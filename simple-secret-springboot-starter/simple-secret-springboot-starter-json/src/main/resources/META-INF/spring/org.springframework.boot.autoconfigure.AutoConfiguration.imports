@@ -1,0 +1,2 @@
+com.ss.json.config.SimpleSecretJacksonAutoConfiguration
+com.ss.json.config.SimpleSecretJsonCodecAutoConfiguration

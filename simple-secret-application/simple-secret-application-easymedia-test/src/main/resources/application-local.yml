@@ -1,0 +1,26 @@
+simple-secret:
+  zlm4j:
+    enabled: true
+    listen-ip: 127.0.0.1
+    allow-anonymous-play: false
+    allow-anonymous-publish: false
+    root-path: ${SIMPLE_SECRET_EASYMEDIA_ROOT:./runtime/easymedia}
+    log-path: ${SIMPLE_SECRET_EASYMEDIA_ROOT:./runtime/easymedia}/logs
+    mp4-save-path: ${SIMPLE_SECRET_EASYMEDIA_ROOT:./runtime/easymedia}/recordings/mp4
+    hls-save-path: ${SIMPLE_SECRET_EASYMEDIA_ROOT:./runtime/easymedia}/recordings/hls
+    rtc-host: 127.0.0.1
+    resource-policy:
+      recording-root: ${SIMPLE_SECRET_EASYMEDIA_ROOT:./runtime/easymedia}/recordings
+  easymedia:
+    enabled: true
+    management-api-enabled: ${SIMPLE_SECRET_EASYMEDIA_MANAGEMENT_ENABLED:false}
+    webrtc:
+      enabled: true
+      local-zlm-enabled: true
+      trickle-ice-enabled: false
+      security:
+        authentication-required: true
+        default-tenant-id: local-test
+        default-subject: easymedia-test-user
+      rate-limit:
+        enabled: true

@@ -1,0 +1,24 @@
+server:
+  address: 127.0.0.1
+  port: 9878
+
+spring:
+  application:
+    name: simple-secret-easymedia-test
+  main:
+    banner-mode: "off"
+
+simple-secret:
+  zlm4j:
+    enabled: false
+  easymedia:
+    enabled: false
+    management-api-enabled: false
+  test:
+    easymedia:
+      management-token: ${SIMPLE_SECRET_EASYMEDIA_MANAGEMENT_TOKEN:}
+
+logging:
+  level:
+    com.ss: INFO
+    org.springframework: WARN

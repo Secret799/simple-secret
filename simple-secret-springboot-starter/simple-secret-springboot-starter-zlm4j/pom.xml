@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ss</groupId>
+        <artifactId>simple-secret-springboot-starter</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>simple-secret-springboot-starter-zlm4j</artifactId>
+    <description>Simple Secret ZLMediaKit(zlm4j) Spring Boot 自动配置,用于视频推拉流、录像、转码、截图、视频拼接</description>
+
+    <properties>
+        <zlm4j.version>1.11.0</zlm4j.version>
+        <javacpp.version>1.5.10</javacpp.version>
+        <ffmpeg.version>6.1.1-1.5.10</ffmpeg.version>
+        <jna.version>5.18.0</jna.version>
+    </properties>
+
+    <dependencies>
+        <!-- 模块实际使用的通用函数接口 -->
+        <dependency>
+            <groupId>com.ss</groupId>
+            <artifactId>simple-secret-common-toolbox</artifactId>
+        </dependency>
+
+        <!-- zlm4j依赖 -->
+        <dependency>
+            <groupId>com.aizuda</groupId>
+            <artifactId>zlm4j</artifactId>
+            <version>${zlm4j.version}</version>
+        </dependency>
+
+        <!-- 原生调用与 FFmpeg Java API；平台 native 由下方 OS profile 选择 -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <version>${javacpp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>ffmpeg</artifactId>
+            <version>${ffmpeg.version}</version>
+        </dependency>
+
+        <!-- 直接使用的 Spring Boot / Spring API -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+        </dependency>
+
+        <!-- 加载模块内置 YAML 默认配置所必需。 -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+        </dependency>
+
+        <!-- 日志 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <!-- 校验注解 @Valid/@NotBlank/@NotNull -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- 生命周期注解 @PostConstruct/@PreDestroy -->
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>native-windows-x86-64</id>
+            <activation><os><family>Windows</family><arch>amd64</arch></os></activation>
+            <properties><native.classifier>windows-x86_64</native.classifier></properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId><artifactId>javacpp</artifactId>
+                    <version>${javacpp.version}</version><classifier>${native.classifier}</classifier><scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId><artifactId>ffmpeg</artifactId>
+                    <version>${ffmpeg.version}</version><classifier>${native.classifier}-gpl</classifier><scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>native-linux-x86-64</id>
+            <activation><os><family>unix</family><name>Linux</name><arch>amd64</arch></os></activation>
+            <properties><native.classifier>linux-x86_64</native.classifier></properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId><artifactId>javacpp</artifactId>
+                    <version>${javacpp.version}</version><classifier>${native.classifier}</classifier><scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId><artifactId>ffmpeg</artifactId>
+                    <version>${ffmpeg.version}</version><classifier>${native.classifier}-gpl</classifier><scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>native-linux-arm64</id>
+            <activation><os><family>unix</family><name>Linux</name><arch>aarch64</arch></os></activation>
+            <properties><native.classifier>linux-arm64</native.classifier></properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId><artifactId>javacpp</artifactId>
+                    <version>${javacpp.version}</version><classifier>${native.classifier}</classifier><scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId><artifactId>ffmpeg</artifactId>
+                    <version>${ffmpeg.version}</version><classifier>${native.classifier}-gpl</classifier><scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>native-macos-arm64</id>
+            <activation><os><family>mac</family><arch>aarch64</arch></os></activation>
+            <properties><native.classifier>macosx-arm64</native.classifier></properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId><artifactId>javacpp</artifactId>
+                    <version>${javacpp.version}</version><classifier>${native.classifier}</classifier><scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId><artifactId>ffmpeg</artifactId>
+                    <version>${ffmpeg.version}</version><classifier>${native.classifier}-gpl</classifier><scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>native-macos-x86-64</id>
+            <activation><os><family>mac</family><arch>x86_64</arch></os></activation>
+            <properties><native.classifier>macosx-x86_64</native.classifier></properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId><artifactId>javacpp</artifactId>
+                    <version>${javacpp.version}</version><classifier>${native.classifier}</classifier><scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId><artifactId>ffmpeg</artifactId>
+                    <version>${ffmpeg.version}</version><classifier>${native.classifier}-gpl</classifier><scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
+</project>

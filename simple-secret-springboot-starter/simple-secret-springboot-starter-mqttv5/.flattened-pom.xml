@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.ss</groupId>
+    <artifactId>simple-secret-springboot-starter</artifactId>
+    <version>1.1.0</version>
+  </parent>
+  <groupId>com.ss</groupId>
+  <artifactId>simple-secret-springboot-starter-mqttv5</artifactId>
+  <version>1.1.0</version>
+  <description>Simple Secret MQTT v5 Spring Boot 自动配置</description>
+  <properties>
+    <eclipse.paho.version>1.2.5</eclipse.paho.version>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.ss</groupId>
+      <artifactId>simple-secret-springboot-starter-json</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.paho</groupId>
+      <artifactId>org.eclipse.paho.mqttv5.client</artifactId>
+      <version>${eclipse.paho.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

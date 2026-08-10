@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.ss</groupId>
+    <artifactId>simple-secret</artifactId>
+    <version>1.1.0</version>
+  </parent>
+  <groupId>com.ss</groupId>
+  <artifactId>simple-secret-springboot-starter</artifactId>
+  <version>1.1.0</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>simple-secret-springboot-starter-json</module>
+    <module>simple-secret-springboot-starter-mqttv5</module>
+    <module>simple-secret-springboot-starter-nats</module>
+    <module>simple-secret-springboot-starter-influxdb</module>
+    <module>simple-secret-springboot-starter-zlm4j</module>
+    <module>simple-secret-springboot-starter-easymedia</module>
+  </modules>
+  <properties>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+</project>
