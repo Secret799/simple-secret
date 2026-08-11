@@ -18,6 +18,8 @@
         <module>simple-secret-plugin-geo</module>
         <module>simple-secret-plugin-kmz</module>
         <module>simple-secret-plugin-udp</module>
+        <module>simple-secret-plugin-camera-sdk</module>
+        <module>simple-secret-plugin-camera-sdk-dahua</module>
     </modules>
 
     <properties>

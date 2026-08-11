@@ -16,6 +16,8 @@
         <module>consumer-influxdb</module>
         <module>consumer-zlm4j</module>
         <module>consumer-easymedia</module>
+        <module>consumer-camera-sdk</module>
+        <module>consumer-camera-sdk-dahua</module>
     </modules>
 
     <properties>

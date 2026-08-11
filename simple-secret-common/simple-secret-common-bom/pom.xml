@@ -13,10 +13,16 @@
 
     <properties>
         <revision>1.1.0</revision>
+        <jna.version>5.18.0</jna.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna</artifactId>
+                <version>${jna.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.ss</groupId>
                 <artifactId>simple-secret-common-toolbox</artifactId>
@@ -30,6 +36,16 @@
             <dependency>
                 <groupId>com.ss</groupId>
                 <artifactId>simple-secret-plugin-kmz</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ss</groupId>
+                <artifactId>simple-secret-plugin-camera-sdk</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ss</groupId>
+                <artifactId>simple-secret-plugin-camera-sdk-dahua</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

@@ -9,6 +9,8 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 - `simple-secret-plugins`：纯 Java 插件聚合模块，当前包含 Geo Referencing 和 KMZ/KML。
 - `simple-secret-plugin-geo`：零运行时依赖的像素坐标、WGS84 地理坐标和 DJI 照片/遥测投影。
 - `simple-secret-plugin-kmz`：零运行时依赖的 KML、KMZ、DJI WPML 航点任务和 LineString 读取。
+- `simple-secret-plugin-camera-sdk`：零生产依赖的摄像机厂商 SDK 领域模型、能力 SPI 和实例注册表。
+- `simple-secret-plugin-camera-sdk-dahua`：只依赖 Camera SDK API 与 JNA 的大华登录、PTZ、H.264 预览和热成像驱动。
 - `simple-secret-springboot-starter-json`：JSON 编解码、属性名解析和 Spring Boot 自动配置。
 - `simple-secret-springboot-starter-mqttv5`：MQTT v5 多客户端、发布订阅和请求响应。
 - `simple-secret-springboot-starter-nats`：NATS 多客户端、发布、请求响应和 queue group 订阅。
@@ -530,6 +532,32 @@ List<Telemetry> records = operations.list(
 ```
 
 DSL 对 identifier、函数、duration、数值类型和字符串字面量统一校验与转义，不提供任意原始条件片段。分页计数必须选择非 tag、非 time 的普通 field，并且分页查询不能包含分组。原始 InfluxQL API 只适合可信代码，禁止拼接请求参数。完整的实体、分页、Service、自动初始化、非 Spring 和安全案例见 [InfluxDB Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-influxdb/README.md)。
+
+## Camera SDK Plugin
+
+`simple-secret-plugin-camera-sdk` 是摄像机厂商 SDK 的 JDK-only API/SPI 层，提供登录、PTZ、实时预览和历史回放查询所需的领域对象及服务接口。它不加载原生库，也不依赖 Spring、JSON、ZLM4J、Hutool 或 Lombok：
+
+```xml
+<dependency>
+    <groupId>com.ss</groupId>
+    <artifactId>simple-secret-plugin-camera-sdk</artifactId>
+</dependency>
+```
+
+完整领域对象、服务接口、注册表和扩展案例见 [Camera SDK Plugin README](simple-secret-plugins/simple-secret-plugin-camera-sdk/README.md)。
+
+大华 NetSDK 用户可额外按需引入：
+
+```xml
+<dependency>
+    <groupId>com.ss</groupId>
+    <artifactId>simple-secret-plugin-camera-sdk-dahua</artifactId>
+</dependency>
+```
+
+该驱动只增加 JNA，不携带厂商 native 二进制，也不依赖 Spring、JSON、ZLM 或 Flink CDC。它提供显式 `open`/`close`、登录/注销、同步及有界异步 PTZ、Annex-B H.264 预览，以及热成像订阅、抓取、测温和历史查询；仅支持 Windows 和 Linux，macOS 会明确拒绝。
+
+原生库目录、完整调用示例和资源关闭要求见 [Dahua Camera SDK Plugin README](simple-secret-plugins/simple-secret-plugin-camera-sdk-dahua/README.md)。
 
 ## ZLM4J Starter
 
