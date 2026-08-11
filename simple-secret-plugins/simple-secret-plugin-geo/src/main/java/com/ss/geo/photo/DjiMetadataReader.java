@@ -18,7 +18,8 @@ import java.util.function.Consumer;
 /**
  * DJI 照片元数据读取器（直接解析 JPEG 二进制：EXIF GPS + DJI XMP）
  * <p>
- * 所有字段均直接从图片二进制数据中读取，不做任何推算或计算。
+ * 所有字段均直接从图片二进制数据中读取，不做任何推算或计算；标定焦距仅接受显式 DJI XMP
+ * {@code drone-dji:CalibratedFocalLength}，MakerNote 因标签语义不稳定而刻意忽略。
  *
  * @author JunPzx
  * @since 2026/5/2

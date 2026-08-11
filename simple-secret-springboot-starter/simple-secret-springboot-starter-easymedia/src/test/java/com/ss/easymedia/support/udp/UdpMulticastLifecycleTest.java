@@ -10,11 +10,26 @@ import java.net.SocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class UdpMulticastLifecycleTest {
+
+    @Test
+    void legacyTypesDelegateToUdpPluginWithoutChangingManagerSignatures() throws Exception {
+        assertThat(com.ss.udp.UdpMessageHandler.class.isAssignableFrom(UdpMessageHandler.class))
+                .isTrue();
+        assertThat(UdpMulticastListener.class.getSuperclass())
+                .isEqualTo(com.ss.udp.UdpMulticastListener.class);
+        assertThat(UdpMulticastListener.class.isAnnotationPresent(Deprecated.class)).isTrue();
+        assertThat(UdpMulticastManager.class.getMethod("joinGroup", UdpMulticastListener.class)
+                .getReturnType()).isEqualTo(Void.TYPE);
+        assertThat(UdpMulticastManager.class.getMethod(
+                "leaveGroup", String.class, int.class, String.class).getReturnType())
+                .isEqualTo(Void.TYPE);
+    }
 
     @Test
     void rejectsInvalidConstructionParameters() {
@@ -108,7 +123,7 @@ class UdpMulticastLifecycleTest {
     }
 
     private static void setField(UdpMulticastListener listener, String name, Object value) throws Exception {
-        Field field = UdpMulticastListener.class.getDeclaredField(name);
+        Field field = com.ss.udp.UdpMulticastListener.class.getDeclaredField(name);
         field.setAccessible(true);
         field.set(listener, value);
     }

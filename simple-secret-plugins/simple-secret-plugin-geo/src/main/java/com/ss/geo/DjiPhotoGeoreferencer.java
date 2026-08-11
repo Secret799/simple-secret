@@ -18,7 +18,7 @@ import java.util.function.Function;
  * DJI 照片坐标参照：照片 + 推理框 → 地理坐标
  *
  * <p>自动从照片 EXIF/XMP 中提取相机内外参，结合推理框像素坐标计算目标真实 GPS。
- * <p>FOV 计算优先级：CalibratedFocalLength（XMP 直接读取）{@code >}
+ * <p>FOV 计算优先级：CalibratedFocalLength（仅显式 DJI XMP 直接读取，MakerNote 刻意忽略）{@code >}
  * FocalPlaneXResolution（EXIF 直接读取 + 物理焦距换算）{@code >}
  * 物理焦距 + 传感器宽度 {@code >} 35mm 等效焦距 {@code >} DJI 规格 FOV {@code >} 默认 FOV。
  *
@@ -98,7 +98,7 @@ public final class DjiPhotoGeoreferencer {
      * 根据 DJI 照片元数据构建 CameraState
      * <p>FOV 始终优先使用图片中直接读取的数据，DJI 规格仅作为回退：
      * <ol>
-     *   <li>CalibratedFocalLength（XMP 直接提供）</li>
+     *   <li>CalibratedFocalLength（仅显式 DJI XMP 直接提供，MakerNote 不参与）</li>
      *   <li>FocalPlaneXResolution + 物理焦距（EXIF 直接提供）</li>
      *   <li>物理焦距 + 已识别镜头的传感器宽度</li>
      *   <li>35mm 等效焦距 + 图片尺寸 + 标准胶片对角线</li>
@@ -224,7 +224,7 @@ public final class DjiPhotoGeoreferencer {
         int h = meta.getImageHeight();
         double digitalZoomRatio = positiveFiniteOrDefault(meta.getDigitalZoomRatio(), 1.0);
 
-        // 1) CalibratedFocalLength 直接从 XMP 读取
+        // 1) CalibratedFocalLength 仅直接从显式 DJI XMP 读取
         Double cf = meta.getCalibratedFocalLength();
         if (cf != null && cf > 0) {
             double fovH = 2.0 * Math.toDegrees(Math.atan(w / (2.0 * cf)));

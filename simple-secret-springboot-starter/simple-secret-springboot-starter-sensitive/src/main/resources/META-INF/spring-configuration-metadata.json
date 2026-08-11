@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "simple-secret.sensitive.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "是否启用 Simple Secret Jackson 字段脱敏自动配置。"
+    }
+  ]
+}

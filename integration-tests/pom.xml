@@ -10,14 +10,35 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>consumer-toolbox</module>
+        <module>consumer-dict</module>
+        <module>consumer-core</module>
+        <module>consumer-web</module>
+        <module>consumer-doc</module>
         <module>consumer-json</module>
+        <module>consumer-mqttv3</module>
         <module>consumer-mqttv5</module>
+        <module>consumer-camera</module>
+        <module>consumer-redis</module>
         <module>consumer-nats</module>
         <module>consumer-influxdb</module>
+        <module>consumer-magic-api</module>
         <module>consumer-zlm4j</module>
         <module>consumer-easymedia</module>
+        <module>consumer-udp</module>
+        <module>consumer-excel</module>
         <module>consumer-camera-sdk</module>
+        <module>consumer-camera-sdk-hikvision</module>
         <module>consumer-camera-sdk-dahua</module>
+        <module>consumer-auth</module>
+        <module>consumer-security</module>
+        <module>consumer-mybatis-plus</module>
+        <module>consumer-tenant</module>
+        <module>consumer-sensitive</module>
+        <module>consumer-idempotent</module>
+        <module>consumer-websocket</module>
+        <module>consumer-netty-websocket</module>
+        <module>consumer-encrypt</module>
     </modules>
 
     <properties>
@@ -32,16 +53,16 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
+                <groupId>com.ss</groupId>
+                <artifactId>simple-secret-common-bom</artifactId>
+                <version>${simple-secret.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>com.ss</groupId>
-                <artifactId>simple-secret-common-bom</artifactId>
-                <version>${simple-secret.version}</version>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

@@ -2,6 +2,8 @@ package com.ss.udp;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -58,6 +60,37 @@ class UdpManagerTest {
         assertThat(manager.getActiveListenerCount()).isZero();
     }
 
+    @Test
+    void managersNormalizeAddressesWhenRemovingListeners() throws Exception {
+        UdpUnicastManager unicastManager = new UdpUnicastManager();
+        ControlledUnicastListener unicastListener =
+                new ControlledUnicastListener("127.0.0.1", 12004);
+        assertThat(unicastManager.startListener(unicastListener)).isTrue();
+        assertThat(unicastListener.started.await(1, TimeUnit.SECONDS)).isTrue();
+
+        assertThat(unicastManager.stopListener(" 127.0.0.1 ", 12004)).isTrue();
+
+        UdpMulticastManager multicastManager = new UdpMulticastManager();
+        ControlledMulticastListener multicastListener = new ControlledMulticastListener();
+        assertThat(multicastManager.joinGroup(multicastListener)).isTrue();
+        assertThat(multicastListener.started.await(1, TimeUnit.SECONDS)).isTrue();
+
+        assertThat(multicastManager.leaveGroup(
+                " 239.1.1.1 ", 12345, " 127.0.0.1 ")).isTrue();
+    }
+
+    @Test
+    void managerRemovesListenerThatTerminatesDuringStartup() throws Exception {
+        UdpUnicastManager manager = new UdpUnicastManager();
+        FailingUnicastListener listener = new FailingUnicastListener();
+
+        assertThat(manager.startListener(listener)).isTrue();
+        listener.join(1_000);
+
+        assertThat(listener.isAlive()).isFalse();
+        assertThat(manager.getActiveListenerCount()).isZero();
+    }
+
     private static final class ControlledMulticastListener extends UdpMulticastListener {
         private final CountDownLatch started = new CountDownLatch(1);
         private final CountDownLatch stopRequested = new CountDownLatch(1);
@@ -105,6 +138,17 @@ class UdpManagerTest {
 
         @Override
         public void run() {
+        }
+    }
+
+    private static final class FailingUnicastListener extends UdpUnicastListener {
+        private FailingUnicastListener() {
+            super("127.0.0.1", 12005, packet -> { });
+        }
+
+        @Override
+        DatagramSocket createSocket() throws SocketException {
+            throw new SocketException("scripted bind failure");
         }
     }
 

@@ -24,11 +24,15 @@ public class UdpMulticastManager {
      */
     public boolean joinGroup(UdpMulticastListener listener) {
         Objects.requireNonNull(listener, "listener");
+        if (listener.getState() != Thread.State.NEW) {
+            throw new IllegalThreadStateException("listener has already been started");
+        }
         String key = key(listener.getLocalIp(), listener.getGroupIp(), listener.getPort());
         if (activeGroups.putIfAbsent(key, listener) != null) {
             return false;
         }
         try {
+            listener.setTerminationCallback(() -> activeGroups.remove(key, listener));
             listener.start();
             return true;
         } catch (RuntimeException exception) {
@@ -86,6 +90,10 @@ public class UdpMulticastManager {
     }
 
     private static String key(String localIp, String groupIp, int port) {
-        return localIp + ":" + groupIp + ":" + port;
+        var localAddress = UdpAddressValidator.requireLocalInterfaceAddress(localIp);
+        var groupAddress = UdpAddressValidator.requireMulticastAddress(groupIp);
+        UdpAddressValidator.requireSameAddressFamily(groupAddress, localAddress);
+        return localAddress.getHostAddress() + ":" + groupAddress.getHostAddress()
+                + ":" + UdpAddressValidator.requirePort(port);
     }
 }

@@ -16,6 +16,8 @@
     </description>
     <modules>
         <module>simple-secret-common-toolbox</module>
+        <module>simple-secret-common-core</module>
+        <module>simple-secret-common-dict</module>
         <module>simple-secret-common-bom</module>
     </modules>
 

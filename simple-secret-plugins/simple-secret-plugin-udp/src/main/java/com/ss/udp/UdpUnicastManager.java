@@ -20,11 +20,15 @@ public class UdpUnicastManager {
     /** 注册并启动监听器。 */
     public boolean startListener(UdpUnicastListener listener) {
         Objects.requireNonNull(listener, "listener");
+        if (listener.getState() != Thread.State.NEW) {
+            throw new IllegalThreadStateException("listener has already been started");
+        }
         String key = listener.getKey();
         if (activeListeners.putIfAbsent(key, listener) != null) {
             return false;
         }
         try {
+            listener.setTerminationCallback(() -> activeListeners.remove(key, listener));
             listener.start();
             return true;
         } catch (RuntimeException exception) {
@@ -40,7 +44,7 @@ public class UdpUnicastManager {
 
     /** 停止并移除指定监听器。 */
     public boolean stopListener(String bindIp, int port) {
-        String key = bindIp + ":" + port;
+        String key = key(bindIp, port);
         UdpUnicastListener listener = activeListeners.remove(key);
         if (listener == null) {
             return false;
@@ -60,6 +64,11 @@ public class UdpUnicastManager {
 
     public int getActiveListenerCount() {
         return activeListeners.size();
+    }
+
+    private static String key(String bindIp, int port) {
+        return UdpAddressValidator.requireBindAddress(bindIp).getHostAddress()
+                + ":" + UdpAddressValidator.requirePort(port);
     }
 
     private void stopAndAwait(UdpUnicastListener listener, String key) {

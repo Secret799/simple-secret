@@ -1,0 +1,3 @@
+com.ss.encrypt.config.SimpleSecretEncryptAutoConfiguration
+com.ss.encrypt.config.MybatisEncryptAutoConfiguration
+com.ss.encrypt.config.ApiEncryptAutoConfiguration

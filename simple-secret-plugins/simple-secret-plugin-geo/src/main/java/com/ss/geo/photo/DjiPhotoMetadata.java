@@ -74,7 +74,7 @@ public class DjiPhotoMetadata implements Serializable {
     /** 35mm 等效焦距（直接来自 EXIF） */
     private Double focalLength35mm;
 
-    /** 标定焦距（像素，来自 XMP drone-dji:CalibratedFocalLength，部分机型有） */
+    /** 标定焦距（像素；仅来自显式 DJI XMP {@code drone-dji:CalibratedFocalLength}，不解析 MakerNote） */
     private Double calibratedFocalLength;
 
     // === 设备标识 ===
@@ -254,7 +254,19 @@ public class DjiPhotoMetadata implements Serializable {
     public DjiPhotoMetadata setFocalPlaneResolutionUnit(Integer value) { this.focalPlaneResolutionUnit = value; return this; }
     public Double getFocalLength35mm() { return focalLength35mm; }
     public DjiPhotoMetadata setFocalLength35mm(Double value) { this.focalLength35mm = value; return this; }
+    /**
+     * 返回仅从显式 DJI XMP 读取的标定焦距；MakerNote 不会为该字段赋值。
+     *
+     * @return 标定焦距（像素），图片未提供时为 {@code null}
+     */
     public Double getCalibratedFocalLength() { return calibratedFocalLength; }
+
+    /**
+     * 设置显式 DJI XMP 中读取的标定焦距。
+     *
+     * @param value 标定焦距（像素）
+     * @return 当前元数据对象
+     */
     public DjiPhotoMetadata setCalibratedFocalLength(Double value) { this.calibratedFocalLength = value; return this; }
     public String getBodySerialNumber() { return bodySerialNumber; }
     public DjiPhotoMetadata setBodySerialNumber(String value) { this.bodySerialNumber = value; return this; }

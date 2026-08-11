@@ -1,0 +1,4 @@
+org.springframework.boot.autoconfigure.AutoConfigurationImportFilter=\
+com.ss.magicapi.config.MagicApiAutoConfigurationImportFilter
+org.springframework.boot.env.EnvironmentPostProcessor=\
+com.ss.magicapi.config.MagicApiEnvironmentPostProcessor

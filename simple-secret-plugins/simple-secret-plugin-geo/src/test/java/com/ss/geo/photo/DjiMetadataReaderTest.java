@@ -3,6 +3,8 @@ package com.ss.geo.photo;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +54,30 @@ class DjiMetadataReaderTest {
         assertThatThrownBy(() -> DjiMetadataReader.read(new ByteArrayInputStream(input), 16))
                 .isInstanceOf(DjiMetadataReadException.class)
                 .hasMessageContaining("16");
+    }
+
+    @Test
+    void inputStreamShouldAcceptTheExactCallerProvidedLimit() {
+        byte[] jpeg = jpegWithSofAndXmp(1, 1, "");
+
+        assertThatCode(() -> DjiMetadataReader.read(new ByteArrayInputStream(jpeg), jpeg.length))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> DjiMetadataReader.read(new ByteArrayInputStream(jpeg), jpeg.length - 1))
+                .isInstanceOf(DjiMetadataReadException.class)
+                .hasMessageContaining(Integer.toString(jpeg.length - 1));
+    }
+
+    @Test
+    void defaultInputStreamLimitShouldRejectOneByteOver64MiBWithoutClosingCallerStream() {
+        TrackingRepeatingInputStream input = new TrackingRepeatingInputStream(
+                DjiMetadataReader.DEFAULT_MAX_PHOTO_BYTES + 1);
+
+        assertThatThrownBy(() -> DjiMetadataReader.read(input))
+                .isInstanceOf(DjiMetadataReadException.class)
+                .hasMessageContaining(Integer.toString(DjiMetadataReader.DEFAULT_MAX_PHOTO_BYTES));
+
+        assertThat(input.closed).isFalse();
+        assertThat(input.bytesRead).isEqualTo(DjiMetadataReader.DEFAULT_MAX_PHOTO_BYTES + 1);
     }
 
     @Test
@@ -140,6 +166,59 @@ class DjiMetadataReaderTest {
     }
 
     @Test
+    void malformedIfdEntryTableShouldBeIgnoredForBothByteOrders() {
+        for (ByteOrder order : new ByteOrder[]{ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN}) {
+            byte[] tiff = new byte[12];
+            ByteBuffer buffer = tiffHeader(tiff, order);
+            buffer.putShort(8, (short) 1);
+
+            DjiPhotoMetadata metadata = DjiMetadataReader.read(wrapExif(tiff));
+
+            assertThat(metadata.getMake()).isNull();
+            assertThat(metadata.getGpsLat()).isNull();
+            assertThat(metadata.getFocalLength()).isNull();
+        }
+    }
+
+    @Test
+    void outOfRangeGpsRationalOffsetShouldLeaveGpsLatitudeNullForBothByteOrders() {
+        for (ByteOrder order : new ByteOrder[]{ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN}) {
+            byte[] jpeg = jpegWithExif(order);
+            putTiffInt(jpeg, order, 62, 318);
+
+            DjiPhotoMetadata metadata = DjiMetadataReader.read(jpeg);
+
+            assertThat(metadata.getGpsLat()).isNull();
+        }
+    }
+
+    @Test
+    void outOfRangeExifRationalOffsetShouldLeaveFocalLengthNullForBothByteOrders() {
+        for (ByteOrder order : new ByteOrder[]{ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN}) {
+            byte[] jpeg = jpegWithExif(order);
+            putTiffInt(jpeg, order, 150, 318);
+
+            DjiPhotoMetadata metadata = DjiMetadataReader.read(jpeg);
+
+            assertThat(metadata.getFocalLength()).isNull();
+        }
+    }
+
+    @Test
+    void outOfRangeAsciiOffsetShouldLeaveMakeNullForBothByteOrders() {
+        for (ByteOrder order : new ByteOrder[]{ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN}) {
+            byte[] tiff = new byte[24];
+            ByteBuffer buffer = tiffHeader(tiff, order);
+            buffer.putShort(8, (short) 1);
+            putEntry(buffer, 10, 0x010F, 2, 5, 20);
+
+            DjiPhotoMetadata metadata = DjiMetadataReader.read(wrapExif(tiff));
+
+            assertThat(metadata.getMake()).isNull();
+        }
+    }
+
+    @Test
     void rtkCoordinatesShouldWinAcrossMultipleXmpSegments() {
         String rtk = "<rdf:Description xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\""
                 + " xmlns:drone-dji=\"http://www.dji.com/drone-dji/1.0/\""
@@ -199,56 +278,36 @@ class DjiMetadataReaderTest {
     }
 
     private static byte[] jpegWithUnknownMakerNoteRational() {
-        byte[] tiff = new byte[52];
-        ByteBuffer buffer = ByteBuffer.wrap(tiff).order(ByteOrder.LITTLE_ENDIAN);
-        buffer.put(0, (byte) 'I');
-        buffer.put(1, (byte) 'I');
-        buffer.putShort(2, (short) 42);
-        buffer.putInt(4, 8);
+        byte[] tiff = new byte[70];
+        ByteBuffer buffer = tiffHeader(tiff, ByteOrder.LITTLE_ENDIAN);
+
+        // IFD0 → ExifIFD，确保 MakerNote 进入读取器实际处理的 ExifIFD 路径。
         buffer.putShort(8, (short) 1);
-        buffer.putShort(10, (short) 0x927C);
-        buffer.putShort(12, (short) 7);
-        buffer.putInt(14, 26);
+        putEntry(buffer, 10, 0x8769, 4, 1, 26);
         buffer.putInt(18, 26);
         buffer.putInt(22, 0);
-        buffer.put(26, (byte) 'D');
-        buffer.put(27, (byte) 'J');
-        buffer.put(28, (byte) 'I');
-        buffer.put(29, (byte) 0);
-        buffer.putShort(30, (short) 1);
-        buffer.putShort(32, (short) 1);
-        buffer.putShort(34, (short) 5);
-        buffer.putInt(36, 1);
-        buffer.putInt(40, 44);
-        buffer.putInt(44, 1000);
-        buffer.putInt(48, 1);
 
-        byte[] exifId = "Exif\0\0".getBytes(StandardCharsets.US_ASCII);
-        int app1Length = 2 + exifId.length + tiff.length;
-        byte[] jpeg = new byte[2 + 2 + app1Length + 2];
-        int offset = 0;
-        jpeg[offset++] = (byte) 0xFF;
-        jpeg[offset++] = (byte) 0xD8;
-        jpeg[offset++] = (byte) 0xFF;
-        jpeg[offset++] = (byte) 0xE1;
-        jpeg[offset++] = (byte) (app1Length >>> 8);
-        jpeg[offset++] = (byte) app1Length;
-        System.arraycopy(exifId, 0, jpeg, offset, exifId.length);
-        offset += exifId.length;
-        System.arraycopy(tiff, 0, jpeg, offset, tiff.length);
-        offset += tiff.length;
-        jpeg[offset++] = (byte) 0xFF;
-        jpeg[offset] = (byte) 0xD9;
-        return jpeg;
+        // ExifIFD → MakerNote → DJI 私有 IFD，其中未知 RATIONAL 的值为 1000/1。
+        buffer.putShort(26, (short) 1);
+        putEntry(buffer, 28, 0x927C, 7, 18, 44);
+        buffer.putInt(40, 0);
+        buffer.put(44, (byte) 'D');
+        buffer.put(45, (byte) 'J');
+        buffer.put(46, (byte) 'I');
+        buffer.put(47, (byte) 0);
+        buffer.putShort(48, (short) 1);
+        buffer.putShort(50, (short) 1);
+        buffer.putShort(52, (short) 5);
+        buffer.putInt(54, 1);
+        buffer.putInt(58, 62);
+        buffer.putInt(62, 1000);
+        buffer.putInt(66, 1);
+        return wrapExif(tiff);
     }
 
     private static byte[] jpegWithExif(ByteOrder order) {
         byte[] tiff = new byte[320];
-        ByteBuffer buffer = ByteBuffer.wrap(tiff).order(order);
-        buffer.put(0, (byte) (order == ByteOrder.LITTLE_ENDIAN ? 'I' : 'M'));
-        buffer.put(1, (byte) (order == ByteOrder.LITTLE_ENDIAN ? 'I' : 'M'));
-        buffer.putShort(2, (short) 42);
-        buffer.putInt(4, 8);
+        ByteBuffer buffer = tiffHeader(tiff, order);
 
         buffer.putShort(8, (short) 2);
         putEntry(buffer, 10, 0x8825, 4, 1, 40);
@@ -299,6 +358,19 @@ class DjiMetadataReaderTest {
         buffer.putInt(offset + 4, denominator);
     }
 
+    private static ByteBuffer tiffHeader(byte[] tiff, ByteOrder order) {
+        ByteBuffer buffer = ByteBuffer.wrap(tiff).order(order);
+        buffer.put(0, (byte) (order == ByteOrder.LITTLE_ENDIAN ? 'I' : 'M'));
+        buffer.put(1, (byte) (order == ByteOrder.LITTLE_ENDIAN ? 'I' : 'M'));
+        buffer.putShort(2, (short) 42);
+        buffer.putInt(4, 8);
+        return buffer;
+    }
+
+    private static void putTiffInt(byte[] jpeg, ByteOrder order, int tiffOffset, int value) {
+        ByteBuffer.wrap(jpeg).order(order).putInt(12 + tiffOffset, value);
+    }
+
     private static byte[] wrapExif(byte[] tiff) {
         byte[] exifId = "Exif\0\0".getBytes(StandardCharsets.US_ASCII);
         int app1Length = 2 + exifId.length + tiff.length;
@@ -317,5 +389,41 @@ class DjiMetadataReaderTest {
         jpeg[offset++] = (byte) 0xFF;
         jpeg[offset] = (byte) 0xD9;
         return jpeg;
+    }
+
+    private static final class TrackingRepeatingInputStream extends InputStream {
+        private int remaining;
+        private int bytesRead;
+        private boolean closed;
+
+        private TrackingRepeatingInputStream(int remaining) {
+            this.remaining = remaining;
+        }
+
+        @Override
+        public int read() {
+            if (remaining == 0) {
+                return -1;
+            }
+            remaining--;
+            bytesRead++;
+            return 0;
+        }
+
+        @Override
+        public int read(byte[] bytes, int offset, int length) {
+            if (remaining == 0) {
+                return -1;
+            }
+            int count = Math.min(length, remaining);
+            remaining -= count;
+            bytesRead += count;
+            return count;
+        }
+
+        @Override
+        public void close() throws IOException {
+            closed = true;
+        }
     }
 }

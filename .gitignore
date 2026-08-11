@@ -5,6 +5,7 @@ target/
 .kotlin
 
 ### IntelliJ IDEA ###
+.idea
 .idea/modules.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml
@@ -37,4 +38,25 @@ build/
 
 ### Mac OS ###
 .DS_Store
-.idea
+
+
+### other ###
+logs
+.gemini
+.log
+.flattened-pom.xml
+.lck
+
+### superpowers ###
+docs/superpowers/
+CLAUDE.md
+AGENTS.md
+.codex
+.claude
+.apifox
+tmp
+.worktrees
+.trellis
+.agents
+.cursor
+.gitattributes

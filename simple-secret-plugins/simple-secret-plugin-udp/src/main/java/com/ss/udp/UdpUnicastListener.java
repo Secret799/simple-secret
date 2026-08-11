@@ -27,6 +27,7 @@ public class UdpUnicastListener extends Thread {
     private volatile DatagramSocket socket;
     private volatile boolean running;
     private volatile boolean stopRequested;
+    private Runnable terminationCallback = () -> { };
     private int maxMessageLength = 1500;
 
     /**
@@ -67,6 +68,7 @@ public class UdpUnicastListener extends Thread {
         } finally {
             running = false;
             closeSocket();
+            notifyTermination();
         }
     }
 
@@ -109,6 +111,21 @@ public class UdpUnicastListener extends Thread {
             messageHandler.onError(exception);
         } catch (RuntimeException callbackException) {
             LOG.log(System.Logger.Level.ERROR, "UDP unicast error callback failed", callbackException);
+        }
+    }
+
+    void setTerminationCallback(Runnable terminationCallback) {
+        if (getState() != State.NEW) {
+            throw new IllegalStateException("termination callback must be configured before listener start");
+        }
+        this.terminationCallback = Objects.requireNonNull(terminationCallback, "terminationCallback");
+    }
+
+    private void notifyTermination() {
+        try {
+            terminationCallback.run();
+        } catch (RuntimeException exception) {
+            LOG.log(System.Logger.Level.ERROR, "UDP unicast termination callback failed", exception);
         }
     }
 

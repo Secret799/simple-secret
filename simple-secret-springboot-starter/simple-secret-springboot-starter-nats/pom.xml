@@ -14,7 +14,6 @@
 
     <properties>
         <jnats.version>2.26.1</jnats.version>
-        <bouncycastle.version>2.73.12</bouncycastle.version>
     </properties>
 
     <dependencies>
@@ -33,7 +32,6 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-lts8on</artifactId>
-            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

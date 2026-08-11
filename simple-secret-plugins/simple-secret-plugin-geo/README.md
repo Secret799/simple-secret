@@ -149,7 +149,7 @@ GeoTarget second = DjiPhotoGeoreferencer.refer(metadata, 2200, 1600, 5.0);
 
 相机内参按以下顺序选择，前一项有效时不会继续使用后一项：
 
-1. DJI XMP `CalibratedFocalLength`。
+1. 显式 DJI XMP `drone-dji:CalibratedFocalLength`（唯一可设置标定焦距的来源）。
 2. EXIF 焦平面分辨率与物理焦距。
 3. 物理焦距与已识别相机传感器宽度。
 4. 35mm 等效焦距。
@@ -158,7 +158,7 @@ GeoTarget second = DjiPhotoGeoreferencer.refer(metadata, 2200, 1600, 5.0);
 
 支持的 DJI 机型包括 M30、M30T、M3D、M3TD、M4D、M4TD、Mavic 3E、Mavic 3T 和 M350 RTK。元数据无法识别机型时，只要照片中存在有效焦距信息仍可定位。
 
-普通 DJI GPS 会覆盖 EXIF GPS；只有 RTK 纬度、经度和绝对高形成完整合法三元组时，RTK 才整体覆盖普通 GPS。MakerNote 是厂商私有结构，本模块不会猜测未知标签为标定焦距。
+普通 DJI GPS 会覆盖 EXIF GPS；只有 RTK 纬度、经度和绝对高形成完整合法三元组时，RTK 才整体覆盖普通 GPS。标准 EXIF 焦距字段仍用于后续 FOV 回退。MakerNote 是厂商私有结构，标签语义并不稳定，本模块刻意忽略它，绝不会猜测未知字段为标定焦距。
 
 ## DJI 实时遥测
 

@@ -31,6 +31,7 @@ public class UdpMulticastListener extends Thread {
     private volatile MulticastSocket socket;
     private volatile boolean running;
     private volatile boolean stopRequested;
+    private Runnable terminationCallback = () -> { };
     private int maxMessageLength = 1024;
 
     /**
@@ -80,6 +81,7 @@ public class UdpMulticastListener extends Thread {
         } finally {
             running = false;
             closeSocket();
+            notifyTermination();
         }
     }
 
@@ -128,6 +130,21 @@ public class UdpMulticastListener extends Thread {
             messageHandler.onError(exception);
         } catch (RuntimeException callbackException) {
             LOG.log(System.Logger.Level.ERROR, "UDP multicast error callback failed", callbackException);
+        }
+    }
+
+    void setTerminationCallback(Runnable terminationCallback) {
+        if (getState() != State.NEW) {
+            throw new IllegalStateException("termination callback must be configured before listener start");
+        }
+        this.terminationCallback = Objects.requireNonNull(terminationCallback, "terminationCallback");
+    }
+
+    private void notifyTermination() {
+        try {
+            terminationCallback.run();
+        } catch (RuntimeException exception) {
+            LOG.log(System.Logger.Level.ERROR, "UDP multicast termination callback failed", exception);
         }
     }
 
