@@ -1,4 +1,4 @@
-package com.ss.camera.autoconfigure;
+package com.ss.camera.config;
 
 import com.ss.camera.domain.StreamUrlAssemblyDomain;
 import com.ss.camera.service.UrlAssemblyHolder;

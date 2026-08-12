@@ -24,7 +24,7 @@ class PublishedDependencyPolicyTest {
                 "org.msgpack:msgpack-core",
                 "com.squareup.okhttp3:okhttp",
                 "org.slf4j:slf4j-api",
-                "org.springframework.boot:spring-boot-autoconfigure");
+                "org.springframework.boot:spring-boot-config");
     }
 
     @Test
