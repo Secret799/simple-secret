@@ -1,6 +1,7 @@
 package com.ss.ics.dahua;
 
 import com.ss.ics.domain.DeviceDomain;
+import com.ss.ics.dahua.internal.model.DahuaNativeThermalData;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;

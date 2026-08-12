@@ -1,5 +1,8 @@
 package com.ss.ics.hikvision;
 
+import com.ss.ics.hikvision.internal.HikvisionNativeApi;
+import com.ss.ics.hikvision.internal.jna.JnaHikvisionNativeApi;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** 海康 SDK 的显式、幂等生命周期。 */

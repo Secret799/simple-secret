@@ -707,6 +707,12 @@ List<PlaybackTimePeriodDomain> month = registry.requirePlayQuery("Hikvision")
 
 该驱动只增加 JNA，不携带任何厂商 native 二进制，也不依赖 Spring、JSON、ZLM 或 Flink CDC。它提供显式 `open`/`close`、登录/注销、同步/有界异步 PTZ、Annex-B H.264 预览，以及热成像订阅、抓取、测温与历史查询；仅支持 Windows 和 Linux，macOS 会明确拒绝。原生库目录、完整示例和资源关闭要求见 [Dahua Camera SDK Plugin README](simple-secret-plugins/simple-secret-plugin-camera-sdk-dahua/README.md)。
 
+两个厂商驱动均将稳定服务入口、配置、异常、会话和用户可见结果保留在
+`com.ss.ics.dahua`、`com.ss.ics.hikvision` 根包，将原生适配接口、native 快照、查询流程和
+JNA 加载实现放入 `internal.*` 子包。第三方应用不应依赖 `internal.*`；根包中的
+`DahuaJnaStructures`、`HikvisionJnaStructures` 仅为保持已有完整类名兼容而保留；
+大华结构公开字段引用的 `DahuaNativeLibrary` 回调类型也保留在根包，但实际厂商函数绑定位于内部包。
+
 ## Camera Starter
 
 `simple-secret-springboot-starter-camera` 提供海康威视和大华摄像机/NVR 的 RTSP 地址组装。它不依赖厂商 SDK、JNA、ZLM4J、Hutool、Lombok 或 JSON 模块，也不会连接设备或启动原生服务。

@@ -4,6 +4,10 @@ import com.ss.ics.domain.DeviceDomain;
 import com.ss.ics.domain.LoginDomain;
 import com.ss.ics.domain.PlayDomain;
 import com.ss.ics.domain.PlaybackTimePeriodDomain;
+import com.ss.ics.hikvision.internal.HikvisionNativeApi;
+import com.ss.ics.hikvision.internal.model.HikvisionFileSearchCondition;
+import com.ss.ics.hikvision.internal.model.HikvisionFileSearchResult;
+import com.ss.ics.hikvision.internal.model.HikvisionNativeLoginResult;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;

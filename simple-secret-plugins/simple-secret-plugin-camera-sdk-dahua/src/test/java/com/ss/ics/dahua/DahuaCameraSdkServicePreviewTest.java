@@ -2,6 +2,7 @@ package com.ss.ics.dahua;
 
 import com.ss.ics.domain.DeviceDomain;
 import com.ss.ics.domain.PlayDomain;
+import com.ss.ics.dahua.internal.model.DahuaNativeStreamFrame;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;

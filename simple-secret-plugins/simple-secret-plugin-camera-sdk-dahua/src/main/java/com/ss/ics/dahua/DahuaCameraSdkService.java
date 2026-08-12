@@ -8,6 +8,14 @@ import com.ss.ics.domain.PTZControlDomain;
 import com.ss.ics.service.DeviceLoginService;
 import com.ss.ics.service.PlayService;
 import com.ss.ics.service.PtzControlService;
+import com.ss.ics.dahua.internal.DahuaNativeApi;
+import com.ss.ics.dahua.internal.model.DahuaNativeLoginResult;
+import com.ss.ics.dahua.internal.model.DahuaNativeRadiometryRecord;
+import com.ss.ics.dahua.internal.model.DahuaNativeRegionTemperature;
+import com.ss.ics.dahua.internal.model.DahuaNativeSearchStart;
+import com.ss.ics.dahua.internal.model.DahuaNativeStreamFrame;
+import com.ss.ics.dahua.internal.model.DahuaNativeTemperatureSummary;
+import com.ss.ics.dahua.internal.model.DahuaNativeThermalData;
 
 import java.time.Duration;
 import java.time.LocalDateTime;

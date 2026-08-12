@@ -17,6 +17,15 @@
 
 未使用 BOM 时增加 `<version>1.1.0</version>`。JNA 由本驱动直接声明，应用不需要重复声明。
 
+## 包结构与兼容边界
+
+第三方应用只应依赖 `com.ss.ics.hikvision` 根包中的服务、配置、异常和返回类型。
+`com.ss.ics.hikvision.internal` 及其 `model`、`query`、`jna` 子包是驱动内部实现，
+不属于版本兼容承诺，即使个别类型因 Java 跨包调用而声明为 `public`，也不应由业务代码直接导入。
+
+`HikvisionJnaStructures` 保留在根包是为了保持已有完整类名兼容，主要用于 JNA 结构映射；
+常规接入应通过 `HikvisionCameraSdkService`，不要直接调用内部 native API、查询器或 JNA 加载器。
+
 ## 准备原生 SDK
 
 部署环境必须自行取得与操作系统、CPU 架构和设备版本匹配的海康 HCNetSDK。驱动支持 Windows 和 Linux，不支持 macOS。

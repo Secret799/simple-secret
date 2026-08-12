@@ -10,6 +10,9 @@ import com.ss.ics.constants.enums.PtzControlCommandEnums;
 import com.ss.ics.service.DeviceLoginService;
 import com.ss.ics.service.PlayQueryService;
 import com.ss.ics.service.PtzControlService;
+import com.ss.ics.hikvision.internal.HikvisionNativeApi;
+import com.ss.ics.hikvision.internal.model.HikvisionNativeLoginResult;
+import com.ss.ics.hikvision.internal.query.HikvisionPlaybackCalendarQuery;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;

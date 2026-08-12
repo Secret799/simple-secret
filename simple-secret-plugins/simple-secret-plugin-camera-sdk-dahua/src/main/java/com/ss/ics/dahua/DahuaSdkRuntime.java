@@ -1,5 +1,8 @@
 package com.ss.ics.dahua;
 
+import com.ss.ics.dahua.internal.DahuaNativeApi;
+import com.ss.ics.dahua.internal.jna.JnaDahuaNativeApi;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** 大华 SDK 的显式、幂等生命周期。 */

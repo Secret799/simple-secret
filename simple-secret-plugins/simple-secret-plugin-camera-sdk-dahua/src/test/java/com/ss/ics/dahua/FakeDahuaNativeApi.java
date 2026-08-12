@@ -1,6 +1,14 @@
 package com.ss.ics.dahua;
 
 import com.ss.ics.domain.LoginDomain;
+import com.ss.ics.dahua.internal.DahuaNativeApi;
+import com.ss.ics.dahua.internal.DahuaNativeStreamCallback;
+import com.ss.ics.dahua.internal.DahuaNativeThermalCallback;
+import com.ss.ics.dahua.internal.model.DahuaNativeLoginResult;
+import com.ss.ics.dahua.internal.model.DahuaNativeRadiometryRecord;
+import com.ss.ics.dahua.internal.model.DahuaNativeRegionTemperature;
+import com.ss.ics.dahua.internal.model.DahuaNativeSearchStart;
+import com.ss.ics.dahua.internal.model.DahuaNativeTemperatureSummary;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
