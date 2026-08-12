@@ -30,6 +30,10 @@ public class RedissonWebRtcSessionRepository implements WebRtcSessionRepository 
 
     /**
      * 创建 Redisson 会话仓储。
+
+     *
+     * @param redissonClient Redisson 客户端
+     * @param keys Redis 键生成器
      */
     public RedissonWebRtcSessionRepository(RedissonClient redissonClient, WebRtcRedisKeys keys) {
         this.redissonClient = redissonClient;

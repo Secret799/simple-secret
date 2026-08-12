@@ -15,15 +15,46 @@ import java.util.Optional;
  */
 public final class NettyWebSocketHandshakeRequest {
 
+    /**
+     * 握手请求 HTTP 方法。
+     */
     private final String method;
+    /**
+     * 握手请求 URI。
+     */
     private final String uri;
+    /**
+     * 文件或资源路径。
+     */
     private final String path;
+    /**
+     * 表头或消息头集合。
+     */
     private final Map<String, List<String>> headers;
+    /**
+     * 握手查询参数快照。
+     */
     private final Map<String, List<String>> queryParameters;
+    /**
+     * 握手请求 Cookie 快照。
+     */
     private final Map<String, String> cookies;
+    /**
+     * 握手客户端远端地址。
+     */
     private final SocketAddress remoteAddress;
 
-    /** 创建并校验握手请求快照。 */
+    /**
+     * 创建并校验握手请求快照。
+     *
+     * @param method HTTP 方法
+     * @param uri 请求 URI
+     * @param path 文件或资源路径
+     * @param headers 表头或消息头集合
+     * @param queryParameters 握手查询参数
+     * @param cookies 握手请求 Cookie 快照
+     * @param remoteAddress 客户端远端地址
+     */
     public NettyWebSocketHandshakeRequest(String method, String uri, String path,
                                           Map<String, List<String>> headers,
                                           Map<String, List<String>> queryParameters,
@@ -38,52 +69,95 @@ public final class NettyWebSocketHandshakeRequest {
         this.remoteAddress = remoteAddress;
     }
 
-    /** 返回 HTTP 方法。 */
+    /**
+     * 返回 HTTP 方法。
+     *
+     * @return 返回的 {@code String} 结果
+     */
     public String method() {
         return method;
     }
 
-    /** 返回原始请求 URI。该值可能包含敏感查询参数，不应直接记录。 */
+    /**
+     * 返回原始请求 URI。该值可能包含敏感查询参数，不应直接记录。
+     *
+     * @return 返回的 {@code String} 结果
+     */
     public String uri() {
         return uri;
     }
 
-    /** 返回不含查询参数的端点路径。 */
+    /**
+     * 返回不含查询参数的端点路径。
+     *
+     * @return 返回的 {@code String} 结果
+     */
     public String path() {
         return path;
     }
 
-    /** 返回已深度复制的只读 header；名称统一为小写。 */
+    /**
+     * 返回已深度复制的只读 header；名称统一为小写。
+     *
+     * @return 返回的 {@code Map<String, List<String>>} 结果
+     */
     public Map<String, List<String>> headers() {
         return headers;
     }
 
-    /** 返回已深度复制的只读查询参数。 */
+    /**
+     * 返回已深度复制的只读查询参数。
+     *
+     * @return 返回的 {@code Map<String, List<String>>} 结果
+     */
     public Map<String, List<String>> queryParameters() {
         return queryParameters;
     }
 
-    /** 返回只读 cookie 映射。 */
+    /**
+     * 返回只读 cookie 映射。
+     *
+     * @return 返回的 {@code Map<String, String>} 结果
+     */
     public Map<String, String> cookies() {
         return cookies;
     }
 
-    /** 返回远端地址；嵌入式通道等场景可能为空。 */
+    /**
+     * 返回远端地址；嵌入式通道等场景可能为空。
+     *
+     * @return 返回的 {@code Optional<SocketAddress>} 结果
+     */
     public Optional<SocketAddress> remoteAddress() {
         return Optional.ofNullable(remoteAddress);
     }
 
-    /** 按大小写不敏感的名称返回第一个 header 值。 */
+    /**
+     * 按大小写不敏感的名称返回第一个 header 值。
+     *
+     * @param name 名称
+     * @return 返回的 {@code Optional<String>} 结果
+     */
     public Optional<String> firstHeader(String name) {
         return first(headers.get(normalizedName(name, "header name")));
     }
 
-    /** 返回指定查询参数的第一个值。 */
+    /**
+     * 返回指定查询参数的第一个值。
+     *
+     * @param name 名称
+     * @return 返回的 {@code Optional<String>} 结果
+     */
     public Optional<String> firstQueryParameter(String name) {
         return first(queryParameters.get(requireText(name, "query parameter name")));
     }
 
-    /** 返回指定 cookie 值。 */
+    /**
+     * 返回指定 cookie 值。
+     *
+     * @param name 名称
+     * @return 返回的 {@code Optional<String>} 结果
+     */
     public Optional<String> cookie(String name) {
         return Optional.ofNullable(cookies.get(requireText(name, "cookie name")));
     }

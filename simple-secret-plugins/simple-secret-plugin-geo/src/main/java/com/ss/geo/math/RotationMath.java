@@ -82,6 +82,9 @@ public final class RotationMath {
 
     /**
      * 向量归一化（原地修改）
+
+     *
+     * @param v 三维向量
      */
     public static void normalize(double[] v) {
         double len = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);

@@ -3,9 +3,8 @@
 `simple-secret-springboot-starter-netty-websocket` 为 Spring Boot 应用提供独立端口的原生 Netty
 WebSocket 服务，适合不希望依赖 Servlet 容器、或需要把长连接端口与 HTTP 业务端口隔离的场景。
 
-它与 `simple-secret-springboot-starter-websocket` 不重复：后者复用 Servlet 容器和 Spring WebSocket；
-本模块自行管理 Netty listener、event loop、握手、frame 和 channel。模块默认关闭，不会因仅引入依赖就
-开放端口。
+本模块不复用 Servlet 容器或 Spring WebSocket，而是自行管理 Netty listener、event loop、握手、frame
+和 channel。模块默认关闭，不会因仅引入依赖就开放端口。
 
 ## Maven 依赖
 
@@ -129,22 +128,22 @@ String tenantId = String.valueOf(principal.attributes().get("tenantId"));
 
 ## 按需组合 JSON
 
-本模块不强制 JSON 依赖。应用确实使用 JSON 消息时再显式引入 JSON starter：
+本模块不强制 JSON 依赖。应用确实使用 JSON 消息时再显式引入 Jackson：
 
 ```xml
 <dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-json</artifactId>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
 </dependency>
 ```
 
 ```java
-import com.ss.json.utils.JsonUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-DeviceCommand command = JsonUtils.parseObject(message.payload(), DeviceCommand.class);
+DeviceCommand command = objectMapper.readValue(message.payload(), DeviceCommand.class);
 ```
 
-这种组合不会让不使用 JSON 的 WebSocket 应用承担 Jackson 依赖，也不会让 JSON 模块反向依赖 Netty。
+这种组合不会让不使用 JSON 的 WebSocket 应用承担 Jackson 依赖，也不会让 Netty 模块绑定特定 JSON 配置。
 
 ## 服务端推送与统计
 

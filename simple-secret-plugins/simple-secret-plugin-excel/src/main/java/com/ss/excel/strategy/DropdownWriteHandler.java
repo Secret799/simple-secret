@@ -28,6 +28,13 @@ public final class DropdownWriteHandler implements SheetWriteHandler {
     private final int lastRowIndex;
     private final Map<Integer, List<String>> optionsByColumn;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param firstRowIndex 下拉选项生效的零基起始行
+     * @param lastRowIndex 下拉选项生效的零基结束行
+     * @param optionsByColumn 以零基列索引为键的下拉选项
+     */
     public DropdownWriteHandler(int firstRowIndex, int lastRowIndex,
                                 Map<Integer, ? extends List<String>> optionsByColumn) {
         if (firstRowIndex < 0) {
@@ -45,6 +52,11 @@ public final class DropdownWriteHandler implements SheetWriteHandler {
         this.optionsByColumn = Collections.unmodifiableMap(new LinkedHashMap<>(copy));
     }
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param optionsByColumn 以零基列索引为键的下拉选项
+     */
     public DropdownWriteHandler(Map<Integer, ? extends List<String>> optionsByColumn) {
         this(1, 65_535, optionsByColumn);
     }

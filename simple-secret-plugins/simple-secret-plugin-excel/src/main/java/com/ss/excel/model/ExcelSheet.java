@@ -16,10 +16,25 @@ public final class ExcelSheet<T> {
     private static final int MAX_SHEET_NAME_LENGTH = 31;
     private static final String INVALID_SHEET_NAME_CHARACTERS = "\\/:*?[]";
 
+    /**
+     * 名称。
+     */
     private final String name;
+    /**
+     * 模型类型。
+     */
     private final Class<T> modelType;
+    /**
+     * 动态表头列定义。
+     */
     private final List<List<String>> head;
+    /**
+     * 数据行集合。
+     */
     private final List<T> rows;
+    /**
+     * EasyExcel 写处理器列表。
+     */
     private final List<WriteHandler> writeHandlers;
 
     private ExcelSheet(Builder<T> builder) {
@@ -41,22 +56,47 @@ public final class ExcelSheet<T> {
         return new Builder<>();
     }
 
+    /**
+     * 返回名称。
+     *
+     * @return 名称
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * 返回模型类型。
+     *
+     * @return 模型类型
+     */
     public Class<T> getModelType() {
         return modelType;
     }
 
+    /**
+     * 返回动态表头定义。
+     *
+     * @return 不可变动态表头定义
+     */
     public List<List<String>> getHead() {
         return head;
     }
 
+    /**
+     * 返回数据行集合。
+     *
+     * @return 数据行集合
+     */
     public List<T> getRows() {
         return rows;
     }
 
+    /**
+     * 返回工作表写处理器。
+     *
+     * @return 不可变写处理器列表
+     */
     public List<WriteHandler> getWriteHandlers() {
         return writeHandlers;
     }
@@ -141,31 +181,66 @@ public final class ExcelSheet<T> {
         private Builder() {
         }
 
+        /**
+         * 设置工作表名称。
+         *
+         * @param value 名称
+         * @return 当前构建器
+         */
         public Builder<T> name(String value) {
             this.name = value;
             return this;
         }
 
+        /**
+         * 设置 EasyExcel 行模型类型。
+         *
+         * @param value 模型类型
+         * @return 当前构建器
+         */
         public Builder<T> modelType(Class<T> value) {
             this.modelType = value;
             return this;
         }
 
+        /**
+         * 设置动态表头。
+         *
+         * @param value 动态表头列定义
+         * @return 当前构建器
+         */
         public Builder<T> head(List<List<String>> value) {
             this.head = value;
             return this;
         }
 
+        /**
+         * 设置待写入的数据行。
+         *
+         * @param value 数据行集合
+         * @return 当前构建器
+         */
         public Builder<T> rows(List<T> value) {
             this.rows = value;
             return this;
         }
 
+        /**
+         * 添加{@code writeHandler}。
+         *
+         * @param value EasyExcel 写处理器
+         * @return 当前构建器
+         */
         public Builder<T> addWriteHandler(WriteHandler value) {
             this.writeHandlers.add(Objects.requireNonNull(value, "writeHandler must not be null"));
             return this;
         }
 
+        /**
+         * 构建结果对象。
+         *
+         * @return 构建完成的结果对象
+         */
         public ExcelSheet<T> build() {
             return new ExcelSheet<>(this);
         }

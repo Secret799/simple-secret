@@ -17,12 +17,21 @@ import java.util.concurrent.TimeUnit;
 public class InfluxPointMapper {
     private final InfluxMetadataRegistry registry;
 
-    /** 创建实体到 Point 的映射器。 */
+    /**
+     * 创建实体到 Point 的映射器。
+     *
+     * @param registry 组件注册表
+     */
     public InfluxPointMapper(InfluxMetadataRegistry registry) {
         this.registry = Objects.requireNonNull(registry, "registry");
     }
 
-    /** 使用实体注解 measurement 创建 Point。 */
+    /**
+     * 使用实体注解 measurement 创建 Point。
+     *
+     * @param entity 实体对象
+     * @return 返回的 {@code Point} 结果
+     */
     public Point toPoint(Object entity) {
         Objects.requireNonNull(entity, "entity");
         InfluxEntityMetadata metadata = registry.metadata(entity.getClass());

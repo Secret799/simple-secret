@@ -22,6 +22,13 @@ public final class ManyRowMergeStrategy extends AbstractMergeStrategy {
     private final List<CellRangeAddress> ranges;
     private final Set<Sheet> appliedSheets = Collections.newSetFromMap(new WeakHashMap<>());
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param continuousRange 是否把连续行解释为一个合并区间
+     * @param columnIndex 零基列索引
+     * @param rowIndexes 待合并的零基行索引
+     */
     public ManyRowMergeStrategy(boolean continuousRange, int columnIndex, List<Integer> rowIndexes) {
         if (columnIndex < 0) {
             throw new IllegalArgumentException("columnIndex must not be negative");
@@ -31,14 +38,30 @@ public final class ManyRowMergeStrategy extends AbstractMergeStrategy {
         this.ranges = buildRanges(continuousRange, columnIndex, rowIndexes);
     }
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param columnIndex 零基列索引
+     * @param rowIndexPairs 成对的零基起止行索引
+     */
     public ManyRowMergeStrategy(int columnIndex, List<Integer> rowIndexPairs) {
         this(false, columnIndex, rowIndexPairs);
     }
 
+    /**
+     * 返回零基列索引。
+     *
+     * @return 零基列索引
+     */
     public int getColumnIndex() {
         return columnIndex;
     }
 
+    /**
+     * 判断{@code continuousRange}。
+     *
+     * @return 满足条件时返回 true
+     */
     public boolean isContinuousRange() {
         return continuousRange;
     }

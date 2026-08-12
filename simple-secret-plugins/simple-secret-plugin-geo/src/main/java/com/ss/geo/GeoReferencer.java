@@ -213,6 +213,13 @@ public final class GeoReferencer {
 
     /**
      * 批量推理框 → 地理坐标（通过 DEM 查询自动获取地面海拔）
+
+     *
+     * @param boxes 检测框集合
+     * @param state 会话状态
+     * @param demQuery 高程查询函数
+     * @param fallbackAlt 高程查询失败时使用的备用海拔
+     * @return 返回的 {@code List<GeoTargetWithBox>} 结果
      */
     public static List<GeoTargetWithBox> boxesToGeo(List<BoundingBox> boxes, CameraState state,
                                                     Function<double[], Double> demQuery, double fallbackAlt) {

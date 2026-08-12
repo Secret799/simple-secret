@@ -27,6 +27,11 @@ public class DefaultMediaResourcePolicy implements MediaResourcePolicy {
     private final Path recordingRoot;
     private final HostAddressResolver resolver;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param properties 模块配置
+     */
     public DefaultMediaResourcePolicy(MediaResourcePolicyProperties properties) {
         this(properties, InetAddress::getAllByName);
     }

@@ -33,7 +33,12 @@ public final class KmlLineStringReader {
     private KmlLineStringReader() {
     }
 
-    /** 从文件读取 LineString。 */
+    /**
+     * 从文件读取 LineString。
+     *
+     * @param path 文件或资源路径
+     * @return 返回的 {@code List<KmlLineString>} 结果
+     */
     public static List<KmlLineString> read(Path path) {
         if (path == null) {
             throw new IllegalArgumentException("KML path must not be null");
@@ -45,7 +50,12 @@ public final class KmlLineStringReader {
         }
     }
 
-    /** 从字符串读取 LineString。 */
+    /**
+     * 从字符串读取 LineString。
+     *
+     * @param kml KML 文本
+     * @return 返回的 {@code List<KmlLineString>} 结果
+     */
     public static List<KmlLineString> read(String kml) {
         if (kml == null) {
             throw new IllegalArgumentException("KML string must not be null");
@@ -58,12 +68,23 @@ public final class KmlLineStringReader {
         return parse(bytes);
     }
 
-    /** 从输入流读取 LineString，输入流不会被关闭。 */
+    /**
+     * 从输入流读取 LineString，输入流不会被关闭。
+     *
+     * @param inputStream 输入流
+     * @return 返回的 {@code List<KmlLineString>} 结果
+     */
     public static List<KmlLineString> read(InputStream inputStream) {
         return read(inputStream, KmlReader.DEFAULT_MAX_BYTES);
     }
 
-    /** 从输入流读取 LineString 并限制最大字节数，输入流不会被关闭。 */
+    /**
+     * 从输入流读取 LineString 并限制最大字节数，输入流不会被关闭。
+     *
+     * @param inputStream 输入流
+     * @param maxBytes 最大允许字节数
+     * @return 返回的 {@code List<KmlLineString>} 结果
+     */
     public static List<KmlLineString> read(InputStream inputStream, int maxBytes) {
         return parse(XmlSupport.readLimited(inputStream, maxBytes, "KML LineString"));
     }

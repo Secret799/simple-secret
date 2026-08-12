@@ -14,6 +14,11 @@ public record WebRtcGatewayResponse(HttpStatusCode status, HttpHeaders headers, 
 
     /**
      * 防御性复制可变响应数据。
+
+     *
+     * @param status 状态
+     * @param headers 表头或消息头集合
+     * @param body 请求或响应体
      */
     public WebRtcGatewayResponse {
         headers = HttpHeaders.readOnlyHttpHeaders(new HttpHeaders(headers));

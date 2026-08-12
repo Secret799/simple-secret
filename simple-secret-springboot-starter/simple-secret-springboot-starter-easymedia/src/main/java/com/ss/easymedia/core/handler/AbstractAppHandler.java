@@ -16,6 +16,11 @@ public abstract class AbstractAppHandler<T extends AppHandler> {
 
     private AppHandlerHolder appHandlerHolder;
 
+    /**
+     * 返回{@code handlerClass}。
+     *
+     * @return {@code handlerClass}
+     */
     @SuppressWarnings("unchecked")
     public Class<T> getHandlerClass() {
         Class<?> type = ResolvableType.forClass(this.getClass())

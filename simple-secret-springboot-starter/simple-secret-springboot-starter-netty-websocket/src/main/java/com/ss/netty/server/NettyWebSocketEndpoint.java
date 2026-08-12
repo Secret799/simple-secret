@@ -15,7 +15,14 @@ public record NettyWebSocketEndpoint(String name, String path,
                                      boolean authenticationRequired,
                                      Set<String> allowedOrigins) {
 
-    /** 创建不可变端点快照。 */
+    /**
+     * 创建不可变端点快照。
+     *
+     * @param name 名称
+     * @param path 文件或资源路径
+     * @param authenticationRequired 是否要求认证
+     * @param allowedOrigins 允许的 Origin 列表
+     */
     public NettyWebSocketEndpoint {
         name = requireText(name, "name");
         path = requireText(path, "path");

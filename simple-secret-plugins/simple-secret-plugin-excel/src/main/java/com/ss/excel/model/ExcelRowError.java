@@ -12,10 +12,26 @@ import java.util.TreeMap;
  */
 public final class ExcelRowError<T> {
 
+    /**
+     * 数据所在行号。
+     */
     private final int rowNumber;
+    /**
+     * 校验失败的原始行数据。
+     */
     private final T value;
+    /**
+     * 以零基列索引为键的错误信息。
+     */
     private final Map<Integer, String> columnErrors;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param rowNumber 数据所在行号
+     * @param value 校验失败的原始行数据
+     * @param columnErrors 以零基列索引为键的错误信息
+     */
     public ExcelRowError(int rowNumber, T value, Map<Integer, String> columnErrors) {
         if (rowNumber < 1) {
             throw new IllegalArgumentException("rowNumber must be greater than zero");
@@ -37,14 +53,29 @@ public final class ExcelRowError<T> {
         this.columnErrors = Collections.unmodifiableMap(sortedErrors);
     }
 
+    /**
+     * 返回数据所在行号。
+     *
+     * @return 数据所在行号
+     */
     public int getRowNumber() {
         return rowNumber;
     }
 
+    /**
+     * 返回校验失败的原始行数据。
+     *
+     * @return 校验失败的原始行数据
+     */
     public T getValue() {
         return value;
     }
 
+    /**
+     * 返回以零基列索引为键的错误信息。
+     *
+     * @return 不可变列错误映射
+     */
     public Map<Integer, String> getColumnErrors() {
         return columnErrors;
     }

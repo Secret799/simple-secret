@@ -19,6 +19,9 @@ public class MicrometerWebRtcSessionMetrics implements WebRtcSessionMetrics {
 
     /**
      * 创建 Micrometer 指标适配器。
+
+     *
+     * @param registry 组件注册表
      */
     public MicrometerWebRtcSessionMetrics(MeterRegistry registry) {
         this.registry = registry;

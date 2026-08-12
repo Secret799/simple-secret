@@ -42,6 +42,11 @@ public class H264NalUnitReader implements AutoCloseable {
     // 缓冲区中已扫描记录下标
     private final Object reassemblyLock = new Object();
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param fragmentCapacity 单个 SEI 分片的最大字节数
+     */
     public H264NalUnitReader(int fragmentCapacity) {
         if (fragmentCapacity <= 0) {
             throw new IllegalArgumentException("fragmentCapacity must be greater than 0");
@@ -49,6 +54,9 @@ public class H264NalUnitReader implements AutoCloseable {
         this.fragmentQueue = new LinkedBlockingQueue<>(fragmentCapacity);
     }
 
+    /**
+     * 创建并初始化实例。
+     */
     public H264NalUnitReader() {
         this(DEFAULT_FRAGMENT_CAPACITY);
     }

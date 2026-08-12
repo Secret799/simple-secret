@@ -12,8 +12,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * 单个 MQTT 客户端的请求响应关联上下文。
  */
 public final class MqttRequestContext {
+    /**
+     * 客户端键。
+     */
     private final String clientKey;
+    /**
+     * 请求响应等待器。
+     */
     private final MqttResponseWaiter waiter;
+    /**
+     * 与请求关联的订阅注册集合。
+     */
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, MqttCorrelationExtractor>> registrations =
             new ConcurrentHashMap<>();
 

@@ -56,6 +56,9 @@ public class SimpleSecretEasyMediaAutoConfiguration {
      * 使流未找到、无人观看分发器在 {@link ZlmCallbackHandlerContext} 中最后生效。
      *
      * @return ZlmCallbackHandlerRegister 注册器
+
+     *
+     * @param trackDelegateCallbacks 媒体轨道回调列表
      */
     @Bean
     public ZlmCallbackHandlerRegister emsCallbackHandlerRegister(List<TrackDelegateCallback> trackDelegateCallbacks) {
@@ -88,6 +91,9 @@ public class SimpleSecretEasyMediaAutoConfiguration {
 
     /**
      * 默认拒绝所有管理请求，宿主应用可注册自定义授权器替换。
+
+     *
+     * @return 返回的 {@code EasyMediaManagementAuthorizer} 结果
      */
     @Bean
     @ConditionalOnMissingBean(EasyMediaManagementAuthorizer.class)
@@ -99,6 +105,10 @@ public class SimpleSecretEasyMediaAutoConfiguration {
 
     /**
      * 注册只保护 EasyMedia 通用管理路径的授权过滤器。
+
+     *
+     * @param authorizer EasyMedia 管理 API 授权器
+     * @return 返回的 {@code FilterRegistrationBean<EasyMediaManagementAuthorizationFilter>} 结果
      */
     @Bean
     @ConditionalOnProperty(prefix = "simple-secret.easymedia", name = "management-api-enabled",

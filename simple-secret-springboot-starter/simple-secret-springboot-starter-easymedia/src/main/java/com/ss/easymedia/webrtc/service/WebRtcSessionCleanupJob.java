@@ -27,6 +27,12 @@ public class WebRtcSessionCleanupJob {
 
     /**
      * 创建关闭会话补偿任务。
+
+     *
+     * @param repository 会话仓储
+     * @param service 业务服务实例
+     * @param properties 模块配置
+     * @param clock 用于获取当前时间的时钟
      */
     public WebRtcSessionCleanupJob(WebRtcSessionRepository repository,
                                    WebRtcSessionService service,

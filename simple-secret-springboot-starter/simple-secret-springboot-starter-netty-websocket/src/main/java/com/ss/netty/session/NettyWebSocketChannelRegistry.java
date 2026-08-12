@@ -20,7 +20,13 @@ public final class NettyWebSocketChannelRegistry {
     private final Map<String, Map<String, ChannelGroup>> principalChannels =
             new ConcurrentHashMap<>();
 
-    /** 注册连接，并在 channel 关闭时自动精确清理。 */
+    /**
+     * 注册连接，并在 channel 关闭时自动精确清理。
+     *
+     * @param path 文件或资源路径
+     * @param principal 认证主体
+     * @param channel 通道
+     */
     public void register(String path, NettyWebSocketPrincipal principal, Channel channel) {
         String validPath = requirePath(path);
         Channel requiredChannel = Objects.requireNonNull(channel, "channel must not be null");
@@ -53,6 +59,11 @@ public final class NettyWebSocketChannelRegistry {
      * 精确移除一个连接。
      *
      * @return {@code true} 表示全局 session 索引中确实存在该连接
+
+     *
+     * @param path 文件或资源路径
+     * @param principal 认证主体
+     * @param channel 通道
      */
     public boolean remove(String path, NettyWebSocketPrincipal principal, Channel channel) {
         String validPath = requirePath(path);
@@ -73,12 +84,24 @@ public final class NettyWebSocketChannelRegistry {
         return sessionChannels.remove(requiredChannel.id().asLongText(), requiredChannel);
     }
 
-    /** 向指定路径的全部活动连接提交文本写入，并返回连接数。 */
+    /**
+     * 向指定路径的全部活动连接提交文本写入，并返回连接数。
+     *
+     * @param path 文件或资源路径
+     * @param message 消息
+     * @return 返回的 {@code int} 结果
+     */
     public int sendToPath(String path, String message) {
         return write(pathChannels.get(requirePath(path)), message);
     }
 
-    /** 向指定 session 提交文本写入。 */
+    /**
+     * 向指定 session 提交文本写入。
+     *
+     * @param sessionId 会话 ID
+     * @param message 消息
+     * @return 返回的 {@code boolean} 结果
+     */
     public boolean sendToSession(String sessionId, String message) {
         Channel channel = sessionChannels.get(requireText(sessionId, "sessionId"));
         if (channel == null || !channel.isActive()) {
@@ -89,7 +112,14 @@ public final class NettyWebSocketChannelRegistry {
         return true;
     }
 
-    /** 向指定路径下同一身份的全部活动连接提交文本写入，并返回连接数。 */
+    /**
+     * 向指定路径下同一身份的全部活动连接提交文本写入，并返回连接数。
+     *
+     * @param path 文件或资源路径
+     * @param sessionKey 会话主体键
+     * @param message 消息
+     * @return 返回的 {@code int} 结果
+     */
     public int sendToPrincipal(String path, String sessionKey, String message) {
         Map<String, ChannelGroup> keyedGroups = principalChannels.get(requirePath(path));
         if (keyedGroups == null) {
@@ -98,7 +128,13 @@ public final class NettyWebSocketChannelRegistry {
         return write(keyedGroups.get(requireText(sessionKey, "sessionKey")), message);
     }
 
-    /** 向同一身份在全部路径下的活动连接提交文本写入，并返回连接总数。 */
+    /**
+     * 向同一身份在全部路径下的活动连接提交文本写入，并返回连接总数。
+     *
+     * @param sessionKey 会话主体键
+     * @param message 消息
+     * @return 返回的 {@code int} 结果
+     */
     public int sendToPrincipalAllPaths(String sessionKey, String message) {
         String validKey = requireText(sessionKey, "sessionKey");
         int count = 0;
@@ -108,13 +144,24 @@ public final class NettyWebSocketChannelRegistry {
         return count;
     }
 
-    /** 返回指定路径当前连接数。 */
+    /**
+     * 返回指定路径当前连接数。
+     *
+     * @param path 文件或资源路径
+     * @return 匹配数量
+     */
     public int countByPath(String path) {
         ChannelGroup group = pathChannels.get(requirePath(path));
         return group == null ? 0 : group.size();
     }
 
-    /** 返回指定路径下同一身份的当前连接数。 */
+    /**
+     * 返回指定路径下同一身份的当前连接数。
+     *
+     * @param path 文件或资源路径
+     * @param sessionKey 会话主体键
+     * @return 匹配数量
+     */
     public int countByPrincipal(String path, String sessionKey) {
         Map<String, ChannelGroup> keyedGroups = principalChannels.get(requirePath(path));
         if (keyedGroups == null) {
@@ -124,12 +171,20 @@ public final class NettyWebSocketChannelRegistry {
         return group == null ? 0 : group.size();
     }
 
-    /** 返回全部当前连接数。 */
+    /**
+     * 返回全部当前连接数。
+     *
+     * @return 匹配数量
+     */
     public int totalCount() {
         return sessionChannels.size();
     }
 
-    /** 返回路径到连接数的不可变快照。 */
+    /**
+     * 返回路径到连接数的不可变快照。
+     *
+     * @return 返回的 {@code Map<String, Integer>} 结果
+     */
     public Map<String, Integer> snapshot() {
         Map<String, Integer> snapshot = new LinkedHashMap<>();
         pathChannels.forEach((path, group) -> {

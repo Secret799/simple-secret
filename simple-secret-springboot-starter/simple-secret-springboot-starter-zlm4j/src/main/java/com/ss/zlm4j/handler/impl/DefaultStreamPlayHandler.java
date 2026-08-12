@@ -21,6 +21,9 @@ public class DefaultStreamPlayHandler extends AbstractCallbackHandler implements
     private final ZlmMediaProperties properties;
     private final ZLMApi zlmApi;
 
+    /**
+     * 创建并初始化实例。
+     */
     public DefaultStreamPlayHandler() {
         this(null, null);
     }

@@ -19,6 +19,12 @@ public record ZlmWebRtcResponse(URI requestUri, HttpStatusCode status, HttpHeade
 
     /**
      * 创建具备上游会话资源的 HTTP 信令响应。
+
+     *
+     * @param requestUri 请求 URI
+     * @param status 状态
+     * @param headers 表头或消息头集合
+     * @param body 请求或响应体
      */
     public ZlmWebRtcResponse(URI requestUri, HttpStatusCode status, HttpHeaders headers, byte[] body) {
         this(requestUri, status, headers, body, true);
@@ -26,6 +32,13 @@ public record ZlmWebRtcResponse(URI requestUri, HttpStatusCode status, HttpHeade
 
     /**
      * 防御性复制可变响应数据，避免调用方在构造后篡改会话响应。
+
+     *
+     * @param requestUri 请求 URI
+     * @param status 状态
+     * @param headers 表头或消息头集合
+     * @param body 请求或响应体
+     * @param managedSession 受管 WebSocket 会话
      */
     public ZlmWebRtcResponse {
         headers = HttpHeaders.readOnlyHttpHeaders(new HttpHeaders(headers));

@@ -5,12 +5,21 @@ package com.ss.geo.photo;
  */
 public class DjiMetadataReadException extends IllegalArgumentException {
 
-    /** 创建读取异常。 */
+    /**
+     * 创建读取异常。
+     *
+     * @param message 消息
+     */
     public DjiMetadataReadException(String message) {
         super(message);
     }
 
-    /** 创建带原始原因的读取异常。 */
+    /**
+     * 创建带原始原因的读取异常。
+     *
+     * @param message 消息
+     * @param cause 原始异常
+     */
     public DjiMetadataReadException(String message, Throwable cause) {
         super(message, cause);
     }

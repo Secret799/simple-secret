@@ -24,7 +24,12 @@ import org.springframework.context.annotation.Configuration;
         havingValue = "true", matchIfMissing = true)
 public class RedissonWebRtcConfiguration {
 
-    /** @return 基于 Redis 的分布式会话仓库。 */
+    /**
+     * @return 基于 Redis 的分布式会话仓库。
+     *
+     * @param redissonClient Redisson 客户端
+     * @param keys Redis 键生成器
+     */
     @Bean
     @ConditionalOnMissingBean(WebRtcSessionRepository.class)
     public WebRtcSessionRepository redissonWebRtcSessionRepository(
@@ -32,7 +37,13 @@ public class RedissonWebRtcConfiguration {
         return new RedissonWebRtcSessionRepository(redissonClient, keys);
     }
 
-    /** @return 基于 Redis 的分布式信令限流器。 */
+    /**
+     * @return 基于 Redis 的分布式信令限流器。
+     *
+     * @param redissonClient Redisson 客户端
+     * @param keys Redis 键生成器
+     * @param properties 模块配置
+     */
     @Bean
     @ConditionalOnMissingBean(WebRtcRateLimiter.class)
     public WebRtcRateLimiter redisWebRtcRateLimiter(

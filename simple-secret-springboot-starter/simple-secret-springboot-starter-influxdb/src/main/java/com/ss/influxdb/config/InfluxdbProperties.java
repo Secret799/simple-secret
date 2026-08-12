@@ -12,17 +12,53 @@ import java.util.Locale;
  */
 @ConfigurationProperties("simple-secret.influxdb")
 public class InfluxdbProperties {
+    /**
+     * 是否启用。
+     */
     private boolean enabled;
+    /**
+     * 服务连接地址。
+     */
     private String url;
+    /**
+     * 用户名。
+     */
     private String username;
+    /**
+     * 密码。
+     */
     private String password;
+    /**
+     * {@code connect}超时时间，单位毫秒。
+     */
     private long connectTimeoutMillis = 10_000L;
+    /**
+     * {@code read}超时时间，单位毫秒。
+     */
     private long readTimeoutMillis = 10_000L;
+    /**
+     * {@code write}超时时间，单位毫秒。
+     */
     private long writeTimeoutMillis = 10_000L;
+    /**
+     * InfluxDB 写一致性级别。
+     */
     private InfluxDB.ConsistencyLevel consistency = InfluxDB.ConsistencyLevel.ONE;
+    /**
+     * InfluxDB 客户端日志级别。
+     */
     private InfluxDB.LogLevel logLevel = InfluxDB.LogLevel.NONE;
+    /**
+     * 数据库名称。
+     */
     private DatabaseConfig database = new DatabaseConfig();
+    /**
+     * InfluxDB 保留策略名称。
+     */
     private RetentionPolicyConfig retentionPolicy = new RetentionPolicyConfig();
+    /**
+     * InfluxDB 批量写入配置。
+     */
     private BatchWriteConfig batchWrite = new BatchWriteConfig();
 
     /** @return 是否启用客户端 */ public boolean isEnabled() { return enabled; }
@@ -130,7 +166,13 @@ public class InfluxdbProperties {
 
     /** 默认数据库及显式自动创建配置。 */
     public static class DatabaseConfig {
+        /**
+         * 名称。
+         */
         private String name;
+        /**
+         * 是否自动创建资源。
+         */
         private boolean autoCreate;
 
         /** @return 数据库名称 */ public String getName() { return name; }
@@ -141,10 +183,25 @@ public class InfluxdbProperties {
 
     /** Retention policy 与显式自动创建配置。 */
     public static class RetentionPolicyConfig {
+        /**
+         * 名称。
+         */
         private String name;
+        /**
+         * 持续时间。
+         */
         private String duration;
+        /**
+         * 是否自动创建资源。
+         */
         private boolean autoCreate;
+        /**
+         * InfluxDB 保留策略副本数。
+         */
         private int replication = 1;
+        /**
+         * 是否为默认保留策略。
+         */
         private boolean defaultPolicy;
 
         /** @return 策略名称 */ public String getName() { return name; }
@@ -162,9 +219,21 @@ public class InfluxdbProperties {
 
     /** InfluxDB Java 客户端 batch 写入配置。 */
     public static class BatchWriteConfig {
+        /**
+         * 是否启用。
+         */
         private boolean enabled;
+        /**
+         * InfluxDB 写一致性级别。
+         */
         private InfluxDB.ConsistencyLevel consistency = InfluxDB.ConsistencyLevel.ONE;
+        /**
+         * 航点动作列表。
+         */
         private int actions = 1_000;
+        /**
+         * {@code flushDuration}，单位毫秒。
+         */
         private int flushDurationMillis = 1_000;
 
         /** @return 是否启用 batch */ public boolean isEnabled() { return enabled; }

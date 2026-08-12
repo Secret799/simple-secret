@@ -29,6 +29,10 @@ public class LocalZlmWebRtcSignalingClient implements ZlmWebRtcSignalingClient {
 
     /**
      * 创建内嵌 ZLM 信令客户端。
+
+     *
+     * @param zlmApi ZLMediaKit 原生 API
+     * @param requestTimeout 请求超时时间
      */
     public LocalZlmWebRtcSignalingClient(ZLMApi zlmApi, Duration requestTimeout) {
         this.zlmApi = zlmApi;

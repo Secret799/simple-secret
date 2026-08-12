@@ -12,29 +12,58 @@ public class FrameSize implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 宽度。
+     */
     private int width;
+    /**
+     * 高度。
+     */
     private int height;
 
     /** 创建空尺寸。 */
     public FrameSize() {
     }
 
-    /** 创建帧尺寸。 */
+    /**
+     * 创建帧尺寸。
+     *
+     * @param width 宽度
+     * @param height 高度
+     */
     public FrameSize(int width, int height) {
         this.width = width;
         this.height = height;
     }
 
-    /** 返回宽度。 */
+    /**
+     * 返回宽度。
+     *
+     * @return 宽度
+     */
     public int getWidth() { return width; }
 
-    /** 设置宽度。 */
+    /**
+     * 设置宽度。
+     *
+     * @param width 宽度
+     * @return 当前对象
+     */
     public FrameSize setWidth(int width) { this.width = width; return this; }
 
-    /** 返回高度。 */
+    /**
+     * 返回高度。
+     *
+     * @return 高度
+     */
     public int getHeight() { return height; }
 
-    /** 设置高度。 */
+    /**
+     * 设置高度。
+     *
+     * @param height 高度
+     * @return 当前对象
+     */
     public FrameSize setHeight(int height) { this.height = height; return this; }
 
     @Override

@@ -129,22 +129,47 @@ public class UdpUnicastListener extends Thread {
         }
     }
 
+    /**
+     * 返回键。
+     *
+     * @return 键
+     */
     public String getKey() {
         return bindIp + ":" + port;
     }
 
+    /**
+     * 返回本地绑定 IP 地址。
+     *
+     * @return 本地绑定 IP 地址
+     */
     public String getBindIp() {
         return bindIp;
     }
 
+    /**
+     * 返回监听或连接端口。
+     *
+     * @return 监听或连接端口
+     */
     public int getPort() {
         return port;
     }
 
+    /**
+     * 返回允许接收的最大 UDP 报文长度。
+     *
+     * @return 允许接收的最大 UDP 报文长度
+     */
     public int getMaxMessageLength() {
         return maxMessageLength;
     }
 
+    /**
+     * 判断{@code running}。
+     *
+     * @return 满足条件时返回 true
+     */
     public boolean isRunning() {
         return running;
     }

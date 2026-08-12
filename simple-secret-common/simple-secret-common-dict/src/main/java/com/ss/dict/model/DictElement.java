@@ -14,7 +14,15 @@ import java.util.Objects;
 public record DictElement(DictScope scope, String scopeCode, String code, String label, String type)
         implements DictValue {
 
-    /** 校验并构造不可变字典元素。 */
+    /**
+     * 校验并构造不可变字典元素。
+     *
+     * @param scope 字典作用域
+     * @param scopeCode 字典作用域编码
+     * @param code 业务编码
+     * @param label 显示标签
+     * @param type 目标类型
+     */
     public DictElement {
         scope = Objects.requireNonNull(scope, "scope");
         scopeCode = requireText(scopeCode, "scopeCode");

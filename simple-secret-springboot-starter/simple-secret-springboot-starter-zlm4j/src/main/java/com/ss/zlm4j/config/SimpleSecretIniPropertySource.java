@@ -12,6 +12,13 @@ import java.util.Map;
 public class SimpleSecretIniPropertySource extends EnumerablePropertySource<Map<String, String>> {
     private final String prefix;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param prefix 属性名前缀
+     * @param name 名称
+     * @param source 属性源数据
+     */
     public SimpleSecretIniPropertySource(String prefix, String name, Map<String, String> source) {
         super(name, source);
         this.prefix = prefix;

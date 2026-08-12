@@ -21,7 +21,12 @@ public class InfluxInitializer implements InitializingBean {
     private final int replication;
     private final boolean defaultPolicy;
 
-    /** 创建初始化器并复制初始化配置。 */
+    /**
+     * 创建初始化器并复制初始化配置。
+     *
+     * @param operations InfluxDB 操作接口
+     * @param properties 模块配置
+     */
     public InfluxInitializer(InfluxOperations operations, InfluxdbProperties properties) {
         this((InfluxManagement) operations, properties);
     }

@@ -8,6 +8,10 @@ import com.ss.nats.message.NatsMessageContext;
 @FunctionalInterface
 public interface NatsMessageValidator {
 
-    /** @return 允许处理时返回 {@code true} */
+    /**
+     * @return 允许处理时返回 {@code true}
+     *
+     * @param message 消息
+     */
     boolean validate(NatsMessageContext message);
 }

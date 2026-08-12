@@ -1,2 +1,0 @@
-com.ss.redis.config.SimpleSecretRedisAutoConfiguration
-com.ss.redis.config.RedisCacheConfiguration

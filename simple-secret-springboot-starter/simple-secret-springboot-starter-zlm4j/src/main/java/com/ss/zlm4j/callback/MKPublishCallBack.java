@@ -22,6 +22,11 @@ public class MKPublishCallBack implements IMKPublishCallBack {
 
     private final StreamPublishHandler handler;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param handler 消息处理
+     */
     public MKPublishCallBack(StreamPublishHandler handler) {
         //回调使用同一个线程
         Native.setCallbackThreadInitializer(this, new CallbackThreadInitializer(true, false, "MediaPublishThread"));

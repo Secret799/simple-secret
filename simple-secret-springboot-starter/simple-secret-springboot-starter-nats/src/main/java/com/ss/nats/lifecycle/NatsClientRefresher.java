@@ -22,7 +22,13 @@ public class NatsClientRefresher {
     private final NatsClientManager clientManager;
     private final List<NatsMessageHandler> handlers;
 
-    /** 创建 NATS 客户端刷新协调器。 */
+    /**
+     * 创建 NATS 客户端刷新协调器。
+     *
+     * @param properties 模块配置
+     * @param clientManager 客户端管理器
+     * @param handlers 处理器集合
+     */
     public NatsClientRefresher(NatsProperties properties, NatsClientManager clientManager,
                                List<NatsMessageHandler> handlers) {
         this.properties = Objects.requireNonNull(properties, "properties");

@@ -27,7 +27,14 @@ public final class KmzParser {
     private KmzParser() {
     }
 
-    /** 从 KMZ 文件解析任务。 */
+    /**
+     * 从 KMZ 文件解析任务。
+     *
+     * @param path 文件或资源路径
+     * @return 返回的 {@code KmzMission} 结果
+     * @throws IllegalArgumentException 路径为 {@code null} 时抛出
+     * @throws KmzException 文件读取失败、KMZ 结构非法或任务数据校验失败时抛出
+     */
     public static KmzMission parse(Path path) {
         if (path == null) {
             throw new IllegalArgumentException("KMZ path must not be null");
@@ -39,7 +46,14 @@ public final class KmzParser {
         }
     }
 
-    /** 从 KMZ 字节数组解析任务。 */
+    /**
+     * 从 KMZ 字节数组解析任务。
+     *
+     * @param bytes 字节数据
+     * @return 返回的 {@code KmzMission} 结果
+     * @throws IllegalArgumentException 字节数组为 {@code null} 时抛出
+     * @throws KmzException KMZ 结构非法或任务数据校验失败时抛出
+     */
     public static KmzMission parse(byte[] bytes) {
         if (bytes == null) {
             throw new IllegalArgumentException("KMZ bytes must not be null");
@@ -47,12 +61,27 @@ public final class KmzParser {
         return parse(new ByteArrayInputStream(bytes));
     }
 
-    /** 使用默认限制从输入流解析任务，输入流不会被关闭。 */
+    /**
+     * 使用默认限制从输入流解析任务，输入流不会被关闭。
+     *
+     * @param inputStream 输入流
+     * @return 返回的 {@code KmzMission} 结果
+     * @throws IllegalArgumentException 输入流为 {@code null} 时抛出
+     * @throws KmzException KMZ 结构非法或任务数据校验失败时抛出
+     */
     public static KmzMission parse(InputStream inputStream) {
         return parse(inputStream, KmzReadLimits.defaults());
     }
 
-    /** 使用指定限制从输入流解析任务，输入流不会被关闭。 */
+    /**
+     * 使用指定限制从输入流解析任务，输入流不会被关闭。
+     *
+     * @param inputStream 输入流
+     * @param limits KMZ 输入限制
+     * @return 返回的 {@code KmzMission} 结果
+     * @throws IllegalArgumentException 输入流或输入限制为 {@code null} 时抛出
+     * @throws KmzException 输入超出限制、KMZ 结构非法或任务数据校验失败时抛出
+     */
     public static KmzMission parse(InputStream inputStream, KmzReadLimits limits) {
         if (limits == null) {
             throw new IllegalArgumentException("KMZ read limits must not be null");

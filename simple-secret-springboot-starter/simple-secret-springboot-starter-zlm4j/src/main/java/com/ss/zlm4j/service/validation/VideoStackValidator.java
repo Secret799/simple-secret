@@ -18,6 +18,11 @@ public class VideoStackValidator {
 
     private final VideoStackValidationProperties properties;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param properties 模块配置
+     */
     public VideoStackValidator(VideoStackValidationProperties properties) {
         this.properties = properties;
     }

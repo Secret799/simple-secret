@@ -6,13 +6,37 @@ package com.ss.camera.domain;
  * <p>该类型保留链式 setter，便于从 Honeybee 迁移现有调用代码。</p>
  */
 public class StreamUrlAssemblyDomain {
+    /**
+     * 设备 IP 地址。
+     */
     private String ip;
+    /**
+     * 监听或连接端口。
+     */
     private String port;
+    /**
+     * 摄像机登录账号。
+     */
     private String account;
+    /**
+     * 密码。
+     */
     private String password;
+    /**
+     * 设备通道号。
+     */
     private String channelNo;
+    /**
+     * 主码流或子码流类型。
+     */
     private String streamType;
+    /**
+     * 摄像机品牌。
+     */
     private String brand;
+    /**
+     * 目标类型。
+     */
     private String type;
 
     /** @return 设备 IP 地址或主机名 */

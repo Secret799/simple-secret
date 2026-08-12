@@ -74,6 +74,14 @@ public class SimpleSecretZlmAutoConfiguration {
     }
 
 
+    /**
+     * 创建并初始化 ZLMediaKit 原生运行上下文。
+     *
+     * @param properties 模块配置
+     * @param callbackHandlerContext 回调处理器上下文
+     * @param environment Spring 配置环境
+     * @return ZLMediaKit 原生运行上下文
+     */
     @Bean
     @Primary
     @ConditionalOnProperty(name = "simple-secret.zlm4j.enabled", havingValue = "true")
@@ -98,6 +106,12 @@ public class SimpleSecretZlmAutoConfiguration {
     }
 
 
+    /**
+     * 创建回调处理器上下文并按 Spring 顺序注册扩展处理器。
+     *
+     * @param registers 回调处理器注册器列表
+     * @return 已完成注册的回调处理器上下文
+     */
     @Bean
     @Primary
     @ConditionalOnProperty(name = "simple-secret.zlm4j.enabled", havingValue = "true")
@@ -116,6 +130,11 @@ public class SimpleSecretZlmAutoConfiguration {
     }
 
 
+    /**
+     * 创建默认 ZLMediaKit 回调处理器注册器。
+     *
+     * @return 默认回调处理器注册器
+     */
     @Bean
     @ConditionalOnProperty(name = "simple-secret.zlm4j.enabled", havingValue = "true")
     public ZlmCallbackHandlerRegister defaultZlmCallbackHandlerRegister() {

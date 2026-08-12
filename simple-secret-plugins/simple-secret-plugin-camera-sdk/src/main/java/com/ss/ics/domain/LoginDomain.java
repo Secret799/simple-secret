@@ -8,9 +8,21 @@ public class LoginDomain implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 用户名。
+     */
     private String username;
+    /**
+     * 密码。
+     */
     private String password;
+    /**
+     * 设备 IP 地址。
+     */
     private String ip;
+    /**
+     * 监听或连接端口。
+     */
     private String port;
 
     /** @return 设备用户名 */
@@ -18,7 +30,11 @@ public class LoginDomain implements Serializable {
         return username;
     }
 
-    /** @param username 设备用户名 @return 当前对象 */
+    /**
+     * @param username 设备用户名
+     *
+     * @return 当前对象
+     */
     public LoginDomain setUsername(String username) {
         this.username = username;
         return this;
@@ -29,7 +45,11 @@ public class LoginDomain implements Serializable {
         return password;
     }
 
-    /** @param password 设备密码 @return 当前对象 */
+    /**
+     * @param password 设备密码
+     *
+     * @return 当前对象
+     */
     public LoginDomain setPassword(String password) {
         this.password = password;
         return this;
@@ -40,7 +60,11 @@ public class LoginDomain implements Serializable {
         return ip;
     }
 
-    /** @param ip 设备 IP 或主机名 @return 当前对象 */
+    /**
+     * @param ip 设备 IP 或主机名
+     *
+     * @return 当前对象
+     */
     public LoginDomain setIp(String ip) {
         this.ip = ip;
         return this;
@@ -51,7 +75,11 @@ public class LoginDomain implements Serializable {
         return port;
     }
 
-    /** @param port 厂商 SDK 登录端口 @return 当前对象 */
+    /**
+     * @param port 厂商 SDK 登录端口
+     *
+     * @return 当前对象
+     */
     public LoginDomain setPort(String port) {
         this.port = port;
         return this;

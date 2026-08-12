@@ -22,6 +22,10 @@ public interface NatsMessageHandler {
      */
     default boolean ordered() { return false; }
 
-    /** 处理消息。 */
+    /**
+     * 处理消息。
+     *
+     * @param message 消息
+     */
     void handle(NatsMessageContext message);
 }

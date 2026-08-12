@@ -198,21 +198,40 @@ public final class SeiParser {
         /** SEI payload 原始数据 */
         private final byte[] payload;
 
+        /**
+         * 创建并初始化实例。
+         *
+         * @param payloadType 负载类型
+         * @param payload 消息负载
+         */
         public SeiMessage(int payloadType, byte[] payload) {
             this.payloadType = payloadType;
             this.payload = payload;
         }
 
+        /**
+         * 返回负载类型。
+         *
+         * @return 负载类型
+         */
         public int getPayloadType() {
             return payloadType;
         }
 
+        /**
+         * 返回消息负载。
+         *
+         * @return 消息负载
+         */
         public byte[] getPayload() {
             return payload;
         }
 
         /**
          * 以 UTF-8 字符串形式获取 payload 内容
+
+         *
+         * @return {@code payloadAsString}
          */
         public String getPayloadAsString() {
             return new String(payload, StandardCharsets.UTF_8);
@@ -220,6 +239,9 @@ public final class SeiParser {
 
         /**
          * 以十六进制形式获取 payload 内容
+
+         *
+         * @return {@code payloadAsHex}
          */
         public String getPayloadAsHex() {
             StringBuilder sb = new StringBuilder(payload.length * 2);

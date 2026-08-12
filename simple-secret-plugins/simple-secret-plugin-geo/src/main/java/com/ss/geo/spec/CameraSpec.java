@@ -31,7 +31,11 @@ public record CameraSpec(
         double minZoom,
         double maxZoom) {
 
-    /** 传感器对角线（mm） */
+    /**
+     * 传感器对角线（mm）
+     *
+     * @return 返回的 {@code double} 结果
+     */
     public double sensorDiagonal() {
         return Math.hypot(sensorWidth, sensorHeight);
     }
@@ -96,7 +100,11 @@ public record CameraSpec(
         return new double[]{fovH, fovV};
     }
 
-    /** 返回该规格的绝对基准倍率。 */
+    /**
+     * 返回该规格的绝对基准倍率。
+     *
+     * @return 返回的 {@code double} 结果
+     */
     public double baselineZoomFactor() {
         return Math.max(minZoom, 1.0);
     }

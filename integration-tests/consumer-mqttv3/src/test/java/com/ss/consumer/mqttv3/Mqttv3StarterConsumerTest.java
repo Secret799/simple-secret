@@ -8,26 +8,20 @@ import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Verifies that the MQTT v3 and v5 starters can share one consumer application. */
+/** Verifies MQTT v3 auto-configuration without contacting a broker. */
 class Mqttv3StarterConsumerTest {
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(ConsumerApplication.class);
 
     @Test
-    void createsBothManagersWithoutOpeningImplicitClients() {
+    void createsManagerWithNoConfiguredClients() {
         runner.run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).hasSingleBean(MqttClientManager.class);
-            assertThat(context).hasSingleBean(
-                    com.ss.mqttv5.client.MqttClientManager.class);
             assertThat(context.getBean(MqttClientManager.class)
                     .containsClient(MqttClientManager.DEFAULT_CLIENT_KEY)).isFalse();
-            assertThat(context.getBean(com.ss.mqttv5.client.MqttClientManager.class)
-                    .containsClient(com.ss.mqttv5.client.MqttClientManager.DEFAULT_CLIENT_KEY))
-                    .isFalse();
             assertThat(context).hasBean("mqttv3ClientManager");
-            assertThat(context).hasBean("mqttClientManager");
         });
     }
 

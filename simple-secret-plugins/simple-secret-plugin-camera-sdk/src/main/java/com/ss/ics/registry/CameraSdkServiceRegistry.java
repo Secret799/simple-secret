@@ -58,12 +58,20 @@ public final class CameraSdkServiceRegistry {
         this.playQueryServices = Map.copyOf(playQueryIndex);
     }
 
-    /** @param product 厂商产品编码 @return 对应 PTZ 服务 */
+    /**
+     * @param product 厂商产品编码
+     *
+     * @return 匹配结果；未找到时的行为见方法说明
+     */
     public Optional<PtzControlService> findPtz(String product) {
         return Optional.ofNullable(ptzServices.get(key(product)));
     }
 
-    /** @param product 厂商产品编码 @return 对应 PTZ 服务 */
+    /**
+     * @param product 厂商产品编码
+     *
+     * @return 返回的 {@code PtzControlService} 结果
+     */
     public PtzControlService requirePtz(String product) {
         return findPtz(product).orElseThrow(() -> unsupported("PTZ"));
     }
@@ -88,22 +96,38 @@ public final class CameraSdkServiceRegistry {
         return findPlay(product, serviceType).orElseThrow(() -> unsupported("play"));
     }
 
-    /** @param product 厂商产品编码 @return 对应登录服务 */
+    /**
+     * @param product 厂商产品编码
+     *
+     * @return 匹配结果；未找到时的行为见方法说明
+     */
     public Optional<DeviceLoginService> findLogin(String product) {
         return Optional.ofNullable(loginServices.get(key(product)));
     }
 
-    /** @param product 厂商产品编码 @return 对应登录服务 */
+    /**
+     * @param product 厂商产品编码
+     *
+     * @return 返回的 {@code DeviceLoginService} 结果
+     */
     public DeviceLoginService requireLogin(String product) {
         return findLogin(product).orElseThrow(() -> unsupported("login"));
     }
 
-    /** @param product 厂商产品编码 @return 对应录像查询服务 */
+    /**
+     * @param product 厂商产品编码
+     *
+     * @return 匹配结果；未找到时的行为见方法说明
+     */
     public Optional<PlayQueryService> findPlayQuery(String product) {
         return Optional.ofNullable(playQueryServices.get(key(product)));
     }
 
-    /** @param product 厂商产品编码 @return 对应录像查询服务 */
+    /**
+     * @param product 厂商产品编码
+     *
+     * @return 返回的 {@code PlayQueryService} 结果
+     */
     public PlayQueryService requirePlayQuery(String product) {
         return findPlayQuery(product).orElseThrow(() -> unsupported("play query"));
     }

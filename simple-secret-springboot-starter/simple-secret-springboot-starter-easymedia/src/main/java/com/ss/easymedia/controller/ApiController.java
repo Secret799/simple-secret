@@ -38,6 +38,14 @@ public class ApiController {
     private final ITranscodeService iTranscodeService;
     private final IVideoStackService iVideoStackService;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param iApiService ZLMediaKit 通用 API 服务
+     * @param iSnapService 截图服务
+     * @param iTranscodeService 转码服务
+     * @param iVideoStackService 视频拼接服务
+     */
     public ApiController(IZlmMediaService iApiService,
                          ISnapService iSnapService,
                          ITranscodeService iTranscodeService,
@@ -54,6 +62,9 @@ public class ApiController {
      * 此接口不会返回具体流地址，请按照流地址生成规则结合自己网络信息来拼接具体地址
      *
      * @return 代理信息
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/addStreamPullerProxy")
     public String addStreamPullerProxy(@Validated @RequestBody StreamProxyPullerBO param) {
@@ -66,6 +77,9 @@ public class ApiController {
      * 流注册成功后，也可以使用close_streams接口替代
      *
      * @return 删除结果
+
+     *
+     * @param key 键
      */
     @PostMapping(value = "/delStreamPullerProxyByKey")
     public Boolean delStreamPullerProxyByKey(String key) {
@@ -93,6 +107,9 @@ public class ApiController {
      * 【推流代理】添加rtmp/rtsp推流代理
      *
      * @return 错误信息
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/addStreamPusherProxy")
     public String addStreamPusherProxy(@Validated @RequestBody StreamProxyPusherBO param) {
@@ -128,6 +145,9 @@ public class ApiController {
      * 【流操作】关闭流
      *
      * @return 关闭结果
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/closeStream")
     public Boolean closeStream(@Validated @RequestBody CloseStreamBO param) {
@@ -138,6 +158,9 @@ public class ApiController {
      * 【流操作】关闭流(批量关)
      *
      * @return 关闭结果
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/closeStreams")
     public String closeStreams(@Validated @RequestBody CloseStreamsBO param) {
@@ -161,6 +184,9 @@ public class ApiController {
      * 【流操作】获取流列表
      *
      * @return 流列表
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/getMediaList")
     public List<MediaSourceDomain> getMediaList(@Validated @RequestBody GetMediaListBO param) {
@@ -171,6 +197,9 @@ public class ApiController {
      * 【流操作】获取流信息
      *
      * @return 流信息
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/getMediaInfo")
     public MediaSourceDomain getMediaInfo(@Validated @RequestBody MediaQueryBO param) {
@@ -181,6 +210,9 @@ public class ApiController {
      * 【流操作】流是否在线
      *
      * @return 是否在线
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/isMediaOnline")
     public Boolean isMediaOnline(@Validated @RequestBody MediaQueryBO param) {
@@ -191,6 +223,9 @@ public class ApiController {
      * 【录像】开始录像
      *
      * @return 开始结果
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/startRecord")
     public Boolean startRecord(@Validated @RequestBody StartRecordBO param) {
@@ -201,6 +236,9 @@ public class ApiController {
      * 【录像】停止录像
      *
      * @return 停止结果
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/stopRecord")
     public Boolean stopRecord(@Validated @RequestBody StopRecordBO param) {
@@ -211,6 +249,9 @@ public class ApiController {
      * 【录像】是否录像
      *
      * @return 是否录像
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/isRecording")
     public Boolean isRecording(@Validated @RequestBody RecordStatusBO param) {
@@ -251,6 +292,9 @@ public class ApiController {
      * 【系统】设置服务器配置
      *
      * @return 录像列表
+
+     *
+     * @param request 请求对象
      */
     @PostMapping(value = "/setServerConfig")
     public Integer setServerConfig(HttpServletRequest request) {
@@ -262,6 +306,9 @@ public class ApiController {
      * 【RTP服务】开启rtp服务
      *
      * @return 端口
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/openRtpServer")
     public Integer openRtpServer(@Validated @RequestBody OpenRtpServerBO param) {
@@ -272,6 +319,9 @@ public class ApiController {
      * 【RTP服务】关闭rtp服务
      *
      * @return 端口
+
+     *
+     * @param stream 媒体流标识
      */
     @PostMapping(value = "/closeRtpServer")
     public Boolean closeRtpServer(@NotBlank(message = "流id不为空")
@@ -293,6 +343,9 @@ public class ApiController {
      * 【截图】获取截图
      *
      * @param url 流地址
+
+     *
+     * @return {@code snapByUrl}
      */
     @GetMapping(value = "/getSnapByUrl")
     public String getSnapByUrl(String url) {
@@ -303,6 +356,9 @@ public class ApiController {
      * 【转码】拉流代理转码(beta)
      * <p>
      * 默认H265转H264 支持分辨率调整 暂时只支持视频转码，音频因为各种封装格式对编码格式、音频参数等转换规则复杂暂时不支持
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/transcode")
     public void transcode(@Validated @RequestBody TranscodeBO param) {
@@ -311,6 +367,9 @@ public class ApiController {
 
     /**
      * 【拼接屏】开启拼接屏(beta)
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/stack/start")
     public void startStack(@RequestBody @Validated VideoStackBO param) {
@@ -319,6 +378,9 @@ public class ApiController {
 
     /**
      * 【拼接屏】重新设置拼接屏(beta)
+
+     *
+     * @param param 调用参数
      */
     @PostMapping(value = "/stack/reset")
     public void resetStack(@RequestBody @Validated VideoStackBO param) {
@@ -327,6 +389,9 @@ public class ApiController {
 
     /**
      * 【拼接屏】关闭拼接屏(beta)
+
+     *
+     * @param id 唯一标识
      */
     @PostMapping(value = "/stack/stop")
     public void stopStack(@NotBlank(message = "拼接屏任务id不为空") @RequestParam(value = "id") String id) {

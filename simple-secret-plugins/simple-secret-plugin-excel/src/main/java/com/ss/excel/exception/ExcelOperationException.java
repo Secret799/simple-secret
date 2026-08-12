@@ -10,16 +10,33 @@ public final class ExcelOperationException extends RuntimeException {
     private final String operation;
     private final String sheetName;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param operation 操作类型
+     * @param sheetName 工作表名称
+     * @param cause 原始异常
+     */
     public ExcelOperationException(String operation, String sheetName, Throwable cause) {
         super(buildMessage(operation, sheetName), cause);
         this.operation = requireText(operation, "operation");
         this.sheetName = requireText(sheetName, "sheetName");
     }
 
+    /**
+     * 返回操作类型。
+     *
+     * @return 操作类型
+     */
     public String getOperation() {
         return operation;
     }
 
+    /**
+     * 返回工作表名称。
+     *
+     * @return 工作表名称
+     */
     public String getSheetName() {
         return sheetName;
     }

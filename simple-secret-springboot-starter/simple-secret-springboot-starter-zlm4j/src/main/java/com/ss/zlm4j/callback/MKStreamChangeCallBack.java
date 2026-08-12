@@ -25,6 +25,11 @@ public class MKStreamChangeCallBack implements IMKStreamChangeCallBack {
 
     private final StreamChangeHandler handler;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param handler 消息处理
+     */
     public MKStreamChangeCallBack(StreamChangeHandler handler) {
         Native.setCallbackThreadInitializer(this, new CallbackThreadInitializer(true, false, "MediaStreamChangeThread"));
         this.handler = handler;

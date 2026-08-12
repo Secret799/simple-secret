@@ -219,22 +219,29 @@ DeviceState state = message.decode(bytes -> customCodec.decode(bytes, DeviceStat
 DeviceState textState = message.decodeText(jsonCodec::parseDeviceState);
 ```
 
-应用同时使用 Simple Secret JSON starter 时，显式声明该依赖并注入 `JsonCodec`：
+应用需要 Jackson 解码时，显式声明 `jackson-databind` 并注入应用自己的 `ObjectMapper`：
 
 ```xml
 <dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-json</artifactId>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
 </dependency>
 ```
 
 ```java
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ss.nats.handler.NatsMessageHandler;
+import com.ss.nats.message.NatsMessageContext;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+
 @Component
 public class JsonDeviceStateHandler implements NatsMessageHandler {
-    private final JsonCodec jsonCodec;
+    private final ObjectMapper objectMapper;
 
-    public JsonDeviceStateHandler(JsonCodec jsonCodec) {
-        this.jsonCodec = jsonCodec;
+    public JsonDeviceStateHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -249,8 +256,13 @@ public class JsonDeviceStateHandler implements NatsMessageHandler {
 
     @Override
     public void handle(NatsMessageContext message) {
-        DeviceState state = message.decodeText(
-                json -> jsonCodec.parseObject(json, DeviceState.class));
+        DeviceState state = message.decode(bytes -> {
+            try {
+                return objectMapper.readValue(bytes, DeviceState.class);
+            } catch (IOException exception) {
+                throw new IllegalArgumentException("invalid NATS payload", exception);
+            }
+        });
     }
 }
 ```

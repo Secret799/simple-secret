@@ -14,6 +14,11 @@ import org.springframework.context.ApplicationEvent;
 public class StreamNoReaderEvent extends ApplicationEvent {
     private final MediaSourceDomain mediaSource;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param mediaSource ZLMediaKit 媒体源
+     */
     public StreamNoReaderEvent(MediaSourceDomain mediaSource) {
         super(mediaSource);
         this.mediaSource = mediaSource;

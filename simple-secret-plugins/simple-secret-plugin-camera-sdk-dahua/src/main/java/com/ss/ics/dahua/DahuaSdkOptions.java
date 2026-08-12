@@ -24,7 +24,15 @@ public record DahuaSdkOptions(
     /** 可配置的历史热成像结果上限。 */
     public static final int MAX_RADIOMETRY_RESULTS = 100_000;
 
-    /** 校验并规范化配置。 */
+    /**
+     * 校验并规范化配置。
+     *
+     * @param libraryDirectory 厂商 SDK 动态库目录
+     * @param operationTimeout 操作超时时间
+     * @param radiometrySearchTimeout 热成像记录检索超时时间
+     * @param asyncPtzQueueCapacity 异步云台任务队列容量
+     * @param maxRadiometryResults 单次历史测温检索最大结果数
+     */
     public DahuaSdkOptions {
         if (libraryDirectory == null) {
             throw new IllegalArgumentException("libraryDirectory must not be null");

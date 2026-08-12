@@ -2,7 +2,7 @@
 
 `simple-secret-springboot-starter-mqttv3` 面向 Java 17 和 Spring Boot 3.5，基于 Eclipse Paho MQTT v3 客户端提供多客户端连接、发布订阅、同步请求与重试、断线重连、Spring Bean 处理器发现和配置刷新。
 
-模块显式依赖 JSON starter，因此 `MqttMessageContext` 可以直接把 JSON payload 转为对象。除此之外不依赖 Honeybee、Hutool、Guava、Lombok、Spring Cloud 或 MQTT v5。MQTT v5 只作为模块测试依赖，用于验证两个 starter 可以同时存在。
+模块直接依赖 Jackson，因此 `MqttMessageContext` 可以把 JSON payload 转为对象。除此之外不依赖其他 Simple Secret starter、Honeybee、Hutool、Guava、Lombok、Spring Cloud 或 MQTT v5。MQTT v5 只作为模块测试依赖，用于验证两个 starter 可以同时存在。
 
 ## Maven 依赖
 
@@ -140,22 +140,23 @@ public class TelemetryHandler implements MqttMessageHandler {
 ## 发布消息
 
 ```java
-import com.ss.json.JsonCodec;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ss.mqttv3.client.MqttClientManager;
 import org.springframework.stereotype.Service;
 
 @Service
 public class DeviceCommandPublisher {
     private final MqttClientManager mqtt;
-    private final JsonCodec jsonCodec;
+    private final ObjectMapper objectMapper;
 
-    public DeviceCommandPublisher(MqttClientManager mqtt, JsonCodec jsonCodec) {
+    public DeviceCommandPublisher(MqttClientManager mqtt, ObjectMapper objectMapper) {
         this.mqtt = mqtt;
-        this.jsonCodec = jsonCodec;
+        this.objectMapper = objectMapper;
     }
 
-    public void reboot(String deviceId) {
-        String payload = jsonCodec.toJsonString(
+    public void reboot(String deviceId) throws JsonProcessingException {
+        String payload = objectMapper.writeValueAsString(
                 new DeviceCommand("reboot", System.currentTimeMillis()));
         mqtt.publish("default", "devices/" + deviceId + "/commands", payload, 1);
     }
@@ -169,7 +170,8 @@ public class DeviceCommandPublisher {
 请求正文与响应正文必须能提取相同且唯一的关联键：
 
 ```java
-import com.ss.json.utils.JsonUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ss.mqttv3.message.MqttMessageContext;
 import com.ss.mqttv3.waiter.MqttCorrelationExtractor;
 
@@ -177,8 +179,14 @@ import java.time.Duration;
 import java.util.Optional;
 
 String requestJson = "{\"requestId\":\"req-1001\",\"action\":\"status\"}";
-MqttCorrelationExtractor extractor = (type, payload) ->
-        String.valueOf(JsonUtils.parseMap(payload).get("requestId"));
+ObjectMapper objectMapper = new ObjectMapper();
+MqttCorrelationExtractor extractor = (type, payload) -> {
+    try {
+        return objectMapper.readTree(payload).path("requestId").asText();
+    } catch (JsonProcessingException exception) {
+        throw new IllegalArgumentException("invalid MQTT correlation payload", exception);
+    }
+};
 
 Optional<MqttMessageContext> response = mqtt.requestWithRetry(
         "default",

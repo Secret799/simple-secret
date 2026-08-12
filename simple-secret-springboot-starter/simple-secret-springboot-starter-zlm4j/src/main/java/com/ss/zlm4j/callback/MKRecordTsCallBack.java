@@ -23,6 +23,11 @@ public class MKRecordTsCallBack implements IMKRecordTsCallBack {
 
     private final RecordTsHandler handler;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param handler 消息处理
+     */
     public MKRecordTsCallBack(RecordTsHandler handler) {
         //回调使用同一个线程
         Native.setCallbackThreadInitializer(this, new CallbackThreadInitializer(true, false, "RecordTsThread"));

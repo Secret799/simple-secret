@@ -19,10 +19,20 @@ public enum WebRtcSessionType {
         this.operation = operation;
     }
 
+    /**
+     * 返回对应的 ZLM WHIP 或 WHEP 上游路径。
+     *
+     * @return ZLM 上游路径
+     */
     public String getUpstreamPath() {
         return upstreamPath;
     }
 
+    /**
+     * 返回操作类型。
+     *
+     * @return 操作类型
+     */
     public WebRtcOperation getOperation() {
         return operation;
     }

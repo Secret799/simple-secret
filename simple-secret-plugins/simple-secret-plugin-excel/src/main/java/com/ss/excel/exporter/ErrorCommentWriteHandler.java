@@ -29,6 +29,11 @@ public final class ErrorCommentWriteHandler implements RowWriteHandler {
     private CellStyle errorStyle;
     private Drawing<?> drawing;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param errors 错误信息列表
+     */
     public ErrorCommentWriteHandler(List<? extends ExcelRowError<?>> errors) {
         this.errors = List.copyOf(errors);
     }

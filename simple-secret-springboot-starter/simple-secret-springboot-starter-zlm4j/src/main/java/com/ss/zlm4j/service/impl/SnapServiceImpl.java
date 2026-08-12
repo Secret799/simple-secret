@@ -44,6 +44,12 @@ public class SnapServiceImpl implements ISnapService {
     private final SnapCapture capture;
     private final NativeResourceReleaser resourceReleaser;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param mediaResourcePolicy 媒体资源访问策略
+     * @param properties 模块配置
+     */
     @Autowired
     public SnapServiceImpl(MediaResourcePolicy mediaResourcePolicy, ZlmMediaProperties properties) {
         this(mediaResourcePolicy, properties, null, DefaultNativeResourceReleaser.INSTANCE);

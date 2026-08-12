@@ -36,49 +36,123 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class VideoStackWindowContext {
 
 
+    /**
+     * 调用参数。
+     */
     private VideoStackWindowBO param;
 
+    /**
+     * {@code fillImg}地址。
+     */
     private String fillImgUrl;
 
+    /**
+     * 宽度。
+     */
     private Integer width;
 
+    /**
+     * 高度。
+     */
     private Integer height;
 
+    /**
+     * 窗口在目标画布中的纵向字节偏移。
+     */
     private Integer yPos;
 
+    /**
+     * 窗口在拼接画布中的序号。
+     */
     private Integer vIndex;
 
+    /**
+     * 拼接窗口每行字节跨度。
+     */
     private Integer lineWidth;
 
+    /**
+     * 目标图像各平面数据指针。
+     */
     private PointerPointer<Pointer> dataPointer;
 
+    /**
+     * 目标图像各平面行跨度指针。
+     */
     private IntPointer linePointer;
 
+    /**
+     * FFmpeg 输入格式上下文。
+     */
     private AVFormatContext iFmtCtx = null;
 
+    /**
+     * FFmpeg 硬件设备上下文。
+     */
     private AVBufferRef hwDeviceCtx = null;
 
+    /**
+     * FFmpeg 媒体流。
+     */
     private AVStream avStream = null;
 
+    /**
+     * FFmpeg 视频帧。
+     */
     private AVFrame avFrame = null;
 
+    /**
+     * 从硬件设备复制到本地内存的视频帧。
+     */
     private AVFrame localFrame = null;
 
+    /**
+     * 转换后的 RGB 视频帧。
+     */
     private AVFrame rgbFrame = null;
 
+    /**
+     * FFmpeg 编码数据包。
+     */
     private AVPacket avPacket = null;
 
+    /**
+     * FFmpeg 解码器上下文。
+     */
     private AVCodecContext deCodecCtx = null;
 
+    /**
+     * FFmpeg 像素格式转换上下文。
+     */
     private SwsContext avSwsCtx = null;
 
+    /**
+     * 占位图片像素格式转换上下文。
+     */
     private SwsContext imgSwsCtx = null;
 
+    /**
+     * 是否已经停止。
+     */
     private final AtomicBoolean stopped = new AtomicBoolean(false);
 
+    /**
+     * 窗口视频填充任务句柄。
+     */
     private volatile Future<?> fillVideoFuture;
 
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param param 调用参数
+     * @param fillImgUrl 默认填充图片地址
+     * @param width 宽度
+     * @param height 高度
+     * @param yPos 窗口在画布中的纵向字节偏移
+     * @param dataPointer 目标图像各平面数据指针
+     * @param linePointer 图像行跨度指针
+     */
     public VideoStackWindowContext(VideoStackWindowBO param, String fillImgUrl, int width, int height, int yPos, PointerPointer<Pointer> dataPointer, IntPointer linePointer) {
         this.param = param;
         this.fillImgUrl = fillImgUrl;
@@ -90,6 +164,9 @@ public class VideoStackWindowContext {
     }
 
 
+    /**
+     * 根据窗口配置初始化视频、图片、填充色或默认占位图。
+     */
     public void init() {
         if ((param.getVideoUrl() != null && !param.getVideoUrl().isBlank())) {
             fillVideoFuture = SpringUtils.getSimpleSecretScheduledExecutor().submit(this::initFillVideo);

@@ -12,7 +12,12 @@ import java.util.List;
  */
 public record KmlLineString(String name, List<Coordinate> coordinates) {
 
-    /** 创建不可变 LineString。 */
+    /**
+     * 创建不可变 LineString。
+     *
+     * @param name 名称
+     * @param coordinates 坐标点列表
+     */
     public KmlLineString {
         if (coordinates == null) {
             throw new IllegalArgumentException("coordinates must not be null");

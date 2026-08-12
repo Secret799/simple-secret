@@ -25,6 +25,11 @@ public class RedisWebRtcRateLimiter implements WebRtcRateLimiter {
 
     /**
      * 创建基于 Redis 的 WebRTC 请求限流器。
+
+     *
+     * @param redissonClient Redisson 客户端
+     * @param keys Redis 键生成器
+     * @param properties 模块配置
      */
     public RedisWebRtcRateLimiter(RedissonClient redissonClient, WebRtcRedisKeys keys,
                                   WebRtcProperties properties) {

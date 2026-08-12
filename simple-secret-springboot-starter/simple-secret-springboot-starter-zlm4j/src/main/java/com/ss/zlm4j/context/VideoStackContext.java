@@ -50,53 +50,127 @@ public class VideoStackContext {
 
     private static int FPS = 25;
 
+    /**
+     * 是否已经停止。
+     */
     private final AtomicBoolean stopped = new AtomicBoolean(false);
 
+    /**
+     * 视频拼接上下文初始化状态。
+     */
     private final AtomicBoolean initStatus = new AtomicBoolean(false);
 
+    /**
+     * 是否正在推送拼接码流。
+     */
     private Boolean isPush = false;
 
+    /**
+     * 当前视频显示时间戳。
+     */
     private Long pts = 0L;
 
+    /**
+     * 最近一次推流时间戳。
+     */
     private Long lastPushTime = 0L;
 
+    /**
+     * 推送下一帧前的等待时间，单位毫秒。
+     */
     private Long pushWaitTime = 0L;
 
+    /**
+     * 调用参数。
+     */
     private VideoStackBO param;
 
+    /**
+     * FFmpeg 输出格式上下文。
+     */
     private AVFormatContext oFmtCtx = null;
 
+    /**
+     * FFmpeg 编码器上下文。
+     */
     private AVCodecContext enCodecCtx = null;
 
+    /**
+     * ZLMediaKit 推流媒体对象。
+     */
     private MK_MEDIA mkMedia = null;
 
+    /**
+     * FFmpeg 媒体流。
+     */
     private AVStream avStream = null;
 
+    /**
+     * FFmpeg 编码器定义。
+     */
     private AVCodec avCodec = null;
 
+    /**
+     * FFmpeg 视频帧。
+     */
     private AVFrame avFrame = null;
 
+    /**
+     * FFmpeg 编码数据包。
+     */
     private AVPacket avPacket = null;
 
+    /**
+     * FFmpeg 像素格式转换上下文。
+     */
     private SwsContext avSwsCtx = null;
 
+    /**
+     * 目标图像各平面数据指针。
+     */
     private PointerPointer<Pointer> dataPointer = null;
 
+    /**
+     * 源图像数据指针。
+     */
     private Pointer srcPointer = null;
 
+    /**
+     * 占位图片像素格式转换上下文。
+     */
     private SwsContext imgSwsCtx = null;
 
+    /**
+     * 源图像数据长度，单位字节。
+     */
     private Integer srcDataSize = 0;
 
+    /**
+     * 目标图像各平面行跨度指针。
+     */
     private IntPointer linePointer = null;
 
+    /**
+     * 视频拼接窗口上下文列表。
+     */
     private List<VideoStackWindowContext> windowList = new ArrayList<>();
 
+    /**
+     * 异步编码任务句柄。
+     */
     private volatile Future<?> encodeFuture;
 
+    /**
+     * 视频拼接完成回调。
+     */
     private volatile Runnable completionCallback = () -> {
     };
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param param 调用参数
+     */
     public VideoStackContext(VideoStackBO param) {
         this.param = param;
         if (param.getPushUrl() != null && !param.getPushUrl().isBlank()) {
@@ -542,6 +616,9 @@ public class VideoStackContext {
      * @param row
      * @param col
      * @return
+
+     *
+     * @param linesize FFmpeg 图像各平面行跨度
      */
     public static int[] calculateBlockDimensions(List<Integer> blockNumbers, int width, int height, int row, int col, int linesize) {
         int blockWidth = (width / col);
@@ -580,6 +657,11 @@ public class VideoStackContext {
      * @param b         蓝色分量(0-255)
      * @param g         绿色分量(0-255)
      * @param r         红色分量(0-255)
+
+     *
+     * @param linePointer 图像行跨度指针
+     * @param width 宽度
+     * @param height 高度
      */
     public static void addGridLines(PointerPointer<Pointer> frameData, IntPointer linePointer, int width, int height, int row, int col, int lineWidth,
                                     int b, int g, int r) {

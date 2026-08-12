@@ -13,8 +13,17 @@ public class Coordinate implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 经度。
+     */
     private double longitude;
+    /**
+     * 纬度。
+     */
     private double latitude;
+    /**
+     * 海拔高度。
+     */
     private double altitude;
 
     /** 创建零值坐标。 */
@@ -34,7 +43,12 @@ public class Coordinate implements Serializable {
         setAltitude(altitude);
     }
 
-    /** 从单个 KML 坐标元组解析坐标。 */
+    /**
+     * 从单个 KML 坐标元组解析坐标。
+     *
+     * @param kmlCoordinates KML 坐标文本
+     * @return 当前对象
+     */
     public static Coordinate fromKml(String kmlCoordinates) {
         if (kmlCoordinates == null || kmlCoordinates.isBlank()) {
             throw new IllegalArgumentException("KML coordinate must use longitude,latitude[,altitude] format");
@@ -53,17 +67,30 @@ public class Coordinate implements Serializable {
         }
     }
 
-    /** 返回固定精度、固定点号小数的 KML 坐标元组。 */
+    /**
+     * 返回固定精度、固定点号小数的 KML 坐标元组。
+     *
+     * @return 返回的 {@code String} 结果
+     */
     public String toKml() {
         return String.format(Locale.ROOT, "%.8f,%.8f,%.2f", longitude, latitude, altitude);
     }
 
-    /** 返回经度。 */
+    /**
+     * 返回经度。
+     *
+     * @return 经度
+     */
     public double getLongitude() {
         return longitude;
     }
 
-    /** 设置经度。 */
+    /**
+     * 设置经度。
+     *
+     * @param longitude 经度
+     * @return 当前对象
+     */
     public Coordinate setLongitude(double longitude) {
         requireFinite(longitude, "longitude");
         if (longitude < -180.0 || longitude > 180.0) {
@@ -73,12 +100,21 @@ public class Coordinate implements Serializable {
         return this;
     }
 
-    /** 返回纬度。 */
+    /**
+     * 返回纬度。
+     *
+     * @return 纬度
+     */
     public double getLatitude() {
         return latitude;
     }
 
-    /** 设置纬度。 */
+    /**
+     * 设置纬度。
+     *
+     * @param latitude 纬度
+     * @return 当前对象
+     */
     public Coordinate setLatitude(double latitude) {
         requireFinite(latitude, "latitude");
         if (latitude < -90.0 || latitude > 90.0) {
@@ -88,12 +124,21 @@ public class Coordinate implements Serializable {
         return this;
     }
 
-    /** 返回海拔。 */
+    /**
+     * 返回海拔。
+     *
+     * @return 海拔高度
+     */
     public double getAltitude() {
         return altitude;
     }
 
-    /** 设置海拔。 */
+    /**
+     * 设置海拔。
+     *
+     * @param altitude 海拔高度
+     * @return 当前对象
+     */
     public Coordinate setAltitude(double altitude) {
         requireFinite(altitude, "altitude");
         this.altitude = altitude;

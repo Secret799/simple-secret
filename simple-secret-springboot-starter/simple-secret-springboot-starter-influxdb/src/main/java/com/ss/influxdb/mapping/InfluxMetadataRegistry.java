@@ -30,7 +30,12 @@ public class InfluxMetadataRegistry {
 
     private final ConcurrentMap<Class<?>, InfluxEntityMetadata> cache = new ConcurrentHashMap<>();
 
-    /** 获取实体元数据，不存在时原子创建。 */
+    /**
+     * 获取实体元数据，不存在时原子创建。
+     *
+     * @param entityType 实体类型
+     * @return 返回的 {@code InfluxEntityMetadata} 结果
+     */
     public InfluxEntityMetadata metadata(Class<?> entityType) {
         if (entityType == null || entityType.isPrimitive() || entityType.isInterface()
                 || entityType.isArray() || entityType.isEnum()) {
@@ -39,7 +44,12 @@ public class InfluxMetadataRegistry {
         return cache.computeIfAbsent(entityType, this::createMetadata);
     }
 
-    /** 解析 getter 对应的 InfluxDB 列名。 */
+    /**
+     * 解析 getter 对应的 InfluxDB 列名。
+     *
+     * @param getter 属性 getter 引用
+     * @return 返回的 {@code String} 结果
+     */
     public <T, R> String column(SerializableFunction<T, R> getter) {
         Field field = LambdaPropertyResolver.resolveField(getter);
         TimeColumn timeColumn = field.getAnnotation(TimeColumn.class);
@@ -79,7 +89,11 @@ public class InfluxMetadataRegistry {
         return mappedField.getColumnName();
     }
 
-    /** 移除指定实体的缓存，主要用于开发期动态类型和测试。 */
+    /**
+     * 移除指定实体的缓存，主要用于开发期动态类型和测试。
+     *
+     * @param entityType 实体类型
+     */
     public void remove(Class<?> entityType) {
         cache.remove(entityType);
     }

@@ -11,17 +11,53 @@ import java.util.Set;
 public class NatsClientOptions {
     private static final Set<String> SUPPORTED_SCHEMES = Set.of("nats", "tls", "ws", "wss");
 
+    /**
+     * 是否启用。
+     */
     private boolean enabled;
+    /**
+     * 服务连接地址。
+     */
     private String url;
+    /**
+     * NATS 连接名称。
+     */
     private String connectionName;
+    /**
+     * 用户名。
+     */
     private String username;
+    /**
+     * 密码。
+     */
     private String password;
+    /**
+     * 是否启用自动重连。
+     */
     private boolean reconnectEnabled = true;
+    /**
+     * 最大重连次数。
+     */
     private int maxReconnects = -1;
+    /**
+     * 重连等待时间，单位毫秒。
+     */
     private long reconnectWaitMillis = 5_000L;
+    /**
+     * 重连抖动上限，单位毫秒。
+     */
     private long reconnectJitterMillis = 2_000L;
+    /**
+     * 连接调度超时时间，单位毫秒。
+     */
     private long connectionTimeoutMillis = 10_000L;
+    /**
+     * 发布超时时间，单位毫秒。
+     */
     private long publishTimeoutMillis = 10_000L;
+    /**
+     * 请求对象超时时间，单位毫秒。
+     */
     private long requestTimeoutMillis = 30_000L;
 
     /** @return 是否启用客户端 */ public boolean isEnabled() { return enabled; }
@@ -49,7 +85,12 @@ public class NatsClientOptions {
     /** @return 请求超时毫秒数 */ public long getRequestTimeoutMillis() { return requestTimeoutMillis; }
     /** @param value 请求超时毫秒数 */ public void setRequestTimeoutMillis(long value) { requestTimeoutMillis = value; }
 
-    /** 返回显式连接名，未配置时使用稳定的 clientKey 派生名称。 */
+    /**
+     * 返回显式连接名，未配置时使用稳定的 clientKey 派生名称。
+     *
+     * @param clientKey 客户端键
+     * @return 匹配结果；未找到时的行为见方法说明
+     */
     public String resolveConnectionName(String clientKey) {
         if (connectionName != null && !connectionName.isBlank()) {
             return connectionName.trim();
@@ -57,7 +98,11 @@ public class NatsClientOptions {
         return "simple-secret-nats-" + requireClientKey(clientKey);
     }
 
-    /** 校验启用客户端配置。 */
+    /**
+     * 校验启用客户端配置。
+     *
+     * @param clientKey 客户端键
+     */
     public void validate(String clientKey) {
         requireClientKey(clientKey);
         if (!enabled) {

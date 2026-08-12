@@ -15,6 +15,11 @@ public class EasyMediaManagementAuthorizationFilter extends OncePerRequestFilter
 
     private final EasyMediaManagementAuthorizer authorizer;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param authorizer EasyMedia 管理 API 授权器
+     */
     public EasyMediaManagementAuthorizationFilter(EasyMediaManagementAuthorizer authorizer) {
         this.authorizer = authorizer;
     }

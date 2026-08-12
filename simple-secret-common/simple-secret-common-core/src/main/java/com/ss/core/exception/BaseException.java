@@ -45,17 +45,29 @@ public class BaseException extends RuntimeException {
         this.arguments = arguments == null ? new Object[0] : arguments.clone();
     }
 
-    /** 返回所属模块。 */
+    /**
+     * 返回所属模块。
+     *
+     * @return 模块标识；未设置时返回 null
+     */
     public String getModule() {
         return module;
     }
 
-    /** 返回国际化错误码。 */
+    /**
+     * 返回国际化错误码。
+     *
+     * @return 国际化错误码；普通消息异常返回 null
+     */
     public String getCode() {
         return code;
     }
 
-    /** 返回国际化参数的副本。 */
+    /**
+     * 返回国际化参数的副本。
+     *
+     * @return 不可影响内部状态的参数数组
+     */
     public Object[] getArguments() {
         return arguments.clone();
     }

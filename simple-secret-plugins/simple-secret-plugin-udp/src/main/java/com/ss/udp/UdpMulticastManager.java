@@ -21,6 +21,9 @@ public class UdpMulticastManager {
      * 注册并启动监听器。
      *
      * @return key 未被占用并成功调用 start 时返回 true
+
+     *
+     * @param listener 事件监听器
      */
     public boolean joinGroup(UdpMulticastListener listener) {
         Objects.requireNonNull(listener, "listener");
@@ -41,13 +44,28 @@ public class UdpMulticastManager {
         }
     }
 
-    /** 创建、注册并启动监听器。 */
+    /**
+     * 创建、注册并启动监听器。
+     *
+     * @param groupIp 组播组 IP 地址
+     * @param port 监听或连接端口
+     * @param localIp 本地网卡 IP 地址
+     * @param messageHandler 文本消息处理器
+     * @return 返回的 {@code boolean} 结果
+     */
     public boolean joinGroup(String groupIp, int port, String localIp,
                              UdpMessageHandler messageHandler) {
         return joinGroup(new UdpMulticastListener(groupIp, port, localIp, messageHandler));
     }
 
-    /** 停止并移除指定监听器。 */
+    /**
+     * 停止并移除指定监听器。
+     *
+     * @param groupIp 组播组 IP 地址
+     * @param port 监听或连接端口
+     * @param localIp 本地网卡 IP 地址
+     * @return 返回的 {@code boolean} 结果
+     */
     public boolean leaveGroup(String groupIp, int port, String localIp) {
         String key = key(localIp, groupIp, port);
         UdpMulticastListener listener = activeGroups.remove(key);
@@ -67,6 +85,11 @@ public class UdpMulticastManager {
         });
     }
 
+    /**
+     * 返回当前活动的组播监听组数量。
+     *
+     * @return 当前活动的组播监听组数量
+     */
     public int getActiveGroupCount() {
         return activeGroups.size();
     }

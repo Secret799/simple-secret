@@ -10,12 +10,21 @@ public class KmzException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /** 创建异常。 */
+    /**
+     * 创建异常。
+     *
+     * @param message 消息
+     */
     public KmzException(String message) {
         super(message);
     }
 
-    /** 创建带原因的异常。 */
+    /**
+     * 创建带原因的异常。
+     *
+     * @param message 消息
+     * @param cause 原始异常
+     */
     public KmzException(String message, Throwable cause) {
         super(message, cause);
     }

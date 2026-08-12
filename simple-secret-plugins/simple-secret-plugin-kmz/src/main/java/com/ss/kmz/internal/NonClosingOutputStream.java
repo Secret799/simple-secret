@@ -9,7 +9,11 @@ import java.io.OutputStream;
  */
 public final class NonClosingOutputStream extends FilterOutputStream {
 
-    /** 创建包装流。 */
+    /**
+     * 创建包装流。
+     *
+     * @param outputStream 输出流
+     */
     public NonClosingOutputStream(OutputStream outputStream) {
         super(outputStream);
     }

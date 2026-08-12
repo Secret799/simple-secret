@@ -12,20 +12,36 @@ public class WaypointHeading implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 航向角。
+     */
     private double headingAngle;
 
     /** 创建零度航向。 */
     public WaypointHeading() {
     }
 
-    /** 创建指定角度的航向。 */
+    /**
+     * 创建指定角度的航向。
+     *
+     * @param headingAngle 航向角
+     */
     public WaypointHeading(double headingAngle) {
         this.headingAngle = headingAngle;
     }
 
-    /** 返回航向角。 */
+    /**
+     * 返回航向角。
+     *
+     * @return 航向角
+     */
     public double getHeadingAngle() { return headingAngle; }
-    /** 设置航向角。 */
+    /**
+     * 设置航向角。
+     *
+     * @param headingAngle 航向角
+     * @return 当前对象
+     */
     public WaypointHeading setHeadingAngle(double headingAngle) { this.headingAngle = headingAngle; return this; }
 
     @Override

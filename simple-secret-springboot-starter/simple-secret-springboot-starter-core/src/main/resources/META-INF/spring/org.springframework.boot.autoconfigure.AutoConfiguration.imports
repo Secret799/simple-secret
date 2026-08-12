@@ -1,4 +1,0 @@
-com.ss.core.config.SimpleSecretCoreAutoConfiguration
-com.ss.core.config.CoreExecutorAutoConfiguration
-com.ss.core.config.CoreAsyncAutoConfiguration
-com.ss.core.config.CoreValidationAutoConfiguration

@@ -17,6 +17,11 @@ import lombok.extern.slf4j.Slf4j;
 public class MKSourceFindCallBack implements IMKSourceFindCallBack {
     private final IMKSourceHandleCallBack mkSourceHandleCallBack;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param imkSourceHandleCallBack 媒体源句柄回调
+     */
     public MKSourceFindCallBack(IMKSourceHandleCallBack imkSourceHandleCallBack) {
         Native.setCallbackThreadInitializer(this, new CallbackThreadInitializer(true, false, "MediaSourceFindThread"));
         this.mkSourceHandleCallBack = imkSourceHandleCallBack;

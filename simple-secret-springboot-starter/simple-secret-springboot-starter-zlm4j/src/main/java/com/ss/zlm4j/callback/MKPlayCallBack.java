@@ -23,6 +23,11 @@ public class MKPlayCallBack implements IMKPlayCallBack {
     private final StreamPlayHandler handler;
 
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param handler 消息处理
+     */
     public MKPlayCallBack(StreamPlayHandler handler) {
         //回调使用同一个线程
         Native.setCallbackThreadInitializer(this, new CallbackThreadInitializer(true, false, "MediaPlayThread"));

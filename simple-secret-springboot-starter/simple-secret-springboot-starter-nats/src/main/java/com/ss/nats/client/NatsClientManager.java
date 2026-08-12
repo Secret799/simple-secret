@@ -104,18 +104,34 @@ public class NatsClientManager implements AutoCloseable {
         });
     }
 
-    /** @return 是否存在指定客户端。 */
+    /**
+     * @return 是否存在指定客户端。
+     *
+     * @param clientKey 客户端键
+     */
     public synchronized boolean containsClient(String clientKey) {
         return clients.containsKey(clientKey);
     }
 
-    /** 使用 UTF-8 发布文本消息并等待 flush 完成。 */
+    /**
+     * 使用 UTF-8 发布文本消息并等待 flush 完成。
+     *
+     * @param clientKey 客户端键
+     * @param subject NATS subject
+     * @param payload 消息负载
+     */
     public void publish(String clientKey, String subject, String payload) {
         Objects.requireNonNull(payload, "payload");
         publish(clientKey, subject, payload.getBytes(StandardCharsets.UTF_8));
     }
 
-    /** 发布字节消息并等待 flush 完成。 */
+    /**
+     * 发布字节消息并等待 flush 完成。
+     *
+     * @param clientKey 客户端键
+     * @param subject NATS subject
+     * @param payload 消息负载
+     */
     public void publish(String clientKey, String subject, byte[] payload) {
         Objects.requireNonNull(payload, "payload");
         NatsSubjects.validatePublishSubject(subject);
@@ -124,7 +140,12 @@ public class NatsClientManager implements AutoCloseable {
         runPublish(clientKey, context, () -> context.connection.publish(subject, snapshot));
     }
 
-    /** 发布调用方构造的 JNATS 消息并等待 flush 完成。 */
+    /**
+     * 发布调用方构造的 JNATS 消息并等待 flush 完成。
+     *
+     * @param clientKey 客户端键
+     * @param message 消息
+     */
     public void publish(String clientKey, Message message) {
         Message source = Objects.requireNonNull(message, "message");
         NatsSubjects.validatePublishSubject(source.getSubject());
@@ -134,6 +155,13 @@ public class NatsClientManager implements AutoCloseable {
 
     /**
      * 执行同步请求响应。超时或没有响应时返回空值。
+
+     *
+     * @param clientKey 客户端键
+     * @param subject NATS subject
+     * @param payload 消息负载
+     * @param timeout 超时时间
+     * @return 返回的 {@code Optional<NatsMessageContext>} 结果
      */
     public Optional<NatsMessageContext> request(String clientKey, String subject, byte[] payload,
                                                 Duration timeout) {
@@ -152,7 +180,14 @@ public class NatsClientManager implements AutoCloseable {
         }
     }
 
-    /** 使用客户端配置的默认超时执行请求响应。 */
+    /**
+     * 使用客户端配置的默认超时执行请求响应。
+     *
+     * @param clientKey 客户端键
+     * @param subject NATS subject
+     * @param payload 消息负载
+     * @return 返回的 {@code Optional<NatsMessageContext>} 结果
+     */
     public Optional<NatsMessageContext> request(String clientKey, String subject, byte[] payload) {
         ClientContext context = context(clientKey, "request");
         return request(clientKey, subject, payload, context.settings.requestTimeout);
@@ -160,6 +195,11 @@ public class NatsClientManager implements AutoCloseable {
 
     /**
      * 注册一个消息处理器。返回的 Dispatcher 会在客户端关闭时一并释放。
+
+     *
+     * @param clientKey 客户端键
+     * @param handler 消息处理
+     * @return 返回的 {@code Dispatcher} 结果
      */
     public synchronized Dispatcher subscribe(String clientKey, NatsMessageHandler handler) {
         NatsMessageHandler target = Objects.requireNonNull(handler, "handler");
@@ -181,7 +221,11 @@ public class NatsClientManager implements AutoCloseable {
         }
     }
 
-    /** 关闭并移除指定客户端。不存在时不执行任何操作。 */
+    /**
+     * 关闭并移除指定客户端。不存在时不执行任何操作。
+     *
+     * @param clientKey 客户端键
+     */
     public synchronized void close(String clientKey) {
         ClientContext context = clients.remove(clientKey);
         if (context != null) {

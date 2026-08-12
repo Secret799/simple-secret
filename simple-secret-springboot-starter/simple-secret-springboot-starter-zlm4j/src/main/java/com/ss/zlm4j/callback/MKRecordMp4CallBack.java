@@ -23,6 +23,11 @@ public class MKRecordMp4CallBack implements IMKRecordMp4CallBack {
 
     private final RecordMp4Handler handler;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param handler 消息处理
+     */
     public MKRecordMp4CallBack(RecordMp4Handler handler) {
         //回调使用同一个线程
         Native.setCallbackThreadInitializer(this, new CallbackThreadInitializer(true, false, "RecordMp4Thread"));

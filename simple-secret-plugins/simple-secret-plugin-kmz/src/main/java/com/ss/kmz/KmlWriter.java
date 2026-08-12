@@ -20,7 +20,14 @@ public final class KmlWriter {
     private KmlWriter() {
     }
 
-    /** 将任务序列化为 UTF-8 KML 字符串。 */
+    /**
+     * 将任务序列化为 UTF-8 KML 字符串。
+     *
+     * @param mission KMZ 航点任务
+     * @return 返回的 {@code String} 结果
+     * @throws IllegalArgumentException 任务数据不满足约束时抛出
+     * @throws KmzException KML 序列化失败时抛出
+     */
     public static String writeToString(KmzMission mission) {
         MissionValidator.validate(mission);
         try {

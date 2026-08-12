@@ -11,8 +11,17 @@ public class PlaybackTimePeriodDomain implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 录像查询日期。
+     */
     private LocalDate date;
+    /**
+     * 当日是否存在录像。
+     */
     private boolean existRecord;
+    /**
+     * 录像时间段列表。
+     */
     private List<TimePeriod> timePeriods;
 
     /** @return 日期 */
@@ -20,7 +29,11 @@ public class PlaybackTimePeriodDomain implements Serializable {
         return date;
     }
 
-    /** @param date 日期 @return 当前对象 */
+    /**
+     * @param date 日期
+     *
+     * @return 当前对象
+     */
     public PlaybackTimePeriodDomain setDate(LocalDate date) {
         this.date = date;
         return this;
@@ -36,7 +49,11 @@ public class PlaybackTimePeriodDomain implements Serializable {
         return existRecord;
     }
 
-    /** @param existRecord 当天是否存在录像 @return 当前对象 */
+    /**
+     * @param existRecord 当天是否存在录像
+     *
+     * @return 当前对象
+     */
     public PlaybackTimePeriodDomain setExistRecord(boolean existRecord) {
         this.existRecord = existRecord;
         return this;
@@ -47,7 +64,11 @@ public class PlaybackTimePeriodDomain implements Serializable {
         return timePeriods;
     }
 
-    /** @param timePeriods 时间段列表 @return 当前对象 */
+    /**
+     * @param timePeriods 时间段列表
+     *
+     * @return 当前对象
+     */
     public PlaybackTimePeriodDomain setTimePeriods(List<TimePeriod> timePeriods) {
         this.timePeriods = timePeriods;
         return this;
@@ -57,7 +78,13 @@ public class PlaybackTimePeriodDomain implements Serializable {
     public static class TimePeriod implements Serializable {
         @Serial
         private static final long serialVersionUID = 1L;
+        /**
+         * 录像时间段开始时间。
+         */
         private LocalTime beginTime;
+        /**
+         * 时间段结束时间。
+         */
         private LocalTime endTime;
 
         /** @return 开始时间 */
@@ -65,7 +92,11 @@ public class PlaybackTimePeriodDomain implements Serializable {
             return beginTime;
         }
 
-        /** @param beginTime 开始时间 @return 当前对象 */
+        /**
+         * @param beginTime 开始时间
+         *
+         * @return 当前对象
+         */
         public TimePeriod setBeginTime(LocalTime beginTime) {
             this.beginTime = beginTime;
             return this;
@@ -76,7 +107,11 @@ public class PlaybackTimePeriodDomain implements Serializable {
             return endTime;
         }
 
-        /** @param endTime 结束时间 @return 当前对象 */
+        /**
+         * @param endTime 结束时间
+         *
+         * @return 当前对象
+         */
         public TimePeriod setEndTime(LocalTime endTime) {
             this.endTime = endTime;
             return this;

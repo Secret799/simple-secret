@@ -15,7 +15,11 @@ public final class XmlSupport {
     private XmlSupport() {
     }
 
-    /** 创建禁止 DTD 和外部实体的 StAX 工厂。 */
+    /**
+     * 创建禁止 DTD 和外部实体的 StAX 工厂。
+     *
+     * @return 新创建的对象
+     */
     public static XMLInputFactory newSecureInputFactory() {
         XMLInputFactory factory = XMLInputFactory.newFactory();
         factory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, true);
@@ -27,6 +31,12 @@ public final class XmlSupport {
 
     /**
      * 在不关闭输入流的前提下读取最多 {@code maxBytes} 字节。
+
+     *
+     * @param inputStream 输入流
+     * @param maxBytes 最大允许字节数
+     * @param contentName 内容名称
+     * @return 返回的 {@code byte[]} 结果
      */
     public static byte[] readLimited(InputStream inputStream, int maxBytes, String contentName) {
         if (inputStream == null) {

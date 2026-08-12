@@ -21,6 +21,9 @@ public class DefaultWebRtcIdentityProvider implements WebRtcIdentityProvider {
 
     /**
      * 创建默认身份解析器。
+
+     *
+     * @param properties 模块配置
      */
     public DefaultWebRtcIdentityProvider(WebRtcProperties properties) {
         this.properties = properties;

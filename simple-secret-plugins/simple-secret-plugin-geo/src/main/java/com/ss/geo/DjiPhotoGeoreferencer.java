@@ -50,6 +50,13 @@ public final class DjiPhotoGeoreferencer {
 
     /**
      * 从 DJI 照片读取元数据并定位单个像素。
+
+     *
+     * @param photoPath 照片文件路径
+     * @param x 像素横坐标
+     * @param y 像素纵坐标
+     * @param groundAltitude 地面海拔高度
+     * @return 返回的 {@code GeoTarget} 结果
      */
     public static GeoTarget refer(Path photoPath, double x, double y, double groundAltitude) {
         return refer(DjiMetadataReader.read(photoPath), x, y, groundAltitude);
@@ -57,6 +64,14 @@ public final class DjiPhotoGeoreferencer {
 
     /**
      * 从 DJI 照片读取元数据，并通过 DEM 回调迭代查询地面海拔。
+
+     *
+     * @param photoPath 照片文件路径
+     * @param x 像素横坐标
+     * @param y 像素纵坐标
+     * @param demQuery 高程查询函数
+     * @param fallbackAltitude 高程查询失败时使用的备用海拔
+     * @return 返回的 {@code GeoTarget} 结果
      */
     public static GeoTarget refer(Path photoPath, double x, double y,
                                   Function<double[], Double> demQuery, double fallbackAltitude) {
@@ -378,6 +393,12 @@ public final class DjiPhotoGeoreferencer {
 
     /**
      * 从 DJI 照片读取元数据并定位多个检测框。
+
+     *
+     * @param photoPath 照片文件路径
+     * @param boxes 检测框集合
+     * @param groundAltitude 地面海拔高度
+     * @return 返回的 {@code List<GeoTargetWithBox>} 结果
      */
     public static List<GeoTargetWithBox> refer(Path photoPath, List<BoundingBox> boxes, double groundAltitude) {
         return refer(DjiMetadataReader.read(photoPath), boxes, groundAltitude);
@@ -385,6 +406,13 @@ public final class DjiPhotoGeoreferencer {
 
     /**
      * 从 DJI 照片读取元数据，并通过 DEM 回调定位多个检测框。
+
+     *
+     * @param photoPath 照片文件路径
+     * @param boxes 检测框集合
+     * @param demQuery 高程查询函数
+     * @param fallbackAltitude 高程查询失败时使用的备用海拔
+     * @return 返回的 {@code List<GeoTargetWithBox>} 结果
      */
     public static List<GeoTargetWithBox> refer(Path photoPath, List<BoundingBox> boxes,
                                                Function<double[], Double> demQuery, double fallbackAltitude) {
@@ -407,6 +435,13 @@ public final class DjiPhotoGeoreferencer {
 
     /**
      * 照片元数据 + 投影上下文 + 多推理框 → 地理坐标列表。
+
+     *
+     * @param meta DJI 照片元数据
+     * @param context 调用上下文
+     * @param boxes 检测框集合
+     * @param groundAltitude 地面海拔高度
+     * @return 返回的 {@code List<GeoTargetWithBox>} 结果
      */
     public static List<GeoTargetWithBox> refer(DjiPhotoMetadata meta, DjiProjectionContext context,
                                                List<BoundingBox> boxes, double groundAltitude) {
@@ -431,6 +466,13 @@ public final class DjiPhotoGeoreferencer {
 
     /**
      * 从 DJI 照片读取元数据并把地理管线投影到画面。
+
+     *
+     * @param photoPath 照片文件路径
+     * @param name 名称
+     * @param pipeline 管线坐标序列
+     * @param bufferMeters 管线中心线缓冲半径，单位米
+     * @return 返回的 {@code PipelineProjection} 结果
      */
     public static PipelineProjection referPipeline(Path photoPath, String name,
                                                     List<GeoCoordinate> pipeline, double bufferMeters) {
@@ -439,6 +481,14 @@ public final class DjiPhotoGeoreferencer {
 
     /**
      * 照片元数据 + 投影上下文 + 管线 → 像素投影。
+
+     *
+     * @param meta DJI 照片元数据
+     * @param context 调用上下文
+     * @param name 名称
+     * @param pipeline 管线坐标序列
+     * @param bufferMeters 管线中心线缓冲半径，单位米
+     * @return 返回的 {@code PipelineProjection} 结果
      */
     public static PipelineProjection referPipeline(DjiPhotoMetadata meta, DjiProjectionContext context, String name,
                                                    List<GeoCoordinate> pipeline, double bufferMeters) {

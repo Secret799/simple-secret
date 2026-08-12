@@ -25,6 +25,11 @@ public class WebRtcSessionExceptionHandler {
 
     /**
      * 将领域会话异常转换为带稳定错误码的 HTTP 响应。
+
+     *
+     * @param exception 异常对象
+     * @param request 请求对象
+     * @return 返回的 {@code ResponseEntity<WebRtcErrorResponse>} 结果
      */
     @ExceptionHandler(WebRtcSessionException.class)
     public ResponseEntity<WebRtcErrorResponse> handleWebRtcSessionException(
@@ -35,6 +40,11 @@ public class WebRtcSessionExceptionHandler {
 
     /**
      * 将缺少 app、stream 等必填参数转换为 400 响应。
+
+     *
+     * @param exception 异常对象
+     * @param request 请求对象
+     * @return 返回的 {@code ResponseEntity<WebRtcErrorResponse>} 结果
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<WebRtcErrorResponse> handleMissingParameter(
@@ -45,6 +55,11 @@ public class WebRtcSessionExceptionHandler {
 
     /**
      * 将不支持的 SDP 媒体类型转换为 415 响应。
+
+     *
+     * @param exception 异常对象
+     * @param request 请求对象
+     * @return 返回的 {@code ResponseEntity<WebRtcErrorResponse>} 结果
      */
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<WebRtcErrorResponse> handleUnsupportedMediaType(
@@ -55,6 +70,11 @@ public class WebRtcSessionExceptionHandler {
 
     /**
      * 将无法反序列化或参数类型不匹配的请求转换为 400 响应。
+
+     *
+     * @param exception 异常对象
+     * @param request 请求对象
+     * @return 返回的 {@code ResponseEntity<WebRtcErrorResponse>} 结果
      */
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
     public ResponseEntity<WebRtcErrorResponse> handleInvalidRequest(

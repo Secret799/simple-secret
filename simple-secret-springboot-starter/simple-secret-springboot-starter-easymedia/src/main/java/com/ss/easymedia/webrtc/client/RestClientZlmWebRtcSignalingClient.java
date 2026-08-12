@@ -36,7 +36,13 @@ public class RestClientZlmWebRtcSignalingClient implements ZlmWebRtcSignalingCli
     /** 校验上游会话 Location 的安全策略。 */
     private final ZlmWebRtcUriPolicy uriPolicy;
 
-    /** 创建 HTTP 转发信令客户端。 */
+    /**
+     * 创建 HTTP 转发信令客户端。
+     *
+     * @param restClient HTTP 客户端
+     * @param signalingBaseUri ZLM 信令基础 URI
+     * @param uriPolicy 外部 URI 安全策略
+     */
     public RestClientZlmWebRtcSignalingClient(RestClient restClient, URI signalingBaseUri,
                                               ZlmWebRtcUriPolicy uriPolicy) {
         this.restClient = restClient;

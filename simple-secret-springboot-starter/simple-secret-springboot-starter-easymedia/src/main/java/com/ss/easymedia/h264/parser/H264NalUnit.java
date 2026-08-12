@@ -13,20 +13,41 @@ public class H264NalUnit {
     private final long firstFragmentTimestamp;
     private final String type;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param nalData NAL 单元字节数据
+     * @param firstFragmentTimestamp 首个媒体分片时间戳
+     */
     public H264NalUnit(byte[] nalData, long firstFragmentTimestamp) {
         this.nalData = nalData != null ? nalData.clone() : new byte[0];
         this.firstFragmentTimestamp = firstFragmentTimestamp;
         this.type = Integer.toHexString(this.nalData.length > 4 ? nalData[4] & 0x1F : 0);
     }
 
+    /**
+     * 返回NAL 单元字节数据。
+     *
+     * @return NAL 单元字节数据
+     */
     public byte[] getNalData() {
         return nalData;
     }
 
+    /**
+     * 返回首个媒体分片时间戳。
+     *
+     * @return 首个媒体分片时间戳
+     */
     public long getFirstFragmentTimestamp() {
         return firstFragmentTimestamp;
     }
 
+    /**
+     * 返回目标类型。
+     *
+     * @return 目标类型
+     */
     public String getType() {
         return type;
     }

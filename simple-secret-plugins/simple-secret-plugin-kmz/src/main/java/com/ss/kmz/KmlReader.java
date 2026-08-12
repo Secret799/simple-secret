@@ -33,7 +33,14 @@ public final class KmlReader {
     private KmlReader() {
     }
 
-    /** 从字符串解析任务。 */
+    /**
+     * 从字符串解析任务。
+     *
+     * @param kml KML 文本
+     * @return 返回的 {@code KmzMission} 结果
+     * @throws IllegalArgumentException KML 文本为 {@code null} 时抛出
+     * @throws KmzException KML 超出大小限制、格式非法或任务数据校验失败时抛出
+     */
     public static KmzMission parse(String kml) {
         if (kml == null) {
             throw new IllegalArgumentException("KML string must not be null");
@@ -45,12 +52,27 @@ public final class KmlReader {
         return parseBytes(bytes);
     }
 
-    /** 从输入流解析任务，输入流不会被关闭。 */
+    /**
+     * 从输入流解析任务，输入流不会被关闭。
+     *
+     * @param inputStream 输入流
+     * @return 返回的 {@code KmzMission} 结果
+     * @throws IllegalArgumentException 输入流为 {@code null} 时抛出
+     * @throws KmzException 输入超出大小限制、格式非法或任务数据校验失败时抛出
+     */
     public static KmzMission parse(InputStream inputStream) {
         return parse(inputStream, DEFAULT_MAX_BYTES);
     }
 
-    /** 从输入流解析任务并限制最大字节数，输入流不会被关闭。 */
+    /**
+     * 从输入流解析任务并限制最大字节数，输入流不会被关闭。
+     *
+     * @param inputStream 输入流
+     * @param maxBytes 最大允许字节数
+     * @return 返回的 {@code KmzMission} 结果
+     * @throws IllegalArgumentException 输入流为 {@code null} 或最大字节数非法时抛出
+     * @throws KmzException 输入超出大小限制、格式非法或任务数据校验失败时抛出
+     */
     public static KmzMission parse(InputStream inputStream, int maxBytes) {
         return parseBytes(XmlSupport.readLimited(inputStream, maxBytes, "KML"));
     }

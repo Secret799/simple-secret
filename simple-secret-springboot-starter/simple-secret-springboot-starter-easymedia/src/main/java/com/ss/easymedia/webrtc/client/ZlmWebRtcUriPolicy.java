@@ -17,6 +17,9 @@ public class ZlmWebRtcUriPolicy {
 
     /**
      * 创建上游会话资源 URI 校验策略。
+
+     *
+     * @param signalingBaseUri ZLM 信令基础 URI
      */
     public ZlmWebRtcUriPolicy(URI signalingBaseUri) {
         this.signalingBaseUri = normalizeBase(signalingBaseUri);
@@ -26,6 +29,10 @@ public class ZlmWebRtcUriPolicy {
      * 将上游 Location 解析为绝对 URI，并确认其仍属于配置的 ZLM 服务。
      *
      * @return 可用于后续信令调用的受信绝对 URI
+
+     *
+     * @param requestUri 请求 URI
+     * @param location 上游会话 Location
      */
     public URI requireTrustedLocation(URI requestUri, URI location) {
         Objects.requireNonNull(requestUri, "requestUri");

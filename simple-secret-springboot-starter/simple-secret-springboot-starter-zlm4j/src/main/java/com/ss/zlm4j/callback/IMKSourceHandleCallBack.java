@@ -10,5 +10,10 @@ import com.aizuda.zlm4j.structure.MK_MEDIA_SOURCE;
  **/
 public interface IMKSourceHandleCallBack {
 
+    /**
+     * 接收原生媒体源句柄回调。
+     *
+     * @param ctx Netty 通道处理上下文
+     */
     void invoke(MK_MEDIA_SOURCE ctx);
 }

@@ -13,7 +13,13 @@ import java.util.Objects;
 public record NettyWebSocketPrincipal(String sessionKey, String name,
                                       Map<String, Object> attributes) {
 
-    /** 创建并校验身份。 */
+    /**
+     * 创建并校验身份。
+     *
+     * @param sessionKey 会话主体键
+     * @param name 名称
+     * @param attributes 扩展属性
+     */
     public NettyWebSocketPrincipal {
         sessionKey = requireText(sessionKey, "sessionKey");
         name = requireText(name, "name");

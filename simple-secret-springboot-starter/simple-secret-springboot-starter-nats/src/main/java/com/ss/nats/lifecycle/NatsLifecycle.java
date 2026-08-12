@@ -13,7 +13,12 @@ public class NatsLifecycle implements ApplicationRunner, AutoCloseable {
     private final NatsClientRefresher refresher;
     private final NatsClientManager clientManager;
 
-    /** 创建 NATS 生命周期组件。 */
+    /**
+     * 创建 NATS 生命周期组件。
+     *
+     * @param refresher NATS 客户端刷新器
+     * @param clientManager 客户端管理器
+     */
     public NatsLifecycle(NatsClientRefresher refresher, NatsClientManager clientManager) {
         this.refresher = Objects.requireNonNull(refresher, "refresher");
         this.clientManager = Objects.requireNonNull(clientManager, "clientManager");

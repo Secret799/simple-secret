@@ -23,10 +23,20 @@ public final class ExcelTreeExport {
         this.writeHandlers = List.copyOf(writeHandlers);
     }
 
+    /**
+     * 返回数据行集合。
+     *
+     * @return 数据行集合
+     */
     public List<List<Object>> getRows() {
         return rows;
     }
 
+    /**
+     * 返回树形父节点列使用的合并处理器。
+     *
+     * @return 不可变写处理器列表
+     */
     public List<WriteHandler> getWriteHandlers() {
         return writeHandlers;
     }

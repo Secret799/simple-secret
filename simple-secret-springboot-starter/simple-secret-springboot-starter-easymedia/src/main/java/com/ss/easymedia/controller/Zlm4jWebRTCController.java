@@ -35,6 +35,12 @@ public class Zlm4jWebRTCController {
     /** 读取 SDP 大小、本地 ZLM 模式和 Trickle ICE 配置。 */
     private final WebRtcProperties properties;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param sessionService WebRTC 会话服务
+     * @param properties 模块配置
+     */
     public Zlm4jWebRTCController(WebRtcSessionService sessionService, WebRtcProperties properties) {
         this.sessionService = sessionService;
         this.properties = properties;
@@ -44,6 +50,12 @@ public class Zlm4jWebRTCController {
      * 接收 WHIP SDP Offer 并返回 ZLM SDP Answer。
      *
      * @return SDP Answer；仅受管 HTTP 信令模式携带会话 Location
+
+     *
+     * @param app 媒体应用名
+     * @param stream 媒体流标识
+     * @param headers 表头或消息头集合
+     * @param request 请求对象
      */
     @PostMapping("/whip")
     public ResponseEntity<byte[]> whip(@RequestParam String app,
@@ -60,6 +72,12 @@ public class Zlm4jWebRTCController {
      * 接收 WHEP SDP Offer 并返回 ZLM SDP Answer。
      *
      * @return SDP Answer；仅受管 HTTP 信令模式携带会话 Location
+
+     *
+     * @param app 媒体应用名
+     * @param stream 媒体流标识
+     * @param headers 表头或消息头集合
+     * @param request 请求对象
      */
     @PostMapping("/whep")
     public ResponseEntity<byte[]> whep(@RequestParam String app,
@@ -76,6 +94,11 @@ public class Zlm4jWebRTCController {
      * 向外置 ZLM 的受管会话转发 Trickle ICE SDP Fragment。
      *
      * @return 上游 PATCH 响应
+
+     *
+     * @param sessionId 会话 ID
+     * @param headers 表头或消息头集合
+     * @param request 请求对象
      */
     @PatchMapping("/sessions/{sessionId}")
     public ResponseEntity<byte[]> patch(@PathVariable String sessionId,
@@ -97,6 +120,10 @@ public class Zlm4jWebRTCController {
      * 请求关闭一个受管 WebRTC 会话。
      *
      * @return 无内容响应；删除失败将进入后台补偿
+
+     *
+     * @param sessionId 会话 ID
+     * @param request 请求对象
      */
     @DeleteMapping("/sessions/{sessionId}")
     public ResponseEntity<Void> delete(@PathVariable String sessionId,

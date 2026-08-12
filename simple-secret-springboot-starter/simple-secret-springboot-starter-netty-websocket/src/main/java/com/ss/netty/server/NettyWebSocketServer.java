@@ -29,7 +29,12 @@ public final class NettyWebSocketServer implements SmartLifecycle {
     private volatile EventLoopGroup workerGroup;
     private volatile Channel serverChannel;
 
-    /** 创建服务。服务由 Spring 容器或调用方显式启动。 */
+    /**
+     * 创建服务。服务由 Spring 容器或调用方显式启动。
+     *
+     * @param properties 模块配置
+     * @param initializer 通道初始化器
+     */
     public NettyWebSocketServer(NettyWebSocketProperties properties,
                                 NettyWebSocketChannelInitializer initializer) {
         this(properties, initializer, (bootstrap, address) ->
@@ -130,7 +135,11 @@ public final class NettyWebSocketServer implements SmartLifecycle {
         return channel != null && channel.isActive();
     }
 
-    /** 返回实际绑定地址；随机端口只有启动后可见。 */
+    /**
+     * 返回实际绑定地址；随机端口只有启动后可见。
+     *
+     * @return 返回的 {@code Optional<InetSocketAddress>} 结果
+     */
     public Optional<InetSocketAddress> localAddress() {
         Channel channel = serverChannel;
         return channel != null && channel.localAddress() instanceof InetSocketAddress address

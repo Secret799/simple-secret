@@ -8,17 +8,29 @@ public final class NatsSubjects {
     private NatsSubjects() {
     }
 
-    /** 校验发布主题，发布主题不允许通配符。 */
+    /**
+     * 校验发布主题，发布主题不允许通配符。
+     *
+     * @param subject NATS subject
+     */
     public static void validatePublishSubject(String subject) {
         validate(subject, false, "publish subject");
     }
 
-    /** 校验订阅主题，允许完整 token 的 {@code *} 和末尾 {@code >}。 */
+    /**
+     * 校验订阅主题，允许完整 token 的 {@code *} 和末尾 {@code >}。
+     *
+     * @param subject NATS subject
+     */
     public static void validateSubscriptionSubject(String subject) {
         validate(subject, true, "subscription subject");
     }
 
-    /** 校验队列组；空字符串表示普通订阅。 */
+    /**
+     * 校验队列组；空字符串表示普通订阅。
+     *
+     * @param queue NATS 队列组名称
+     */
     public static void validateQueue(String queue) {
         if (queue == null || queue.isBlank()) {
             return;

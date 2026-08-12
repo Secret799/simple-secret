@@ -21,6 +21,12 @@ public class RecordShardingFileEvent extends ApplicationEvent {
      */
     private final RecordSource recordSource;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param recordSource 录像事件源对象
+     * @param recordInfoDomain 录像分片信息
+     */
     public RecordShardingFileEvent(RecordSource recordSource, RecordInfoDomain recordInfoDomain) {
         super(recordSource);
         this.recordSource = recordSource;

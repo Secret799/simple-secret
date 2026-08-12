@@ -24,7 +24,15 @@ public final class NettyWebSocketChannelInitializer extends ChannelInitializer<C
     private final NettyWebSocketChannelRegistry channels;
     private final Semaphore handlerCapacity;
 
-    /** 创建 channel 初始化器。 */
+    /**
+     * 创建 channel 初始化器。
+     *
+     * @param properties 模块配置
+     * @param endpoints 端点配置集合
+     * @param authenticator 握手认证器
+     * @param handlerExecutor 处理器执行器
+     * @param channels Netty 通道组
+     */
     public NettyWebSocketChannelInitializer(NettyWebSocketProperties properties,
                                             NettyWebSocketEndpointRegistry endpoints,
                                             NettyWebSocketAuthenticator authenticator,

@@ -17,7 +17,12 @@ public class UdpUnicastManager {
 
     private final Map<String, UdpUnicastListener> activeListeners = new ConcurrentHashMap<>();
 
-    /** 注册并启动监听器。 */
+    /**
+     * 注册并启动监听器。
+     *
+     * @param listener 事件监听器
+     * @return 返回的 {@code boolean} 结果
+     */
     public boolean startListener(UdpUnicastListener listener) {
         Objects.requireNonNull(listener, "listener");
         if (listener.getState() != Thread.State.NEW) {
@@ -37,12 +42,25 @@ public class UdpUnicastManager {
         }
     }
 
-    /** 创建、注册并启动监听器。 */
+    /**
+     * 创建、注册并启动监听器。
+     *
+     * @param bindIp 本地绑定 IP 地址
+     * @param port 监听或连接端口
+     * @param messageHandler 文本消息处理器
+     * @return 返回的 {@code boolean} 结果
+     */
     public boolean startListener(String bindIp, int port, UdpMessageHandler messageHandler) {
         return startListener(new UdpUnicastListener(bindIp, port, messageHandler));
     }
 
-    /** 停止并移除指定监听器。 */
+    /**
+     * 停止并移除指定监听器。
+     *
+     * @param bindIp 本地绑定 IP 地址
+     * @param port 监听或连接端口
+     * @return 返回的 {@code boolean} 结果
+     */
     public boolean stopListener(String bindIp, int port) {
         String key = key(bindIp, port);
         UdpUnicastListener listener = activeListeners.remove(key);
@@ -62,6 +80,11 @@ public class UdpUnicastManager {
         });
     }
 
+    /**
+     * 返回当前活动的单播监听器数量。
+     *
+     * @return 当前活动的单播监听器数量
+     */
     public int getActiveListenerCount() {
         return activeListeners.size();
     }

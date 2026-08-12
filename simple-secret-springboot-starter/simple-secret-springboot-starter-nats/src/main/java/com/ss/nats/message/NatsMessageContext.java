@@ -11,10 +11,25 @@ import java.util.function.Function;
  * NATS 入站或响应消息的不可变快照。
  */
 public final class NatsMessageContext {
+    /**
+     * 客户端键。
+     */
     private final String clientKey;
+    /**
+     * NATS subject。
+     */
     private final String subject;
+    /**
+     * 响应主题。
+     */
     private final String replyTo;
+    /**
+     * 消息负载。
+     */
     private final byte[] payload;
+    /**
+     * 表头或消息头集合。
+     */
     private final Headers headers;
 
     /**
@@ -43,17 +58,31 @@ public final class NatsMessageContext {
     /** @return payload 防御性副本 */ public byte[] getPayload() { return payload.clone(); }
     /** @return headers 防御性副本 */ public Headers getHeaders() { return new Headers(headers); }
 
-    /** 将 payload 按 UTF-8 解码。 */
+    /**
+     * 将 payload 按 UTF-8 解码。
+     *
+     * @return {@code payloadAsString}
+     */
     public String getPayloadAsString() {
         return new String(payload, StandardCharsets.UTF_8);
     }
 
-    /** 使用调用方提供的字节解码函数转换 payload。 */
+    /**
+     * 使用调用方提供的字节解码函数转换 payload。
+     *
+     * @param decoder 消息解码器
+     * @return 返回的 {@code T} 结果
+     */
     public <T> T decode(Function<byte[], T> decoder) {
         return Objects.requireNonNull(decoder, "decoder").apply(payload.clone());
     }
 
-    /** 使用调用方提供的文本解码函数转换 UTF-8 payload。 */
+    /**
+     * 使用调用方提供的文本解码函数转换 UTF-8 payload。
+     *
+     * @param decoder 消息解码器
+     * @return 返回的 {@code T} 结果
+     */
     public <T> T decodeText(Function<String, T> decoder) {
         return Objects.requireNonNull(decoder, "decoder").apply(getPayloadAsString());
     }

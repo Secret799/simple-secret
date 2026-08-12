@@ -6,19 +6,61 @@ import java.util.UUID;
  * 单个 MQTT v3 客户端的连接与操作配置。
  */
 public class MqttClientOptions {
+    /**
+     * 是否启用。
+     */
     private boolean enabled;
+    /**
+     * Broker 地址。
+     */
     private String broker;
+    /**
+     * 客户端 ID。
+     */
     private String clientId;
+    /**
+     * 自动生成的客户端 ID。
+     */
     private String generatedClientId;
+    /**
+     * 用户名。
+     */
     private String username;
+    /**
+     * 密码。
+     */
     private String password;
+    /**
+     * 是否使用 MQTT 3 清洁会话。
+     */
     private boolean cleanSession = true;
+    /**
+     * 连接保活间隔，单位秒。
+     */
     private int keepAliveSeconds = 30;
+    /**
+     * 连接超时时间，单位秒。
+     */
     private int connectionTimeoutSeconds = 10;
+    /**
+     * 发布超时时间，单位秒。
+     */
     private int publishTimeoutSeconds = 10;
+    /**
+     * 是否启用自动重连。
+     */
     private boolean reconnectEnabled = true;
+    /**
+     * 重连延迟，单位毫秒。
+     */
     private long reconnectDelayMillis = 1_000L;
+    /**
+     * 客户端持久化目录。
+     */
     private String persistenceDirectory;
+    /**
+     * 遗嘱消息配置。
+     */
     private MqttWillOptions will = new MqttWillOptions();
 
     /** @return 是否启用客户端 */

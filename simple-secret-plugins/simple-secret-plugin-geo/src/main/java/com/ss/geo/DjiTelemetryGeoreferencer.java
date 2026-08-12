@@ -87,6 +87,12 @@ public final class DjiTelemetryGeoreferencer {
 
     /**
      * 像素点 → 地理坐标。
+
+     *
+     * @param telemetry DJI 遥测数据
+     * @param pixel 像素坐标
+     * @param groundAltitude 地面海拔高度
+     * @return 返回的 {@code GeoTarget} 结果
      */
     public static GeoTarget pixelToGeo(DjiCameraTelemetry telemetry, PixelCoordinate pixel, double groundAltitude) {
         return GeoReferencer.pixelToGeo(pixel, buildCameraState(telemetry), groundAltitude);
@@ -94,6 +100,12 @@ public final class DjiTelemetryGeoreferencer {
 
     /**
      * 推理框 → 地理坐标。
+
+     *
+     * @param telemetry DJI 遥测数据
+     * @param boxes 检测框集合
+     * @param groundAltitude 地面海拔高度
+     * @return 返回的 {@code List<GeoTargetWithBox>} 结果
      */
     public static List<GeoTargetWithBox> boxesToGeo(DjiCameraTelemetry telemetry,
                                                     List<BoundingBox> boxes, double groundAltitude) {
@@ -102,6 +114,13 @@ public final class DjiTelemetryGeoreferencer {
 
     /**
      * 地理管线 → 像素投影。
+
+     *
+     * @param telemetry DJI 遥测数据
+     * @param name 名称
+     * @param pipeline 管线坐标序列
+     * @param bufferMeters 管线中心线缓冲半径，单位米
+     * @return 返回的 {@code PipelineProjection} 结果
      */
     public static PipelineProjection pipelineToPixels(DjiCameraTelemetry telemetry, String name,
                                                       List<GeoCoordinate> pipeline, double bufferMeters) {

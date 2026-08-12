@@ -8,12 +8,33 @@ public class DeviceDomain implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 设备标识。
+     */
     private String deviceId;
+    /**
+     * 设备名称。
+     */
     private String deviceName;
+    /**
+     * 用户名。
+     */
     private String username;
+    /**
+     * 密码。
+     */
     private String password;
+    /**
+     * 设备 IP 地址。
+     */
     private String ip;
+    /**
+     * 监听或连接端口。
+     */
     private String port;
+    /**
+     * 通道。
+     */
     private String channel;
 
     /** @return SDK 内部设备标识 */
@@ -21,7 +42,11 @@ public class DeviceDomain implements Serializable {
         return deviceId;
     }
 
-    /** @param deviceId SDK 内部设备标识 @return 当前对象 */
+    /**
+     * @param deviceId SDK 内部设备标识
+     *
+     * @return 当前对象
+     */
     public DeviceDomain setDeviceId(String deviceId) {
         this.deviceId = deviceId;
         return this;
@@ -32,7 +57,11 @@ public class DeviceDomain implements Serializable {
         return deviceName;
     }
 
-    /** @param deviceName 设备名称 @return 当前对象 */
+    /**
+     * @param deviceName 设备名称
+     *
+     * @return 当前对象
+     */
     public DeviceDomain setDeviceName(String deviceName) {
         this.deviceName = deviceName;
         return this;
@@ -43,7 +72,11 @@ public class DeviceDomain implements Serializable {
         return username;
     }
 
-    /** @param username 设备用户名 @return 当前对象 */
+    /**
+     * @param username 设备用户名
+     *
+     * @return 当前对象
+     */
     public DeviceDomain setUsername(String username) {
         this.username = username;
         return this;
@@ -54,7 +87,11 @@ public class DeviceDomain implements Serializable {
         return password;
     }
 
-    /** @param password 设备密码 @return 当前对象 */
+    /**
+     * @param password 设备密码
+     *
+     * @return 当前对象
+     */
     public DeviceDomain setPassword(String password) {
         this.password = password;
         return this;
@@ -65,7 +102,11 @@ public class DeviceDomain implements Serializable {
         return ip;
     }
 
-    /** @param ip 设备 IP 或主机名 @return 当前对象 */
+    /**
+     * @param ip 设备 IP 或主机名
+     *
+     * @return 当前对象
+     */
     public DeviceDomain setIp(String ip) {
         this.ip = ip;
         return this;
@@ -76,7 +117,11 @@ public class DeviceDomain implements Serializable {
         return port;
     }
 
-    /** @param port 厂商 SDK 登录端口 @return 当前对象 */
+    /**
+     * @param port 厂商 SDK 登录端口
+     *
+     * @return 当前对象
+     */
     public DeviceDomain setPort(String port) {
         this.port = port;
         return this;
@@ -87,7 +132,11 @@ public class DeviceDomain implements Serializable {
         return channel;
     }
 
-    /** @param channel 设备通道 @return 当前对象 */
+    /**
+     * @param channel 设备通道
+     *
+     * @return 当前对象
+     */
     public DeviceDomain setChannel(String channel) {
         this.channel = channel;
         return this;

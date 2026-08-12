@@ -10,14 +10,41 @@ import java.util.Map;
  */
 @ConfigurationProperties("simple-secret.mqttv3")
 public class MqttProperties {
+    /**
+     * 是否启用。
+     */
     private boolean enabled = true;
+    /**
+     * 消息处理核心线程数。
+     */
     private int handlerCoreSize = 4;
+    /**
+     * 消息处理最大线程数。
+     */
     private int handlerMaxSize = 16;
+    /**
+     * 消息处理队列容量。
+     */
     private int handlerQueueCapacity = 1024;
+    /**
+     * 消息发布核心线程数。
+     */
     private int publishCoreSize = 2;
+    /**
+     * 消息发布最大线程数。
+     */
     private int publishMaxSize = 8;
+    /**
+     * 消息发布队列容量。
+     */
     private int publishQueueCapacity = 1024;
+    /**
+     * 连接调度核心线程数。
+     */
     private int connectionCoreSize = 2;
+    /**
+     * 以客户端键分组的配置。
+     */
     private Map<String, MqttClientOptions> clients = new LinkedHashMap<>();
 
     /** @return 是否启用 MQTT 自动配置 */

@@ -8,13 +8,35 @@ import java.util.List;
  * @param <T> 记录类型
  */
 public final class InfluxPage<T> {
+    /**
+     * 查询结果总条数。
+     */
     private final long total;
+    /**
+     * 当前值。
+     */
     private final long current;
+    /**
+     * 分页大小。
+     */
     private final long pageSize;
+    /**
+     * 查询结果总页数。
+     */
     private final long totalPages;
+    /**
+     * 会话记录集合。
+     */
     private final List<T> records;
 
-    /** 创建分页结果并计算总页数。 */
+    /**
+     * 创建分页结果并计算总页数。
+     *
+     * @param total 查询结果总数
+     * @param current 当前值
+     * @param pageSize 分页大小
+     * @param records 会话记录集合
+     */
     public InfluxPage(long total, long current, long pageSize, List<T> records) {
         if (total < 0 || current <= 0 || pageSize <= 0) {
             throw new IllegalArgumentException("InfluxDB page values are invalid");

@@ -21,7 +21,13 @@ public final class NettyWebSocketEndpointRegistry {
     private final Map<String, NettyWebSocketEndpoint> endpoints;
     private final Map<String, NettyWebSocketMessageHandler> handlers;
 
-    /** 校验服务配置并编译端点和处理器索引。 */
+    /**
+     * 校验服务配置并编译端点和处理器索引。
+     *
+     * @param properties 模块配置
+     * @param handlers 处理器集合
+     * @param authenticator 握手认证器
+     */
     public NettyWebSocketEndpointRegistry(NettyWebSocketProperties properties,
                                           List<NettyWebSocketMessageHandler> handlers,
                                           NettyWebSocketAuthenticator authenticator) {
@@ -32,17 +38,31 @@ public final class NettyWebSocketEndpointRegistry {
         this.handlers = indexHandlers(handlers, this.endpoints);
     }
 
-    /** 返回指定路径的端点。 */
+    /**
+     * 返回指定路径的端点。
+     *
+     * @param path 文件或资源路径
+     * @return 返回的 {@code Optional<NettyWebSocketEndpoint>} 结果
+     */
     public Optional<NettyWebSocketEndpoint> endpoint(String path) {
         return Optional.ofNullable(endpoints.get(requirePath(path)));
     }
 
-    /** 返回指定路径的入站处理器；推送专用端点为空。 */
+    /**
+     * 返回指定路径的入站处理器；推送专用端点为空。
+     *
+     * @param path 文件或资源路径
+     * @return 返回的 {@code Optional<NettyWebSocketMessageHandler>} 结果
+     */
     public Optional<NettyWebSocketMessageHandler> handler(String path) {
         return Optional.ofNullable(handlers.get(requirePath(path)));
     }
 
-    /** 返回全部已启用端点的只读索引。 */
+    /**
+     * 返回全部已启用端点的只读索引。
+     *
+     * @return 返回的 {@code Map<String, NettyWebSocketEndpoint>} 结果
+     */
     public Map<String, NettyWebSocketEndpoint> endpoints() {
         return endpoints;
     }
@@ -51,6 +71,12 @@ public final class NettyWebSocketEndpointRegistry {
      * 校验握手 Origin。
      *
      * <p>没有 Origin 的非浏览器客户端允许连接；配置白名单时精确匹配，否则要求 Origin 与 Host 同源。</p>
+
+     *
+     * @param path 文件或资源路径
+     * @param origin 请求 Origin
+     * @param hostHeader HTTP Host 请求头
+     * @return 满足条件时返回 true
      */
     public boolean isOriginAllowed(String path, String origin, String hostHeader) {
         NettyWebSocketEndpoint endpoint = endpoints.get(requirePath(path));

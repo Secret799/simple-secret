@@ -41,6 +41,9 @@ public class SimpleSecretPropertySourcePostProcessor
     private final ResourceLoader resourceLoader;
     private final List<PropertySourceLoader> propertySourceLoaders;
 
+    /**
+     * 创建并初始化实例。
+     */
     public SimpleSecretPropertySourcePostProcessor() {
         this.resourceLoader = new DefaultResourceLoader();
         this.propertySourceLoaders = SpringFactoriesLoader.loadFactories(

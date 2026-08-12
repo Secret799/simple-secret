@@ -23,6 +23,11 @@ public class MKStreamNoFoundCallBack implements IMKNoFoundCallBack {
     private final StreamNoFoundHandler handler;
 
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param handler 消息处理
+     */
     public MKStreamNoFoundCallBack(StreamNoFoundHandler handler) {
         //回调使用同一个线程
         Native.setCallbackThreadInitializer(this, new CallbackThreadInitializer(true, false, "MediaNoFoundThread"));

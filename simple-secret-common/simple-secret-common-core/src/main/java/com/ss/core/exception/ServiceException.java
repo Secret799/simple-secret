@@ -11,13 +11,22 @@ public final class ServiceException extends RuntimeException {
     private final Integer code;
     private String detailMessage;
 
-    /** 使用消息创建异常。 */
+    /**
+     * 使用消息创建异常。
+     *
+     * @param message 错误消息
+     */
     public ServiceException(String message) {
         super(message);
         this.code = null;
     }
 
-    /** 使用消息和错误码创建异常。 */
+    /**
+     * 使用消息和错误码创建异常。
+     *
+     * @param message 错误消息
+     * @param code 数值错误码
+     */
     public ServiceException(String message, int code) {
         this(message, code, new Object[0]);
     }
@@ -34,24 +43,41 @@ public final class ServiceException extends RuntimeException {
         this.code = code;
     }
 
-    /** 使用消息和原始原因创建异常。 */
+    /**
+     * 使用消息和原始原因创建异常。
+     *
+     * @param message 错误消息
+     * @param cause 原始异常
+     */
     public ServiceException(String message, Throwable cause) {
         super(message, cause);
         this.code = null;
     }
 
-    /** 使用原始原因创建异常。 */
+    /**
+     * 使用原始原因创建异常。
+     *
+     * @param cause 原始异常
+     */
     public ServiceException(Throwable cause) {
         super(cause);
         this.code = null;
     }
 
-    /** 返回错误码。 */
+    /**
+     * 返回错误码。
+     *
+     * @return 数值错误码；未设置时返回 null
+     */
     public Integer getCode() {
         return code;
     }
 
-    /** 返回仅用于内部诊断的错误详情。 */
+    /**
+     * 返回仅用于内部诊断的错误详情。
+     *
+     * @return 内部诊断信息；未设置时返回 null
+     */
     public String getDetailMessage() {
         return detailMessage;
     }

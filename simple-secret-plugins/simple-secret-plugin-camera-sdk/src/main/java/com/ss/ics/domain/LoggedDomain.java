@@ -9,11 +9,29 @@ public class LoggedDomain implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /**
+     * {@code user}标识。
+     */
     private String userId;
+    /**
+     * 设备标识。
+     */
     private String deviceId;
+    /**
+     * 设备通道号。
+     */
     private String channelNo;
+    /**
+     * 设备分类。
+     */
     private String deviceCategory;
+    /**
+     * 设备型号或厂商类型。
+     */
     private String deviceType;
+    /**
+     * 设备登录时间。
+     */
     private LocalDateTime loginTime;
 
     /** @return 厂商登录句柄的字符串表示 */
@@ -21,7 +39,11 @@ public class LoggedDomain implements Serializable {
         return userId;
     }
 
-    /** @param userId 厂商登录句柄的字符串表示 @return 当前对象 */
+    /**
+     * @param userId 厂商登录句柄的字符串表示
+     *
+     * @return 当前对象
+     */
     public LoggedDomain setUserId(String userId) {
         this.userId = userId;
         return this;
@@ -32,7 +54,11 @@ public class LoggedDomain implements Serializable {
         return deviceId;
     }
 
-    /** @param deviceId 设备序列号 @return 当前对象 */
+    /**
+     * @param deviceId 设备序列号
+     *
+     * @return 当前对象
+     */
     public LoggedDomain setDeviceId(String deviceId) {
         this.deviceId = deviceId;
         return this;
@@ -43,7 +69,11 @@ public class LoggedDomain implements Serializable {
         return channelNo;
     }
 
-    /** @param channelNo 厂商返回的起始通道号 @return 当前对象 */
+    /**
+     * @param channelNo 厂商返回的起始通道号
+     *
+     * @return 当前对象
+     */
     public LoggedDomain setChannelNo(String channelNo) {
         this.channelNo = channelNo;
         return this;
@@ -54,7 +84,11 @@ public class LoggedDomain implements Serializable {
         return deviceCategory;
     }
 
-    /** @param deviceCategory 设备分类 @return 当前对象 */
+    /**
+     * @param deviceCategory 设备分类
+     *
+     * @return 当前对象
+     */
     public LoggedDomain setDeviceCategory(String deviceCategory) {
         this.deviceCategory = deviceCategory;
         return this;
@@ -65,7 +99,11 @@ public class LoggedDomain implements Serializable {
         return deviceType;
     }
 
-    /** @param deviceType 设备型号 @return 当前对象 */
+    /**
+     * @param deviceType 设备型号
+     *
+     * @return 当前对象
+     */
     public LoggedDomain setDeviceType(String deviceType) {
         this.deviceType = deviceType;
         return this;
@@ -76,7 +114,11 @@ public class LoggedDomain implements Serializable {
         return loginTime;
     }
 
-    /** @param loginTime 登录时间 @return 当前对象 */
+    /**
+     * @param loginTime 登录时间
+     *
+     * @return 当前对象
+     */
     public LoggedDomain setLoginTime(LocalDateTime loginTime) {
         this.loginTime = loginTime;
         return this;

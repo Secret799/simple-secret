@@ -1,25 +1,62 @@
 package com.ss.mqttv3.message;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.ss.json.utils.JsonUtils;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ss.mqttv3.exception.MqttOperationException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.TimeZone;
 
 /**
  * MQTT 入站消息及其客户端、订阅元数据。
  */
 public final class MqttMessageContext {
+    private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
+
+    /**
+     * 客户端键。
+     */
     private final String clientKey;
+    /**
+     * 客户端 ID。
+     */
     private final String clientId;
+    /**
+     * 共享订阅组。
+     */
     private final String shareGroup;
+    /**
+     * 订阅主题。
+     */
     private final String subscribeTopic;
+    /**
+     * 消息主题。
+     */
     private final String topic;
+    /**
+     * 消息负载。
+     */
     private final byte[] payload;
+    /**
+     * 消息 QoS。
+     */
     private final int qos;
+    /**
+     * 是否保留消息。
+     */
     private final boolean retained;
+    /**
+     * 是否为重复投递。
+     */
     private final boolean duplicate;
+    /**
+     * 消息标识。
+     */
     private final int messageId;
 
     /**
@@ -98,7 +135,15 @@ public final class MqttMessageContext {
      * @return 转换结果
      */
     public <T> T getPayload(Class<T> type) {
-        return JsonUtils.parseObject(getPayloadAsString(), type);
+        requireType(type, "type");
+        if (isPayloadBlank()) {
+            return null;
+        }
+        try {
+            return OBJECT_MAPPER.readValue(payload, type);
+        } catch (Exception exception) {
+            throw payloadDecodeException(exception);
+        }
     }
 
     /**
@@ -109,7 +154,46 @@ public final class MqttMessageContext {
      * @return 转换结果
      */
     public <T> T getPayload(TypeReference<T> type) {
-        return JsonUtils.parseObject(getPayloadAsString(), type);
+        requireType(type, "type");
+        if (isPayloadBlank()) {
+            return null;
+        }
+        try {
+            return OBJECT_MAPPER.readValue(payload, type);
+        } catch (Exception exception) {
+            throw payloadDecodeException(exception);
+        }
+    }
+
+    private MqttOperationException payloadDecodeException(Exception cause) {
+        return new MqttOperationException("decode payload", clientKey, topic, sanitizeCause(cause));
+    }
+
+    private boolean isPayloadBlank() {
+        return getPayloadAsString().trim().isEmpty();
+    }
+
+    private static void requireType(Object type, String label) {
+        if (type == null) {
+            throw new IllegalArgumentException(label + " must not be null");
+        }
+    }
+
+    private static RuntimeException sanitizeCause(Exception source) {
+        RuntimeException sanitized = new RuntimeException(
+                "Jackson operation failed: " + source.getClass().getName());
+        sanitized.setStackTrace(source.getStackTrace());
+        return sanitized;
+    }
+
+    private static ObjectMapper createObjectMapper() {
+        ObjectMapper objectMapper = JsonMapper.builder()
+                .addModule(new JavaTimeModule())
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
+                .build();
+        objectMapper.setTimeZone(TimeZone.getDefault());
+        return objectMapper;
     }
 
     private static final class SnapshotMessage extends MqttMessage {

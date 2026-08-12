@@ -32,6 +32,11 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
     private final Map<String, Set<String>> trackDelegateMemo = new ConcurrentHashMap<>();
 
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param trackDelegateCallbacks 媒体轨道回调列表
+     */
     public EmsCommonStreamChangeHandler(List<TrackDelegateCallback> trackDelegateCallbacks) {
         this.trackDelegateCallbacks = trackDelegateCallbacks == null ? List.of() : List.copyOf(trackDelegateCallbacks);
     }

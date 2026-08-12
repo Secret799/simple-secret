@@ -9,7 +9,15 @@ public record DahuaThermalData(
         int height,
         short[] grayscale,
         float[] temperatures) {
-    /** 校验尺寸并隔离数组所有权。 */
+    /**
+     * 校验尺寸并隔离数组所有权。
+     *
+     * @param timestamp 消息时间戳
+     * @param width 宽度
+     * @param height 高度
+     * @param grayscale 热成像灰度数据
+     * @param temperatures 温度矩阵数据
+     */
     public DahuaThermalData {
         if (timestamp == null) {
             throw new IllegalArgumentException("timestamp must not be null");

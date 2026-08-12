@@ -21,6 +21,9 @@ public class DefaultStreamPublishHandler extends AbstractCallbackHandler impleme
     private final ZlmMediaProperties properties;
     private final ZLMApi zlmApi;
 
+    /**
+     * 创建并初始化实例。
+     */
     public DefaultStreamPublishHandler() {
         this(null, null);
     }

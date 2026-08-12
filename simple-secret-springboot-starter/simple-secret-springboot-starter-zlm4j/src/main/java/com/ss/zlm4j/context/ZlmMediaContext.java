@@ -27,17 +27,39 @@ import java.util.function.Function;
 public class ZlmMediaContext {
 
 
+    /**
+     * ZLMediaKit 默认配置项。
+     */
     @Getter
     private final ZlmMediaProperties defaultProperties;
+    /**
+     * ZLMediaKit 回调处理器上下文。
+     */
     private final ZlmCallbackHandlerContext handlerContext;
+    /**
+     * ZLMediaKit 默认 INI 配置文本。
+     */
     @Getter
     public final Map<String, Object> DEFAULT_ZLM_INI_CONFIGURATION = new HashMap<>();
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param zlmMediaProperties ZLMediaKit 配置
+     * @param callbackHandlerContext ZLMediaKit 回调处理器上下文
+     */
     public ZlmMediaContext(ZlmMediaProperties zlmMediaProperties, ZlmCallbackHandlerContext callbackHandlerContext) {
         this.defaultProperties = zlmMediaProperties;
         this.handlerContext = callbackHandlerContext;
     }
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param zlmMediaProperties ZLMediaKit 配置
+     * @param callbackHandlerContext ZLMediaKit 回调处理器上下文
+     * @param defaultConfig ZLMediaKit 默认 INI 配置
+     */
     public ZlmMediaContext(ZlmMediaProperties zlmMediaProperties, ZlmCallbackHandlerContext callbackHandlerContext, Map<String, Object> defaultConfig) {
         this(zlmMediaProperties, callbackHandlerContext);
         this.DEFAULT_ZLM_INI_CONFIGURATION.putAll(defaultConfig);
@@ -64,6 +86,9 @@ public class ZlmMediaContext {
     @Getter
     private MK_INI mkIni;
 
+    /**
+     * 初始化 ZLMediaKit 原生环境、INI 配置和媒体服务。
+     */
     @PostConstruct
     public void initMediaServer() {
         if (zlmApi == null) {
@@ -79,6 +104,11 @@ public class ZlmMediaContext {
         throw new IllegalStateException("MediaServer initialization failed");
     }
 
+    /**
+     * 加载{@code zlmApi}。
+     *
+     * @return 返回的 {@code ZLMApi} 结果
+     */
     protected ZLMApi loadZlmApi() {
         return Native.load("mk_api", ZLMApi.class);
     }
@@ -141,6 +171,9 @@ public class ZlmMediaContext {
 
     /**
      * 启动流媒体服务器
+
+     *
+     * @return 返回的 {@code boolean} 结果
      */
     public boolean startMediaServer() {
         //创建http服务器 0:失败,非0:端口号

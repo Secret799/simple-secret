@@ -22,12 +22,24 @@ public record KmzReadLimits(int maxCompressedBytes, int maxEntryBytes, int maxEn
 
     /**
      * 创建限制，并把累计解压上限设置为压缩输入上限。
+
+     *
+     * @param maxCompressedBytes KMZ 最大压缩输入字节数
+     * @param maxEntryBytes 单个 KMZ 条目的最大解压字节数
+     * @param maxEntries 最大条目数
      */
     public KmzReadLimits(int maxCompressedBytes, int maxEntryBytes, int maxEntries) {
         this(maxCompressedBytes, maxEntryBytes, maxEntries, maxCompressedBytes);
     }
 
-    /** 校验限制均为正数。 */
+    /**
+     * 校验限制均为正数。
+     *
+     * @param maxCompressedBytes KMZ 最大压缩输入字节数
+     * @param maxEntryBytes 单个 KMZ 条目的最大解压字节数
+     * @param maxEntries 最大条目数
+     * @param maxTotalUncompressedBytes KMZ 所有条目的最大解压总字节数
+     */
     public KmzReadLimits {
         if (maxCompressedBytes <= 0 || maxEntryBytes <= 0 || maxEntries <= 0
                 || maxTotalUncompressedBytes <= 0) {
@@ -35,7 +47,11 @@ public record KmzReadLimits(int maxCompressedBytes, int maxEntryBytes, int maxEn
         }
     }
 
-    /** 返回默认限制。 */
+    /**
+     * 返回默认限制。
+     *
+     * @return 当前对象
+     */
     public static KmzReadLimits defaults() {
         return new KmzReadLimits(
                 DEFAULT_MAX_COMPRESSED_BYTES,

@@ -18,6 +18,12 @@ public class StreamNoFoundEvent extends ApplicationEvent {
     private final SocketInfoDomain socketInfo;
 
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param mediaInfo ZLMediaKit 媒体信息
+     * @param socketInfo 客户端套接字信息
+     */
     public StreamNoFoundEvent(MediaInfoDomain mediaInfo, SocketInfoDomain socketInfo) {
         super(mediaInfo);
         this.mediaInfo = mediaInfo;

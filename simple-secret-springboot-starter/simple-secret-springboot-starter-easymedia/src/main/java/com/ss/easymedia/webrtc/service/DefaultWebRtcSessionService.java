@@ -71,6 +71,18 @@ public class DefaultWebRtcSessionService implements WebRtcSessionService {
 
     /**
      * 创建编排 WebRTC 会话生命周期的服务。
+
+     *
+     * @param identityProvider 身份提供器
+     * @param accessPolicy 访问控制策略
+     * @param rateLimiter 请求限流器
+     * @param client ZLM WebRTC 信令客户端
+     * @param uriPolicy 外部 URI 安全策略
+     * @param repository 会话仓储
+     * @param idGenerator 安全会话 ID 生成器
+     * @param properties 模块配置
+     * @param clock 用于获取当前时间的时钟
+     * @param metrics 指标记录器
      */
     public DefaultWebRtcSessionService(WebRtcIdentityProvider identityProvider,
                                        WebRtcAccessPolicy accessPolicy,

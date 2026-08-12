@@ -17,10 +17,18 @@ public final class SafeColumnWidthStyleStrategy extends AbstractColumnWidthStyle
 
     private final int maxWidth;
 
+    /**
+     * 创建并初始化实例。
+     */
     public SafeColumnWidthStyleStrategy() {
         this(DEFAULT_MAX_CHARACTERS);
     }
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param maxCharacters 自动列宽允许的最大字符数
+     */
     public SafeColumnWidthStyleStrategy(int maxCharacters) {
         if (maxCharacters < 1 || maxCharacters > 255) {
             throw new IllegalArgumentException("maxCharacters must be between 1 and 255");

@@ -45,6 +45,11 @@ public class TranscodeServiceImpl implements ITranscodeService {
     private final Supplier<ExecutorService> executorSupplier;
     private final BiFunction<TranscodeBO, String, TranscodeContext> contextFactory;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param mediaResourcePolicy 媒体资源访问策略
+     */
     @Autowired
     public TranscodeServiceImpl(MediaResourcePolicy mediaResourcePolicy) {
         this(mediaResourcePolicy, ZlmMediaHelper::getZlmApi,

@@ -11,8 +11,17 @@ public class GeoCoordinate implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 纬度。
+     */
     private double lat;
+    /**
+     * 经度。
+     */
     private double lon;
+    /**
+     * 高度。
+     */
     private double alt;
 
     /** 创建空坐标。 */
@@ -32,34 +41,61 @@ public class GeoCoordinate implements Serializable {
         this.alt = alt;
     }
 
-    /** 返回纬度。 */
+    /**
+     * 返回纬度。
+     *
+     * @return 纬度
+     */
     public double getLat() {
         return lat;
     }
 
-    /** 设置纬度。 */
+    /**
+     * 设置纬度。
+     *
+     * @param lat 纬度
+     * @return 当前对象
+     */
     public GeoCoordinate setLat(double lat) {
         this.lat = lat;
         return this;
     }
 
-    /** 返回经度。 */
+    /**
+     * 返回经度。
+     *
+     * @return 经度
+     */
     public double getLon() {
         return lon;
     }
 
-    /** 设置经度。 */
+    /**
+     * 设置经度。
+     *
+     * @param lon 经度
+     * @return 当前对象
+     */
     public GeoCoordinate setLon(double lon) {
         this.lon = lon;
         return this;
     }
 
-    /** 返回海拔。 */
+    /**
+     * 返回海拔。
+     *
+     * @return 高度
+     */
     public double getAlt() {
         return alt;
     }
 
-    /** 设置海拔。 */
+    /**
+     * 设置海拔。
+     *
+     * @param alt 高度
+     * @return 当前对象
+     */
     public GeoCoordinate setAlt(double alt) {
         this.alt = alt;
         return this;

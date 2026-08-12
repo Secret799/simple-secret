@@ -65,7 +65,11 @@ public class InfluxOperations implements InfluxManagement {
         consistency = Objects.requireNonNull(properties.getConsistency(), "consistency");
     }
 
-    /** 将单个实体同步写入其注解或默认目标。 */
+    /**
+     * 将单个实体同步写入其注解或默认目标。
+     *
+     * @param entity 实体对象
+     */
     public void save(Object entity) {
         Objects.requireNonNull(entity, "entity");
         InfluxEntityMetadata metadata = registry.metadata(entity.getClass());
@@ -82,7 +86,11 @@ public class InfluxOperations implements InfluxManagement {
         }
     }
 
-    /** 将实体集合按 database 和 retention policy 分组后同步批量写入。 */
+    /**
+     * 将实体集合按 database 和 retention policy 分组后同步批量写入。
+     *
+     * @param entities 实体集合
+     */
     public void saveBatch(Collection<?> entities) {
         if (entities == null || entities.isEmpty()) {
             throw new IllegalArgumentException("InfluxDB batch entities must not be empty");
@@ -90,12 +98,23 @@ public class InfluxOperations implements InfluxManagement {
         writeGroups(entities);
     }
 
-    /** 使用默认数据库执行调用方提供的完整 InfluxQL。 */
+    /**
+     * 使用默认数据库执行调用方提供的完整 InfluxQL。
+     *
+     * @param influxql InfluxQL 查询语句
+     * @return 返回的 {@code QueryResult} 结果
+     */
     public QueryResult query(String influxql) {
         return query(influxql, defaultDatabase);
     }
 
-    /** 使用指定数据库执行调用方提供的完整 InfluxQL。 */
+    /**
+     * 使用指定数据库执行调用方提供的完整 InfluxQL。
+     *
+     * @param influxql InfluxQL 查询语句
+     * @param database 数据库名称
+     * @return 返回的 {@code QueryResult} 结果
+     */
     public QueryResult query(String influxql, String database) {
         if (influxql == null || influxql.isBlank()) {
             throw new IllegalArgumentException("InfluxQL query must not be blank");
@@ -112,26 +131,48 @@ public class InfluxOperations implements InfluxManagement {
         }
     }
 
-    /** 使用实体注解或默认数据库执行调用方提供的完整 InfluxQL。 */
+    /**
+     * 使用实体注解或默认数据库执行调用方提供的完整 InfluxQL。
+     *
+     * @param influxql InfluxQL 查询语句
+     * @param entityType 实体类型
+     * @return 返回的 {@code QueryResult} 结果
+     */
     public QueryResult query(String influxql, Class<?> entityType) {
         Objects.requireNonNull(entityType, "entityType");
         return query(influxql, database(entityType));
     }
 
-    /** 执行安全查询构建器并映射全部实体。 */
+    /**
+     * 执行安全查询构建器并映射全部实体。
+     *
+     * @param wrapper 查询包装器
+     * @return 返回的 {@code List<T>} 结果
+     */
     public <T> List<T> list(LambdaQueryWrapper<T> wrapper) {
         Objects.requireNonNull(wrapper, "wrapper");
         String database = wrapper.getDatabaseName() == null ? defaultDatabase : wrapper.getDatabaseName();
         return resultMapper.map(query(wrapper.build(), database), wrapper.getEntityType());
     }
 
-    /** 执行调用方提供的完整 InfluxQL，并按实体类型映射列表。 */
+    /**
+     * 执行调用方提供的完整 InfluxQL，并按实体类型映射列表。
+     *
+     * @param influxql InfluxQL 查询语句
+     * @param entityType 实体类型
+     * @return 返回的 {@code List<T>} 结果
+     */
     public <T> List<T> list(String influxql, Class<T> entityType) {
         Objects.requireNonNull(entityType, "entityType");
         return resultMapper.map(query(influxql, database(entityType)), entityType);
     }
 
-    /** 执行安全查询构建器并要求最多返回一条实体。 */
+    /**
+     * 执行安全查询构建器并要求最多返回一条实体。
+     *
+     * @param wrapper 查询包装器
+     * @return 返回的 {@code T} 结果
+     */
     public <T> T one(LambdaQueryWrapper<T> wrapper) {
         List<T> records = list(wrapper);
         if (records.size() > 1) {
@@ -140,7 +181,13 @@ public class InfluxOperations implements InfluxManagement {
         return records.isEmpty() ? null : records.get(0);
     }
 
-    /** 执行调用方提供的完整 InfluxQL，并要求最多映射一条实体。 */
+    /**
+     * 执行调用方提供的完整 InfluxQL，并要求最多映射一条实体。
+     *
+     * @param influxql InfluxQL 查询语句
+     * @param entityType 实体类型
+     * @return 返回的 {@code T} 结果
+     */
     public <T> T one(String influxql, Class<T> entityType) {
         List<T> records = list(influxql, entityType);
         if (records.size() > 1) {
@@ -149,7 +196,12 @@ public class InfluxOperations implements InfluxManagement {
         return records.isEmpty() ? null : records.get(0);
     }
 
-    /** 为实体类型创建安全查询构建器。 */
+    /**
+     * 为实体类型创建安全查询构建器。
+     *
+     * @param entityType 实体类型
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public <T> LambdaQueryWrapper<T> wrapper(Class<T> entityType) {
         return LambdaQueryWrapper.of(entityType, registry);
     }
@@ -161,6 +213,9 @@ public class InfluxOperations implements InfluxManagement {
      * @param countField 业务上始终非空的计数字段
      * @param current    从 1 开始的当前页
      * @param pageSize   每页记录数
+
+     *
+     * @return 返回的 {@code InfluxPage<T>} 结果
      */
     public <T> InfluxPage<T> page(LambdaQueryWrapper<T> wrapper,
                                   SerializableFunction<T, ?> countField,

@@ -35,12 +35,27 @@ import static org.bytedeco.ffmpeg.global.avutil.*;
  */
 @Slf4j
 public class TranscodeContext {
+    /**
+     * 调用参数。
+     */
     private final TranscodeBO param;
 
+    /**
+     * {@code push}地址。
+     */
     private final String pushUrl;
 
+    /**
+     * 是否已经停止。
+     */
     private final AtomicBoolean stopped = new AtomicBoolean(false);
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param param 调用参数
+     * @param pushUrl 转码输出推流地址
+     */
     public TranscodeContext(TranscodeBO param, String pushUrl) {
         this.param = param;
         this.pushUrl = pushUrl;

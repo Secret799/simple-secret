@@ -35,6 +35,15 @@ public class FlowReportEvent extends ApplicationEvent {
     private final boolean isPlayer;
 
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param mediaInfo ZLMediaKit 媒体信息
+     * @param socketInfo 客户端套接字信息
+     * @param totalBytes 累计流量字节数
+     * @param totalSeconds 累计连接秒数
+     * @param isPlayer 是否为播放端流量
+     */
     public FlowReportEvent(MediaInfoDomain mediaInfo, SocketInfoDomain socketInfo, long totalBytes, long totalSeconds, boolean isPlayer) {
         super(mediaInfo);
         this.isPlayer = isPlayer;

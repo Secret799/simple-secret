@@ -9,8 +9,17 @@ public class PlayDomain implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /**
+     * 录像回放参数。
+     */
     private PlaybackParam playbackParam;
+    /**
+     * 实时取流参数。
+     */
     private TakeStreamParam takeStreamParam;
+    /**
+     * 视频编码参数。
+     */
     private VideoParam videoParam;
 
     /** @return 历史回放参数 */
@@ -18,7 +27,11 @@ public class PlayDomain implements Serializable {
         return playbackParam;
     }
 
-    /** @param playbackParam 历史回放参数 @return 当前对象 */
+    /**
+     * @param playbackParam 历史回放参数
+     *
+     * @return 当前对象
+     */
     public PlayDomain setPlaybackParam(PlaybackParam playbackParam) {
         this.playbackParam = playbackParam;
         return this;
@@ -29,7 +42,11 @@ public class PlayDomain implements Serializable {
         return takeStreamParam;
     }
 
-    /** @param takeStreamParam 取流参数 @return 当前对象 */
+    /**
+     * @param takeStreamParam 取流参数
+     *
+     * @return 当前对象
+     */
     public PlayDomain setTakeStreamParam(TakeStreamParam takeStreamParam) {
         this.takeStreamParam = takeStreamParam;
         return this;
@@ -40,7 +57,11 @@ public class PlayDomain implements Serializable {
         return videoParam;
     }
 
-    /** @param videoParam 视频参数 @return 当前对象 */
+    /**
+     * @param videoParam 视频参数
+     *
+     * @return 当前对象
+     */
     public PlayDomain setVideoParam(VideoParam videoParam) {
         this.videoParam = videoParam;
         return this;
@@ -50,9 +71,21 @@ public class PlayDomain implements Serializable {
     public static class PlaybackParam implements Serializable {
         @Serial
         private static final long serialVersionUID = 1L;
+        /**
+         * 业务编码。
+         */
         private String code;
+        /**
+         * 录像回放开始时间。
+         */
         private LocalDateTime beginTime;
+        /**
+         * 时间段结束时间。
+         */
         private LocalDateTime endTime;
+        /**
+         * 录像回放倍率。
+         */
         private Double multiplier;
 
         /** @return 回放请求唯一编码 */
@@ -60,7 +93,11 @@ public class PlayDomain implements Serializable {
             return code;
         }
 
-        /** @param code 回放请求唯一编码 @return 当前对象 */
+        /**
+         * @param code 回放请求唯一编码
+         *
+         * @return 当前对象
+         */
         public PlaybackParam setCode(String code) {
             this.code = code;
             return this;
@@ -71,7 +108,11 @@ public class PlayDomain implements Serializable {
             return beginTime;
         }
 
-        /** @param beginTime 开始时间 @return 当前对象 */
+        /**
+         * @param beginTime 开始时间
+         *
+         * @return 当前对象
+         */
         public PlaybackParam setBeginTime(LocalDateTime beginTime) {
             this.beginTime = beginTime;
             return this;
@@ -82,7 +123,11 @@ public class PlayDomain implements Serializable {
             return endTime;
         }
 
-        /** @param endTime 结束时间 @return 当前对象 */
+        /**
+         * @param endTime 结束时间
+         *
+         * @return 当前对象
+         */
         public PlaybackParam setEndTime(LocalDateTime endTime) {
             this.endTime = endTime;
             return this;
@@ -93,7 +138,11 @@ public class PlayDomain implements Serializable {
             return multiplier;
         }
 
-        /** @param multiplier 播放倍率 @return 当前对象 */
+        /**
+         * @param multiplier 播放倍率
+         *
+         * @return 当前对象
+         */
         public PlaybackParam setMultiplier(Double multiplier) {
             this.multiplier = multiplier;
             return this;
@@ -104,9 +153,21 @@ public class PlayDomain implements Serializable {
     public static class VideoParam implements Serializable {
         @Serial
         private static final long serialVersionUID = 1L;
+        /**
+         * 视频分辨率宽度。
+         */
         private Integer resolutionWidth;
+        /**
+         * 视频分辨率高度。
+         */
         private Integer resolutionHeight;
+        /**
+         * 视频帧率。
+         */
         private Integer frameRate;
+        /**
+         * 码流比特率。
+         */
         private Integer bitRate;
 
         /** @return 分辨率宽度 */
@@ -114,7 +175,11 @@ public class PlayDomain implements Serializable {
             return resolutionWidth;
         }
 
-        /** @param resolutionWidth 分辨率宽度 @return 当前对象 */
+        /**
+         * @param resolutionWidth 分辨率宽度
+         *
+         * @return 当前对象
+         */
         public VideoParam setResolutionWidth(Integer resolutionWidth) {
             this.resolutionWidth = resolutionWidth;
             return this;
@@ -125,7 +190,11 @@ public class PlayDomain implements Serializable {
             return resolutionHeight;
         }
 
-        /** @param resolutionHeight 分辨率高度 @return 当前对象 */
+        /**
+         * @param resolutionHeight 分辨率高度
+         *
+         * @return 当前对象
+         */
         public VideoParam setResolutionHeight(Integer resolutionHeight) {
             this.resolutionHeight = resolutionHeight;
             return this;
@@ -136,7 +205,11 @@ public class PlayDomain implements Serializable {
             return frameRate == null ? 25 : frameRate;
         }
 
-        /** @param frameRate 帧率 @return 当前对象 */
+        /**
+         * @param frameRate 帧率
+         *
+         * @return 当前对象
+         */
         public VideoParam setFrameRate(Integer frameRate) {
             this.frameRate = frameRate;
             return this;
@@ -147,7 +220,11 @@ public class PlayDomain implements Serializable {
             return bitRate;
         }
 
-        /** @param bitRate 码率 @return 当前对象 */
+        /**
+         * @param bitRate 码率
+         *
+         * @return 当前对象
+         */
         public VideoParam setBitRate(Integer bitRate) {
             this.bitRate = bitRate;
             return this;
@@ -158,9 +235,21 @@ public class PlayDomain implements Serializable {
     public static class TakeStreamParam implements Serializable {
         @Serial
         private static final long serialVersionUID = 1L;
+        /**
+         * 主码流或子码流类型。
+         */
         private Integer streamType = 0;
+        /**
+         * 厂商 SDK 传输协议类型。
+         */
         private String byProtoType = "0";
+        /**
+         * 视频编码类型。
+         */
         private Integer videoEncode;
+        /**
+         * 音频编码类型。
+         */
         private Integer audioEncode;
 
         /** @return 码流类型 */
@@ -168,7 +257,11 @@ public class PlayDomain implements Serializable {
             return streamType;
         }
 
-        /** @param streamType 码流类型 @return 当前对象 */
+        /**
+         * @param streamType 码流类型
+         *
+         * @return 当前对象
+         */
         public TakeStreamParam setStreamType(Integer streamType) {
             this.streamType = streamType;
             return this;
@@ -179,7 +272,11 @@ public class PlayDomain implements Serializable {
             return byProtoType;
         }
 
-        /** @param byProtoType 厂商协议类型 @return 当前对象 */
+        /**
+         * @param byProtoType 厂商协议类型
+         *
+         * @return 当前对象
+         */
         public TakeStreamParam setByProtoType(String byProtoType) {
             this.byProtoType = byProtoType;
             return this;
@@ -190,7 +287,11 @@ public class PlayDomain implements Serializable {
             return videoEncode;
         }
 
-        /** @param videoEncode 视频编码 @return 当前对象 */
+        /**
+         * @param videoEncode 视频编码
+         *
+         * @return 当前对象
+         */
         public TakeStreamParam setVideoEncode(Integer videoEncode) {
             this.videoEncode = videoEncode;
             return this;
@@ -201,7 +302,11 @@ public class PlayDomain implements Serializable {
             return audioEncode;
         }
 
-        /** @param audioEncode 音频编码 @return 当前对象 */
+        /**
+         * @param audioEncode 音频编码
+         *
+         * @return 当前对象
+         */
         public TakeStreamParam setAudioEncode(Integer audioEncode) {
             this.audioEncode = audioEncode;
             return this;

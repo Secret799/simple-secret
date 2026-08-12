@@ -17,28 +17,58 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 - `simple-secret-plugin-camera-sdk`：零生产依赖的摄像机厂商 SDK 领域模型、能力 SPI 和实例注册表。
 - `simple-secret-plugin-camera-sdk-hikvision`：只依赖 Camera SDK API 与 JNA 的海康登录、PTZ 和录像月历驱动。
 - `simple-secret-plugin-camera-sdk-dahua`：只依赖 Camera SDK API 与 JNA 的大华登录、PTZ、H.264 预览和热成像驱动。
-- `simple-secret-springboot-starter-core`：默认零副作用的项目元数据、任务执行器、调度器、异步和可选 fail-fast Validation。
-- `simple-secret-springboot-starter-web`：默认关闭的 WebMVC 基础控制器、异常响应、具体来源 CORS 和请求耗时日志。
-- `simple-secret-springboot-starter-auth`：默认关闭的 Sa-Token 登录用户、认证策略分派、权限桥接和可选 Servlet 认证异常响应。
-- `simple-secret-springboot-starter-security`：默认关闭的 WebMVC 路由登录保护，可独立使用或显式组合 Auth 固定异常响应。
-- `simple-secret-springboot-starter-mybatis-plus`：MyBatis-Plus 安全分页、审计字段、字段状态缓存、基础 Mapper、数据库识别和可覆盖自动配置。
-- `simple-secret-springboot-starter-tenant`：默认失败关闭的 MyBatis-Plus SQL 行级租户隔离和安全作用域。
-- `simple-secret-springboot-starter-sensitive`：默认脱敏的 Jackson 字段注解、五种内置策略和可覆盖授权决策。
-- `simple-secret-springboot-starter-idempotent`：基于可替换原子 Store 的 Servlet 重复提交保护。
-- `simple-secret-springboot-starter-websocket`：默认关闭的 WebSocket 端点、认证 SPI、多连接会话和可选跨节点消息桥接。
 - `simple-secret-springboot-starter-netty-websocket`：默认关闭的独立 Netty WebSocket 端口、多端点认证、文本处理和多连接推送。
-- `simple-secret-springboot-starter-encrypt`：默认关闭的 authenticated encryption、可选 MyBatis 字段加密和 Servlet API v1 混合加密。
-- `simple-secret-springboot-starter-doc`：默认关闭的 springdoc WebMVC OpenAPI 元数据、鉴权声明和可选 Javadoc 标签。
-- `simple-secret-springboot-starter-json`：JSON 编解码、属性名解析和 Spring Boot 自动配置。
 - `simple-secret-springboot-starter-mqttv3`：MQTT 3.1.1 多客户端、发布订阅和请求响应。
 - `simple-secret-springboot-starter-mqttv5`：MQTT v5 多客户端、发布订阅和请求响应。
 - `simple-secret-springboot-starter-camera`：海康威视、大华摄像机和 NVR 的 RTSP 地址组装。
-- `simple-secret-springboot-starter-redis`：Redisson 对象、集合、锁、限流、发布订阅、队列和可选 Spring Cache。
 - `simple-secret-springboot-starter-nats`：NATS 多客户端、发布、请求响应和 queue group 订阅。
 - `simple-secret-springboot-starter-influxdb`：InfluxDB 1.x 注解映射、安全 InfluxQL DSL、写入、查询和初始化。
-- `simple-secret-springboot-starter-magic-api`：默认关闭的 Magic API 2.2.2 集成、安全默认值和启动前配置校验。
 - `simple-secret-springboot-starter-zlm4j`：嵌入式 ZLMediaKit、媒体代理、录像、RTP、截图和转码。
 - `simple-secret-springboot-starter-easymedia`：基于 zlm4j 的 WebRTC 网关、媒体管理 API、H.264 裸流，并复用 UDP 插件提供组播能力。
+
+本项目不迁移 `auth`、`core` starter、`doc`、`encrypt`、`idempotent`、`json`、`magic-api`、
+`mybatis-plus`、`redis`、`security`、`sensitive`、`tenant`、`web` 和 Servlet `websocket` starter。
+需要这些能力时，应用应根据自身架构显式选择实现和依赖；`simple-secret-common-core` 等公共模块不受影响。
+
+## 整体架构
+
+Simple Secret 按“版本管理、公共能力、纯 Java 插件、Spring Boot 集成、示例应用”分层。业务模块不会依赖
+示例应用，纯 Java 插件不会反向依赖 starter，starter 只组合自身必需的第三方库和少量明确声明的公共模块。
+
+```mermaid
+flowchart TD
+    APP["业务应用"] --> BOM["simple-secret-common-bom"]
+    APP --> COMMON["common API"]
+    APP --> PLUGIN["纯 Java plugin"]
+    APP --> STARTER["Spring Boot starter"]
+    STARTER --> COMMON
+    STARTER --> PLUGIN
+    SAMPLE["EasyMedia 测试应用"] --> STARTER
+    TEST["consumer integration tests"] --> BOM
+    TEST --> COMMON
+    TEST --> PLUGIN
+    TEST --> STARTER
+```
+
+典型接入流程如下：
+
+1. 应用导入 BOM，统一 Simple Secret 模块和关键第三方依赖版本。
+2. 根据运行环境选择公共 API、纯 Java 插件或 Spring Boot starter，不引入聚合 POM 作为运行时依赖。
+3. starter 读取 `simple-secret.*` 配置，校验开关、端点、容量和凭据后创建受管资源。
+4. 业务代码通过公开接口调用能力，通过 handler、listener 或 SPI 接收异步事件。
+5. 应用关闭时由 Spring 生命周期或模块的 `close`、`stop` API 释放线程、连接、套接字和原生资源。
+
+## 文档索引
+
+- [Common 聚合与依赖边界](simple-secret-common/README.md)
+- [Common BOM](simple-secret-common/simple-secret-common-bom/README.md)
+- [Common Core](simple-secret-common/simple-secret-common-core/README.md)
+- [Common Toolbox](simple-secret-common/simple-secret-common-toolbox/README.md)
+- [Common Dict](simple-secret-common/simple-secret-common-dict/README.md)
+- [纯 Java Plugins](simple-secret-plugins/README.md)
+- [Spring Boot Starters](simple-secret-springboot-starter/README.md)
+- [示例应用](simple-secret-application/README.md)
+- [第三方消费者集成测试](integration-tests/README.md)
 
 ## 接入准备
 
@@ -65,11 +95,11 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 </dependencyManagement>
 ```
 
-Simple Secret BOM 既管理模块版本，也锁定项目统一采用的 Jackson、springdoc、POI、Commons 等第三方版本。若同一 `dependencyManagement` 同时导入 Simple Secret BOM 与 Spring Boot BOM，必须将 Simple Secret BOM 放在 Spring Boot BOM 前面，使这些约束优先生效。
+Simple Secret BOM 既管理保留模块版本，也锁定项目统一采用的 Jackson、Netty、POI、Commons 等第三方版本。若同一 `dependencyManagement` 同时导入 Simple Secret BOM 与 Spring Boot BOM，必须将 Simple Secret BOM 放在 Spring Boot BOM 前面，使这些约束优先生效。
 
 所有模块的 Java 包统一使用 `com.ss.<模块缩写>.*`。自动配置均支持按模块关闭，不使用的模块不会主动启动外部连接或原生服务。
 
-## Core API and Starter
+## Core API
 
 只需要通用结果和异常类型时使用零第三方依赖模块：
 
@@ -89,30 +119,7 @@ throw BusinessException.normalForModule(
         "orders", "order {} not found", orderId);
 ```
 
-Spring Boot 应用需要项目元数据、线程池、调度器或异步支持时使用 starter：
-
-```xml
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-core</artifactId>
-</dependency>
-```
-
-所有运行时功能默认关闭。以下配置只开启任务执行器：
-
-```yaml
-simple-secret:
-  core:
-    task-executor:
-      enabled: true
-      core-pool-size: 4
-      max-pool-size: 8
-      queue-capacity: 256
-      keep-alive: 60s
-      thread-name-prefix: app-task-
-```
-
-Validation 依赖为 optional，使用 fail-fast 时由应用显式引入 `spring-boot-starter-validation`。完整 Result、异常、项目元数据、调度器、`@Async`、Validator、Bean 覆盖和生命周期案例见 [Core Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-core/README.md)。
+该模块仅提供通用模型，不注册 Spring Bean、不创建线程池，也不启动外部资源。
 
 ## Dict API
 
@@ -138,149 +145,6 @@ try (DictionaryRegistry registry = new DictionaryRegistry()) {
 模块不扫描 Spring、不按字符串加载类、不反射调用约定方法。数据源异常不会缓存，重复 key、错误注解
 和不可写展示字段会明确失败。完整枚举、业务数据源、缓存失效、`DictService`、`@DictField` 和迁移案例见
 [Dict README](simple-secret-common/simple-secret-common-dict/README.md)。
-
-## WebMVC Starter
-
-`simple-secret-springboot-starter-web` 为 Spring Boot WebMVC 应用提供默认关闭的 `BaseController`、异常响应、CORS 和请求耗时日志。应用自行显式引入 `spring-boot-starter-web`，再按需添加 starter：
-
-```xml
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-web</artifactId>
-</dependency>
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-web</artifactId>
-</dependency>
-```
-
-所有自动配置行为都需要先设置 `simple-secret.web.enabled=true`，并分别开启异常处理、CORS 或耗时记录；`BaseController` 是直接 API，不受这些开关控制。CORS 携带凭据时必须配置具体、非 wildcard origin；生产环境建议使用 HTTPS。完整 Maven/BOM、异常安全响应、Bean 覆盖、XSS 边界和不迁移项见 [WebMVC Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-web/README.md)。
-
-## Auth Starter
-
-`simple-secret-springboot-starter-auth` 提供默认关闭的 Sa-Token 登录用户会话辅助、认证策略注册和可选 Servlet 认证异常响应。Web 应用需自行显式引入 `spring-boot-starter-web` 与 `sa-token-spring-boot3-starter`；Auth starter 不传递它们，也不迁移 Redis、JWT、Validation 或具体的用户/权限业务规则。完整 BOM 依赖、非 Web 与 Servlet 示例、配置边界、Bean 覆盖、固定安全响应和日志安全要求见 [Auth Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-auth/README.md)。
-
-## Security Starter
-
-`simple-secret-springboot-starter-security` 提供默认关闭的 WebMVC 路由登录保护，只调用 `StpLogic.checkLogin()`。它不传递 Auth starter、官方 Sa-Token Spring Boot starter 或 Web 容器，也不内置 Swagger、Actuator、静态资源、登录端点或 `/error` 白名单。完整 BOM 依赖、include/exclude、Auth advice 组合、消费者 Bean 覆盖和安全边界见 [Security Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-security/README.md)。
-
-## MyBatis-Plus Starter
-
-`simple-secret-springboot-starter-mybatis-plus` 提供安全分页参数、不可变分页结果、审计实体、
-基础 Mapper、数据库类型识别、字段状态缓存，以及分页和乐观锁自动配置：
-
-```xml
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-mybatis-plus</artifactId>
-</dependency>
-```
-
-```yaml
-simple-secret:
-  mybatis:
-    enabled: true
-    pagination-enabled: true
-    optimistic-locker-enabled: true
-    max-page-size: 500
-    overflow: false
-```
-
-模块只额外复用零第三方依赖的内部 toolbox 缓存，不传递动态数据源、MP Join、P6Spy、Auth、Web、
-JSON、Hutool 或 Lombok。
-排序列只接受普通标识符并转换为下划线列名，不接受函数、点号、注释或 SQL 片段。完整的实体、
-Mapper、分页、审计上下文、Bean 覆盖和数据库识别案例见
-[MyBatis-Plus Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-mybatis-plus/README.md)。
-
-## Tenant Starter
-
-`simple-secret-springboot-starter-tenant` 通过消费者提供的 `TenantContextProvider` 获取租户标识，
-将租户插件放在分页和乐观锁之前。缺失租户时阻止 SQL，不会返回 `NULL` 条件或静默跳过隔离：
-
-```xml
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-tenant</artifactId>
-</dependency>
-```
-
-```java
-@Bean
-TenantContextProvider tenantContextProvider(CurrentSession session) {
-    return session::tenantId;
-}
-```
-
-模块不引入 Redis、Redisson、Sa-Token、Auth、Web、JSON、Spring Cache、Toolbox、Hutool、
-Lombok 或 TTL。配置、临时租户、显式 ignore、实体继承、消费者 Bean 覆盖和异步安全边界见
-[Tenant Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-tenant/README.md)。
-
-## Sensitive Starter
-
-`simple-secret-springboot-starter-sensitive` 为 Jackson JSON 输出提供默认失败关闭的字段脱敏：
-
-```xml
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-sensitive</artifactId>
-</dependency>
-```
-
-```java
-@Sensitive(strategy = SensitiveStrategy.PHONE)
-private String phone;
-```
-
-应用可覆盖 `SensitiveService`，只有明确返回 false 才输出原文。模块不依赖 JSON starter、Hutool、
-Auth、Security 或 Web；注解、五种策略、非 Spring ObjectMapper、Bean 覆盖和安全边界见
-[Sensitive Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-sensitive/README.md)。
-
-## Idempotent Starter
-
-`simple-secret-springboot-starter-idempotent` 使用 SHA-256 请求摘要和带 owner 的原子 TTL 租约保护
-Spring Bean 方法。模块默认开启，但不会创建 Redis 连接；应用必须提供 `IdempotencyStore`，或者提供
-`RedissonClient` 让 starter 创建默认 Redisson Store：
-
-```xml
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-idempotent</artifactId>
-</dependency>
-```
-
-```java
-@RepeatSubmit(interval = 5, timeUnit = TimeUnit.SECONDS)
-public OrderView createOrder(CreateOrderCommand command) {
-    return orderService.create(command);
-}
-```
-
-正常返回后租约保留到 TTL；异常默认按 owner 原子释放。模块不依赖 JSON/Redis/Core/Web starter、
-Sa-Token、Security、Hutool 或业务 `Result`。Redisson、自定义 Store、身份 resolver、消息国际化、
-代理限制和数据库唯一约束边界见
-[Idempotent Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-idempotent/README.md)。
-
-## WebSocket Starter
-
-`simple-secret-springboot-starter-websocket` 默认关闭且不创建公开端点。应用提供匿名或认证 handler 后启用：
-
-```xml
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-websocket</artifactId>
-</dependency>
-```
-
-```yaml
-simple-secret:
-  websocket:
-    enabled: true
-```
-
-模块支持同一用户多连接、精确断开清理、本地定向发送和广播；认证与跨节点消息分别通过
-`WebSocketHandshakeAuthenticator`、`WebSocketMessageBroker` 接入，不依赖 Auth、Redis、JSON、Core、
-Hutool、Lombok 或 Sa-Token。完整 handler、认证、Origin、安全边界和 Broker 示例见
-[WebSocket Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-websocket/README.md)。
 
 ## Netty WebSocket Starter
 
@@ -311,32 +175,6 @@ simple-secret:
 不依赖 JSON、Servlet WebSocket、Redis、MQTT、Hutool 或 Lombok。完整认证、Origin、容量、JSON 按需组合、
 手动启动和安全边界见
 [Netty WebSocket Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-netty-websocket/README.md)。
-
-## Encrypt Starter
-
-`simple-secret-springboot-starter-encrypt` 默认关闭，不包含默认密钥。只使用核心密码服务时无需引入 Web、
-MyBatis 或其他 Simple Secret 模块：
-
-```xml
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-encrypt</artifactId>
-</dependency>
-```
-
-```yaml
-simple-secret:
-  encrypt:
-    enabled: true
-    keys:
-      primary:
-        secret-key: ${APP_AES_KEY_BASE64}
-```
-
-模块使用 AES-GCM、RSA-OAEP-SHA256、SM2、SM4-GCM 和版本化密文格式；Base64 仅作为兼容编码，
-不是加密。MyBatis 字段、Servlet v1 协议、密钥 provider、KMS 替换、查询限制、旧 Honeybee 密文迁移
-和完整安全边界见
-[Encrypt Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-encrypt/README.md)。
 
 ## Geo Referencing Plugin
 
@@ -446,162 +284,9 @@ ExcelImportResult<UserRow> result = new ExcelImporter().read(input, request);
 
 插件不会关闭调用方流。默认按 500 行处理、最多读取 100000 行；完整的校验错误、合并单元格、下拉框、列宽和树导出案例见 [Excel Plugin README](simple-secret-plugins/simple-secret-plugin-excel/README.md)。
 
-## OpenAPI Doc Starter
-
-`simple-secret-springboot-starter-doc` 面向 Spring Boot 3.5 WebMVC 应用，默认不公开 API docs，也不传递 Swagger UI、Knife4j 或 Therapi：
-
-```xml
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-web</artifactId>
-</dependency>
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-doc</artifactId>
-</dependency>
-```
-
-```yaml
-simple-secret:
-  doc:
-    enabled: true
-    info:
-      title: ${spring.application.name} API
-      version: 1.0.0
-    security:
-      schemes:
-        bearerAuth:
-          type: HTTP_BEARER
-          bearer-format: JWT
-      globally-required:
-        - bearerAuth
-```
-
-starter 使用 springdoc 的稳定公开扩展点，不覆盖内部 `OpenAPIService`，也不重复修改 servlet context path。完整的 API Key/Basic/Bearer、分组、消费者覆盖、Swagger UI、Knife4j、Therapi 和生产访问控制案例见 [Doc Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-doc/README.md)。
-
-## JSON Starter
-
-### 功能和依赖边界
-
-`simple-secret-springboot-starter-json` 提供：
-
-- 非 Spring 场景可直接使用的 `JsonUtils`。
-- 可绑定调用方 `ObjectMapper` 的 `JsonCodec`。
-- JavaScript 安全整数和 `BigDecimal` 精度保护。
-- getter 方法引用到 JSON 属性名的解析。
-- 判断对象实例字段是否全部为空的 Jackson 值过滤器。
-- 可选的 Spring Boot Jackson 定制。
-
-核心依赖只有 Jackson 和内部 toolbox。`spring-boot-autoconfigure`、`spring-web` 均为 optional，因此普通 Java 项目使用静态工具时不会被强制传递 Spring Web。
-
-### Maven 依赖
-
-```xml
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-json</artifactId>
-</dependency>
-```
-
-### 非 Spring 使用
-
-```java
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.ss.json.utils.JsonUtils;
-
-import java.util.List;
-import java.util.Map;
-
-String json = JsonUtils.toJsonString(new User(1L, "Alice"));
-User user = JsonUtils.parseObject(json, User.class);
-
-List<User> users = JsonUtils.parseArray(
-        "[{\"id\":1,\"name\":\"Alice\"}]", User.class);
-Map<String, Object> attributes = JsonUtils.parseMap("{\"enabled\":true}");
-List<User> genericUsers = JsonUtils.parseObject(
-        "[{\"id\":1,\"name\":\"Alice\"}]",
-        new TypeReference<List<User>>() { });
-```
-
-`JsonUtils` 始终使用自身独立的默认 `ObjectMapper`，不会读取或修改 Spring 容器中的 Jackson 配置。空字符串解析对象时返回 `null`，空字符串解析数组时返回不可变空列表；解析失败统一抛出 `JsonOperationException`，异常消息不会回显原始 JSON 正文。
-
-### Spring Boot 使用
-
-自动配置默认开启。业务代码优先注入 `JsonCodec`，它会使用宿主应用已有的 `ObjectMapper`；如果应用上下文中没有 mapper，则使用 starter 的独立默认 mapper：
-
-```java
-import com.ss.json.JsonCodec;
-import org.springframework.stereotype.Service;
-
-@Service
-public class AuditPayloadService {
-    private final JsonCodec jsonCodec;
-
-    public AuditPayloadService(JsonCodec jsonCodec) {
-        this.jsonCodec = jsonCodec;
-    }
-
-    public String encode(AuditEvent event) {
-        return jsonCodec.toJsonString(event);
-    }
-
-    public AuditEvent decode(String payload) {
-        return jsonCodec.parseObject(payload, AuditEvent.class);
-    }
-}
-```
-
-starter 默认不会修改宿主应用的 `ObjectMapper`。需要把安全整数、`BigDecimal` 字符串格式、时区和序列化特性应用到宿主 mapper 时显式开启：
-
-```yaml
-simple-secret:
-  json:
-    enabled: true
-    jackson-customization-enabled: true
-```
-
-宿主应用注册的同类型 Jackson 模块优先级更高。修改宿主 mapper 还要求 classpath 中存在 `Jackson2ObjectMapperBuilder`，通常由 `spring-boot-starter-web` 提供。非 Web Boot 环境没有 `ObjectMapper` Bean 时，starter 只发布 `JsonCodec`，不会额外发布 `ObjectMapper`。
-
-### 属性名和空对象过滤案例
-
-```java
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.ss.json.filter.EmptyObjectFilter;
-import com.ss.json.property.JsonPropertyNameResolver;
-import com.ss.json.property.NameCase;
-
-class User {
-    @JsonProperty("display_name")
-    private String userName;
-
-    @JsonInclude(value = JsonInclude.Include.CUSTOM,
-            valueFilter = EmptyObjectFilter.class)
-    private Profile profile;
-
-    public String getUserName() {
-        return userName;
-    }
-}
-
-String property = JsonPropertyNameResolver.resolve(
-        User::getUserName, "-", NameCase.LOWER);
-// 字段存在 @JsonProperty，因此结果是 display_name。
-```
-
-### 数值精度规则
-
-默认 mapper 会将 JavaScript 安全整数范围 `[-9007199254740991, 9007199254740991]` 外的 `Long`、`BigInteger` 序列化为 JSON 字符串，并将 `BigDecimal` 序列化为字符串：
-
-```json
-{"safe":9007199254740991,"unsafe":"9007199254740992","amount":"12.3400"}
-```
-
-如果上下游协议要求所有数字必须使用 JSON number，应保持 `jackson-customization-enabled=false` 并使用宿主自己的 mapper 配置。
-
 ## MQTT v3 Starter
 
-`simple-secret-springboot-starter-mqttv3` 基于 Eclipse Paho MQTT v3 客户端，提供 MQTT 3.1.1 多客户端、发布订阅、同步请求与重试、断线重连和 Spring Bean 自动订阅。它传递依赖 JSON starter，但不传递依赖 MQTT v5、Spring Cloud 或其他工具库：
+`simple-secret-springboot-starter-mqttv3` 基于 Eclipse Paho MQTT v3 客户端，提供 MQTT 3.1.1 多客户端、发布订阅、同步请求与重试、断线重连和 Spring Bean 自动订阅。模块直接依赖 Jackson 以支持消息上下文反序列化，不依赖 MQTT v5、Spring Cloud 或其他 Simple Secret starter：
 
 ```xml
 <dependency>
@@ -651,7 +336,7 @@ mqttClientManager.publish(
 
 ### 功能和依赖边界
 
-`simple-secret-springboot-starter-mqttv5` 提供多客户端连接、发布订阅、共享订阅、同步请求与重试、断线重连、Spring Bean 处理器发现和配置刷新。它传递依赖 JSON starter，因此消息上下文可以直接把 JSON payload 转为对象。
+`simple-secret-springboot-starter-mqttv5` 提供多客户端连接、发布订阅、共享订阅、同步请求与重试、断线重连、Spring Bean 处理器发现和配置刷新。模块直接依赖 Jackson，消息上下文可以直接把 JSON payload 转为对象，不依赖其他 Simple Secret starter。
 
 ### Maven 依赖
 
@@ -747,22 +432,23 @@ public class SharedTelemetryHandler implements MqttMessageHandler {
 ### 发布消息
 
 ```java
-import com.ss.json.JsonCodec;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ss.mqttv5.client.MqttClientManager;
 import org.springframework.stereotype.Service;
 
 @Service
 public class DeviceCommandPublisher {
     private final MqttClientManager mqtt;
-    private final JsonCodec jsonCodec;
+    private final ObjectMapper objectMapper;
 
-    public DeviceCommandPublisher(MqttClientManager mqtt, JsonCodec jsonCodec) {
+    public DeviceCommandPublisher(MqttClientManager mqtt, ObjectMapper objectMapper) {
         this.mqtt = mqtt;
-        this.jsonCodec = jsonCodec;
+        this.objectMapper = objectMapper;
     }
 
-    public void reboot(String deviceId) {
-        String payload = jsonCodec.toJsonString(
+    public void reboot(String deviceId) throws JsonProcessingException {
+        String payload = objectMapper.writeValueAsString(
                 new DeviceCommand("reboot", System.currentTimeMillis()));
         mqtt.publish("default", "devices/" + deviceId + "/commands", payload, 1);
     }
@@ -776,7 +462,8 @@ public class DeviceCommandPublisher {
 请求正文与响应正文必须能提取相同的关联键：
 
 ```java
-import com.ss.json.utils.JsonUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ss.mqttv5.message.MqttMessageContext;
 import com.ss.mqttv5.waiter.MqttCorrelationExtractor;
 
@@ -784,8 +471,14 @@ import java.time.Duration;
 import java.util.Optional;
 
 String requestJson = "{\"requestId\":\"req-1001\",\"action\":\"status\"}";
-MqttCorrelationExtractor extractor = (type, payload) ->
-        String.valueOf(JsonUtils.parseMap(payload).get("requestId"));
+ObjectMapper objectMapper = new ObjectMapper();
+MqttCorrelationExtractor extractor = (type, payload) -> {
+    try {
+        return objectMapper.readTree(payload).path("requestId").asText();
+    } catch (JsonProcessingException exception) {
+        throw new IllegalArgumentException("invalid MQTT correlation payload", exception);
+    }
+};
 
 Optional<MqttMessageContext> response = mqtt.requestWithRetry(
         "default",
@@ -848,48 +541,9 @@ connections.shutdown();
 
 唯一配置前缀是 `simple-secret.mqtt`，设置 `simple-secret.mqtt.enabled=false` 可完全关闭自动配置。若运行环境存在 Spring Cloud，starter 会通过反射识别 `EnvironmentChangeEvent`，只有该前缀下的键发生变化时才刷新客户端，starter 本身不直接依赖 Spring Cloud。
 
-## Redis Starter
-
-`simple-secret-springboot-starter-redis` 基于 Redisson 提供对象、集合、原子计数、分布式锁、限流、发布订阅、队列和可选 Spring Cache。默认关闭，不提供 Redis 地址，也不会连接 `localhost`：
-
-```xml
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-redis</artifactId>
-</dependency>
-```
-
-```yaml
-simple-secret:
-  redis:
-    enabled: true
-    mode: single
-    key-prefix: order-service
-    single:
-      address: rediss://redis.example.internal:6379
-      username: ${REDIS_USERNAME:}
-      password: ${REDIS_PASSWORD:}
-```
-
-```java
-redis.set("orders:" + order.id(), order, Duration.ofMinutes(30));
-
-Order created = redis.withLock(
-        "locks:order:" + order.id(),
-        Duration.ofSeconds(2),
-        () -> orderService.create(order));
-
-try (RedisSubscription subscription = redis.subscribe(
-        "events:orders", OrderEvent.class, eventHandler::accept)) {
-    redis.publish("events:orders", new OrderEvent("created", order.id()));
-}
-```
-
-模块不依赖 Spring Data Redis、JSON starter、Lock4j、Caffeine、Spring Web 或 Honeybee。应用提供自己的 `RedissonClient` 时 starter 不接管其生命周期；Spring Cache 需要显式启用并声明固定缓存名。完整的单机、集群、集合、锁、限流、队列、缓存和异常案例见 [Redis Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-redis/README.md)。
-
 ## NATS Starter
 
-`simple-secret-springboot-starter-nats` 提供 NATS 多客户端、发布、请求响应、普通订阅、queue group 和 Spring Bean 自动订阅。模块不依赖 JSON starter，应用可自行选择 payload codec：
+`simple-secret-springboot-starter-nats` 提供 NATS 多客户端、发布、请求响应、普通订阅、queue group 和 Spring Bean 自动订阅。模块不依赖 JSON 实现，应用可自行选择 payload codec：
 
 ```xml
 <dependency>
@@ -1002,31 +656,6 @@ List<Telemetry> records = operations.list(
 ```
 
 DSL 对 identifier、函数、duration、数值类型和字符串字面量统一校验与转义，不提供任意原始条件片段。分页计数必须选择非 tag、非 time 的普通 field，并且分页查询不能包含分组。原始 InfluxQL API 只适合可信代码，禁止拼接请求参数。完整的实体、分页、Service、自动初始化、非 Spring 和安全案例见 [InfluxDB Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-influxdb/README.md)。
-
-## Magic API Starter
-
-`simple-secret-springboot-starter-magic-api` 对 Magic API 2.2.2 提供默认关闭的 Spring Boot 3.5 集成。只有显式启用后才加载上游动态路由、WebSocket 和资源组件；文件模式必须指定资源目录，编辑器入口必须同时配置用户名和密码：
-
-```xml
-<dependency>
-    <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-magic-api</artifactId>
-</dependency>
-```
-
-```yaml
-simple-secret:
-  magic-api:
-    enabled: true
-
-magic-api:
-  resource:
-    type: file
-    location: ${MAGIC_API_HOME:./data/magic-api}
-    readonly: true
-```
-
-starter 默认关闭 banner、跨域、SQL/URL 输出，将资源设为只读，并把最大分页大小限制为 1000。模块不传递 task、springdoc、MyBatis-Plus、JSON starter 或 Honeybee 私有依赖；完整的数据库资源、编辑器认证、自定义 `ResultProvider` 和生产安全案例见 [Magic API Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-magic-api/README.md)。
 
 ## Camera SDK Plugin
 

@@ -4,10 +4,25 @@ package com.ss.mqttv5.config;
  * MQTT 遗嘱消息配置。
  */
 public class MqttWillOptions {
+    /**
+     * 是否启用。
+     */
     private boolean enabled;
+    /**
+     * 消息主题。
+     */
     private String topic;
+    /**
+     * 消息负载。
+     */
     private String payload;
+    /**
+     * 消息 QoS。
+     */
     private int qos;
+    /**
+     * 是否保留消息。
+     */
     private boolean retained;
 
     /**

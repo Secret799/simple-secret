@@ -13,12 +13,20 @@ public class WebRtcRedisKeys {
     /** 所有 WebRTC Redis 数据的命名空间前缀。 */
     private static final String PREFIX = "ems:webrtc:";
 
-    /** @return 指定会话快照的 Redis 键。 */
+    /**
+     * @return 指定会话快照的 Redis 键。
+     *
+     * @param sessionId 会话 ID
+     */
     public String session(String sessionId) {
         return PREFIX + "session:" + sessionId;
     }
 
-    /** @return 指定会话串行化操作使用的分布式锁键。 */
+    /**
+     * @return 指定会话串行化操作使用的分布式锁键。
+     *
+     * @param sessionId 会话 ID
+     */
     public String sessionLock(String sessionId) {
         return PREFIX + "lock:session:" + sessionId;
     }
@@ -32,6 +40,11 @@ public class WebRtcRedisKeys {
      * 构造按操作、主体和客户端 IP 隔离的限流键。
      *
      * @return 不暴露原始身份信息的 Redis 限流键
+
+     *
+     * @param operation 操作类型
+     * @param identityKey 身份维度缓存键
+     * @param clientIp 客户端 IP 地址
      */
     public String rateLimit(WebRtcOperation operation, String identityKey, String clientIp) {
         return PREFIX + "rate:" + operation.name().toLowerCase(Locale.ROOT)

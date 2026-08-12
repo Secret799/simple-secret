@@ -55,6 +55,11 @@ public class ZlmMediaServiceImpl implements IZlmMediaService {
     private final MediaResourcePolicy mediaResourcePolicy;
     private final ZLMApi zlmApi;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param mediaResourcePolicy 媒体资源访问策略
+     */
     public ZlmMediaServiceImpl(MediaResourcePolicy mediaResourcePolicy) {
         this(mediaResourcePolicy, (ZLMApi) null);
     }
@@ -64,6 +69,12 @@ public class ZlmMediaServiceImpl implements IZlmMediaService {
         this.zlmApi = zlmApi;
     }
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param mediaResourcePolicy 媒体资源访问策略
+     * @param context 调用上下文
+     */
     @Autowired
     public ZlmMediaServiceImpl(MediaResourcePolicy mediaResourcePolicy, ZlmMediaContext context) {
         this(mediaResourcePolicy, context.getZlmApi());

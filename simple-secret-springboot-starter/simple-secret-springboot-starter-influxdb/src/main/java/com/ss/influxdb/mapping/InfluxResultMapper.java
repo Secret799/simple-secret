@@ -26,12 +26,22 @@ import java.util.concurrent.TimeUnit;
 public class InfluxResultMapper {
     private final InfluxMetadataRegistry registry;
 
-    /** 创建查询结果映射器。 */
+    /**
+     * 创建查询结果映射器。
+     *
+     * @param registry 组件注册表
+     */
     public InfluxResultMapper(InfluxMetadataRegistry registry) {
         this.registry = Objects.requireNonNull(registry, "registry");
     }
 
-    /** 映射完整查询结果，服务端错误会转换为统一异常。 */
+    /**
+     * 映射完整查询结果，服务端错误会转换为统一异常。
+     *
+     * @param result 服务调用结果
+     * @param entityType 实体类型
+     * @return 返回的 {@code List<T>} 结果
+     */
     public <T> List<T> map(QueryResult result, Class<T> entityType) {
         if (result == null) {
             return List.of();
@@ -59,7 +69,13 @@ public class InfluxResultMapper {
         return List.copyOf(records);
     }
 
-    /** 映射单个 series，包括 group by 返回的 tags。 */
+    /**
+     * 映射单个 series，包括 group by 返回的 tags。
+     *
+     * @param series InfluxDB 查询结果序列
+     * @param entityType 实体类型
+     * @return 返回的 {@code List<T>} 结果
+     */
     public <T> List<T> map(QueryResult.Series series, Class<T> entityType) {
         if (series == null || series.getValues() == null || series.getValues().isEmpty()) {
             return List.of();

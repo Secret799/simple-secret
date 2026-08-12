@@ -64,7 +64,11 @@ public final class DahuaCameraSdkService
                 new ThreadPoolExecutor.AbortPolicy());
     }
 
-    /** @param options SDK 配置 @return 已初始化的大华服务 */
+    /**
+     * @param options SDK 配置
+     *
+     * @return 当前对象
+     */
     public static DahuaCameraSdkService open(DahuaSdkOptions options) {
         return new DahuaCameraSdkService(DahuaSdkRuntime.open(options));
     }
@@ -359,14 +363,29 @@ public final class DahuaCameraSdkService
         }
     }
 
-    /** 查询指定 8192 坐标点的温度统计。 */
+    /**
+     * 查询指定 8192 坐标点的温度统计。
+     *
+     * @param device 摄像机设备信息
+     * @param x 像素横坐标
+     * @param y 像素纵坐标
+     * @return 返回的 {@code DahuaTemperatureSummary} 结果
+     */
     public DahuaTemperatureSummary queryPointTemperature(DeviceDomain device, int x, int y) {
         DahuaPoint point = new DahuaPoint(x, y);
         return withOpen(() -> withTemporaryDeviceSession(device, (handle, channel) ->
                 map(nativeApi.queryPointTemperature(handle, channel, point.x(), point.y()))));
     }
 
-    /** 查询已配置测温规则的温度统计。 */
+    /**
+     * 查询已配置测温规则的温度统计。
+     *
+     * @param device 摄像机设备信息
+     * @param presetId 预置点编号
+     * @param ruleId 测温规则编号
+     * @param meterType 厂商 SDK 测温类型
+     * @return 返回的 {@code DahuaTemperatureSummary} 结果
+     */
     public DahuaTemperatureSummary queryItemTemperature(
             DeviceDomain device, int presetId, int ruleId, int meterType) {
         validateMeterType(meterType);
@@ -378,7 +397,13 @@ public final class DahuaCameraSdkService
                         handle, channel, presetId, ruleId, meterType))));
     }
 
-    /** 查询 3 到 8 个点组成的任意区域温度。 */
+    /**
+     * 查询 3 到 8 个点组成的任意区域温度。
+     *
+     * @param device 摄像机设备信息
+     * @param points 坐标点集合
+     * @return 返回的 {@code DahuaRegionTemperature} 结果
+     */
     public DahuaRegionTemperature queryRegionTemperature(
             DeviceDomain device, List<DahuaPoint> points) {
         if (points == null || points.size() < 3 || points.size() > 8

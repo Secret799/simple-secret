@@ -57,7 +57,11 @@ import java.time.Clock;
         havingValue = "true", matchIfMissing = true)
 public class WebRtcSessionConfiguration {
 
-    /** @return 从 EMS 总配置提取的 WebRTC 配置。 */
+    /**
+     * @return 从 EMS 总配置提取的 WebRTC 配置。
+     *
+     * @param emsProperties EasyMedia 配置
+     */
     @Bean
     @ConditionalOnMissingBean
     public WebRtcProperties webRtcProperties(EmsProperties emsProperties) {
@@ -85,7 +89,11 @@ public class WebRtcSessionConfiguration {
         return new WebRtcRedisKeys();
     }
 
-    /** @return 配置了连接和读取超时的外置 ZLM HTTP 客户端工厂。 */
+    /**
+     * @return 配置了连接和读取超时的外置 ZLM HTTP 客户端工厂。
+     *
+     * @param properties 模块配置
+     */
     @Bean(name = "webRtcClientHttpRequestFactory")
     @ConditionalOnMissingBean(name = "webRtcClientHttpRequestFactory")
     public ClientHttpRequestFactory webRtcClientHttpRequestFactory(WebRtcProperties properties) {
@@ -98,7 +106,11 @@ public class WebRtcSessionConfiguration {
         return factory;
     }
 
-    /** @return 仅供外置 ZLM 信令适配器使用的 REST 客户端。 */
+    /**
+     * @return 仅供外置 ZLM 信令适配器使用的 REST 客户端。
+     *
+     * @param requestFactory HTTP 请求工厂
+     */
     @Bean(name = "webRtcRestClient")
     @ConditionalOnMissingBean(name = "webRtcRestClient")
     public RestClient webRtcRestClient(
@@ -106,14 +118,23 @@ public class WebRtcSessionConfiguration {
         return RestClient.builder().requestFactory(requestFactory).build();
     }
 
-    /** @return 验证上游会话资源地址可信性的策略。 */
+    /**
+     * @return 验证上游会话资源地址可信性的策略。
+     *
+     * @param properties 模块配置
+     */
     @Bean
     @ConditionalOnMissingBean
     public ZlmWebRtcUriPolicy zlmWebRtcUriPolicy(WebRtcProperties properties) {
         return new ZlmWebRtcUriPolicy(properties.getSignalingBaseUrl());
     }
 
-    /** @return 使用当前 JVM 内嵌 ZLM C API 的信令客户端。 */
+    /**
+     * @return 使用当前 JVM 内嵌 ZLM C API 的信令客户端。
+     *
+     * @param zlmMediaContext ZLMediaKit 原生运行上下文
+     * @param properties 模块配置
+     */
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "simple-secret.easymedia.webrtc", name = "local-zlm-enabled",
@@ -124,7 +145,13 @@ public class WebRtcSessionConfiguration {
                 zlmMediaContext.getZlmApi(), properties.getRequestTimeout());
     }
 
-    /** @return 向外置 ZLM HTTP 服务转发的信令客户端。 */
+    /**
+     * @return 向外置 ZLM HTTP 服务转发的信令客户端。
+     *
+     * @param restClient HTTP 客户端
+     * @param properties 模块配置
+     * @param uriPolicy 外部 URI 安全策略
+     */
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "simple-secret.easymedia.webrtc", name = "local-zlm-enabled",
@@ -145,21 +172,35 @@ public class WebRtcSessionConfiguration {
         return new InMemoryWebRtcSessionRepository();
     }
 
-    /** @return 默认身份解析器：从配置读取固定主体，未配置且要求认证时拒绝匿名请求。 */
+    /**
+     * @return 默认身份解析器：从配置读取固定主体，未配置且要求认证时拒绝匿名请求。
+     *
+     * @param properties 模块配置
+     */
     @Bean
     @ConditionalOnMissingBean
     public WebRtcIdentityProvider webRtcIdentityProvider(WebRtcProperties properties) {
         return new DefaultWebRtcIdentityProvider(properties);
     }
 
-    /** @return 默认的创建和会话所有权访问策略。 */
+    /**
+     * @return 默认的创建和会话所有权访问策略。
+     *
+     * @param properties 模块配置
+     */
     @Bean
     @ConditionalOnMissingBean
     public WebRtcAccessPolicy webRtcAccessPolicy(WebRtcProperties properties) {
         return new DefaultWebRtcAccessPolicy(properties);
     }
 
-    /** @return 未配置 Redis 集成时使用的有界单机限流器。 */
+    /**
+     * @return 未配置 Redis 集成时使用的有界单机限流器。
+     *
+     * @param keys Redis 键生成器
+     * @param properties 模块配置
+     * @param clock 用于获取当前时间的时钟
+     */
     @Bean
     @ConditionalOnMissingBean(value = WebRtcRateLimiter.class,
             type = "org.redisson.api.RedissonClient")
@@ -169,7 +210,11 @@ public class WebRtcSessionConfiguration {
         return new InMemoryWebRtcRateLimiter(keys, properties, clock);
     }
 
-    /** @return 写入 Micrometer 的生产指标实现。 */
+    /**
+     * @return 写入 Micrometer 的生产指标实现。
+     *
+     * @param registry 组件注册表
+     */
     @Bean
     @ConditionalOnBean(MeterRegistry.class)
     @ConditionalOnMissingBean(WebRtcSessionMetrics.class)
@@ -184,7 +229,20 @@ public class WebRtcSessionConfiguration {
         return new NoopWebRtcSessionMetrics();
     }
 
-    /** @return 编排鉴权、限流、上游信令和会话持久化的服务。 */
+    /**
+     * @return 编排鉴权、限流、上游信令和会话持久化的服务。
+     *
+     * @param identityProvider 身份提供器
+     * @param accessPolicy 访问控制策略
+     * @param rateLimiter 请求限流器
+     * @param zlmClient ZLM WebRTC 信令客户端
+     * @param uriPolicy 外部 URI 安全策略
+     * @param repository 会话仓储
+     * @param idGenerator 安全会话 ID 生成器
+     * @param properties 模块配置
+     * @param clock 用于获取当前时间的时钟
+     * @param metrics 指标记录器
+     */
     @Bean
     @ConditionalOnMissingBean
     public WebRtcSessionService webRtcSessionService(
@@ -203,7 +261,14 @@ public class WebRtcSessionConfiguration {
                 repository, idGenerator, properties, clock, metrics);
     }
 
-    /** @return 定期补偿失败上游 DELETE 操作的任务。 */
+    /**
+     * @return 定期补偿失败上游 DELETE 操作的任务。
+     *
+     * @param repository 会话仓储
+     * @param service 业务服务实例
+     * @param properties 模块配置
+     * @param clock 用于获取当前时间的时钟
+     */
     @Bean
     @ConditionalOnMissingBean
     public WebRtcSessionCleanupJob webRtcSessionCleanupJob(

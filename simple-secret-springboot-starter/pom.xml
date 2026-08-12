@@ -12,26 +12,12 @@
     <artifactId>simple-secret-springboot-starter</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>simple-secret-springboot-starter-core</module>
-        <module>simple-secret-springboot-starter-web</module>
-        <module>simple-secret-springboot-starter-doc</module>
-        <module>simple-secret-springboot-starter-json</module>
         <module>simple-secret-springboot-starter-mqttv3</module>
         <module>simple-secret-springboot-starter-mqttv5</module>
         <module>simple-secret-springboot-starter-camera</module>
         <module>simple-secret-springboot-starter-nats</module>
         <module>simple-secret-springboot-starter-influxdb</module>
-        <module>simple-secret-springboot-starter-magic-api</module>
-        <module>simple-secret-springboot-starter-redis</module>
-        <module>simple-secret-springboot-starter-auth</module>
-        <module>simple-secret-springboot-starter-security</module>
-        <module>simple-secret-springboot-starter-mybatis-plus</module>
-        <module>simple-secret-springboot-starter-tenant</module>
-        <module>simple-secret-springboot-starter-sensitive</module>
-        <module>simple-secret-springboot-starter-idempotent</module>
-        <module>simple-secret-springboot-starter-websocket</module>
         <module>simple-secret-springboot-starter-netty-websocket</module>
-        <module>simple-secret-springboot-starter-encrypt</module>
         <module>simple-secret-springboot-starter-zlm4j</module>
         <module>simple-secret-springboot-starter-easymedia</module>
     </modules>

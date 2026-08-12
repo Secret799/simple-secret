@@ -18,6 +18,9 @@ public class DefaultWebRtcAccessPolicy implements WebRtcAccessPolicy {
 
     /**
      * 创建默认访问策略。
+
+     *
+     * @param properties 模块配置
      */
     public DefaultWebRtcAccessPolicy(WebRtcProperties properties) {
         this.properties = properties;

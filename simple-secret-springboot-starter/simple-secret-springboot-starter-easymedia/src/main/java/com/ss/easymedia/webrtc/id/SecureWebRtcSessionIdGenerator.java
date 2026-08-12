@@ -16,6 +16,9 @@ public final class SecureWebRtcSessionIdGenerator implements WebRtcSessionIdGene
 
     /**
      * 创建会话 ID 生成器。
+
+     *
+     * @param secureRandom 安全随机数生成器
      */
     public SecureWebRtcSessionIdGenerator(SecureRandom secureRandom) {
         this.secureRandom = secureRandom;

@@ -39,7 +39,12 @@ public final class InfluxFieldMetadata {
     /** @return 是否为时间列 */ public boolean isTime() { return time; }
     /** @return 时间精度；非时间列为 {@code null} */ public TimeUnit getTimeUnit() { return timeUnit; }
 
-    /** 读取实体字段值。 */
+    /**
+     * 读取实体字段值。
+     *
+     * @param target 目标值
+     * @return 返回的 {@code Object} 结果
+     */
     public Object read(Object target) {
         try {
             return field.get(target);
@@ -48,7 +53,12 @@ public final class InfluxFieldMetadata {
         }
     }
 
-    /** 写入实体字段值。 */
+    /**
+     * 写入实体字段值。
+     *
+     * @param target 目标值
+     * @param value 写入操作
+     */
     public void write(Object target, Object value) {
         try {
             field.set(target, value);

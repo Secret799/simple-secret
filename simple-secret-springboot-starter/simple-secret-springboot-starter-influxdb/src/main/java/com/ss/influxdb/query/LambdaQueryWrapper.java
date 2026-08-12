@@ -57,12 +57,23 @@ public final class LambdaQueryWrapper<T> {
         paginationRequested = source.paginationRequested;
     }
 
-    /** 创建指定实体的查询构建器。 */
+    /**
+     * 创建指定实体的查询构建器。
+     *
+     * @param entityType 实体类型
+     * @param registry 组件注册表
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public static <T> LambdaQueryWrapper<T> of(Class<T> entityType, InfluxMetadataRegistry registry) {
         return new LambdaQueryWrapper<>(entityType, registry);
     }
 
-    /** 选择一个或多个实体列；未调用时使用 {@code *}。 */
+    /**
+     * 选择一个或多个实体列；未调用时使用 {@code *}。
+     *
+     * @param getters 待查询的实体属性 getter 列表
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     @SafeVarargs
     public final LambdaQueryWrapper<T> select(SerializableFunction<T, ?>... getters) {
         requireGetters(getters);
@@ -72,56 +83,116 @@ public final class LambdaQueryWrapper<T> {
         return this;
     }
 
-    /** 添加聚合或转换函数选择项。 */
+    /**
+     * 添加聚合或转换函数选择项。
+     *
+     * @param function 处理函数
+     * @param getter 属性 getter 引用
+     * @param alias 查询字段别名
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> function(String function, SerializableFunction<T, ?> getter, String alias) {
         selections.add(InfluxIdentifiers.function(function) + "(" + column(getter) + ") AS "
                 + InfluxIdentifiers.quote(alias));
         return this;
     }
 
-    /** 覆盖实体注解中的 measurement。 */
+    /**
+     * 覆盖实体注解中的 measurement。
+     *
+     * @param measurement InfluxDB measurement
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> measurement(String measurement) {
         this.measurement = validatedIdentifier(measurement);
         return this;
     }
 
-    /** 覆盖实体注解中的 retention policy。 */
+    /**
+     * 覆盖实体注解中的 retention policy。
+     *
+     * @param retentionPolicy InfluxDB 保留策略
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> retentionPolicy(String retentionPolicy) {
         this.retentionPolicy = validatedIdentifier(retentionPolicy);
         return this;
     }
 
-    /** 添加等于条件。 */
+    /**
+     * 添加等于条件。
+     *
+     * @param getter 属性 getter 引用
+     * @param value 等于比较值
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> eq(SerializableFunction<T, ?> getter, Object value) {
         return comparison(getter, "=", value);
     }
 
-    /** 添加不等于条件。 */
+    /**
+     * 添加不等于条件。
+     *
+     * @param getter 属性 getter 引用
+     * @param value 不等于比较值
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> ne(SerializableFunction<T, ?> getter, Object value) {
         return comparison(getter, "!=", value);
     }
 
-    /** 添加大于条件。 */
+    /**
+     * 添加大于条件。
+     *
+     * @param getter 属性 getter 引用
+     * @param value 大于比较值
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> gt(SerializableFunction<T, ?> getter, Object value) {
         return comparison(getter, ">", value);
     }
 
-    /** 添加大于等于条件。 */
+    /**
+     * 添加大于等于条件。
+     *
+     * @param getter 属性 getter 引用
+     * @param value 大于等于比较值
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> ge(SerializableFunction<T, ?> getter, Object value) {
         return comparison(getter, ">=", value);
     }
 
-    /** 添加小于条件。 */
+    /**
+     * 添加小于条件。
+     *
+     * @param getter 属性 getter 引用
+     * @param value 小于比较值
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> lt(SerializableFunction<T, ?> getter, Object value) {
         return comparison(getter, "<", value);
     }
 
-    /** 添加小于等于条件。 */
+    /**
+     * 添加小于等于条件。
+     *
+     * @param getter 属性 getter 引用
+     * @param value 小于等于比较值
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> le(SerializableFunction<T, ?> getter, Object value) {
         return comparison(getter, "<=", value);
     }
 
-    /** 添加闭区间条件。 */
+    /**
+     * 添加闭区间条件。
+     *
+     * @param getter 属性 getter 引用
+     * @param lower 范围下界
+     * @param upper 范围上界
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> between(SerializableFunction<T, ?> getter, Object lower, Object upper) {
         String column = column(getter);
         add("AND", new GroupCondition(List.of(
@@ -130,27 +201,54 @@ public final class LambdaQueryWrapper<T> {
         return this;
     }
 
-    /** 添加集合包含条件，内部使用 OR 连接。 */
+    /**
+     * 添加集合包含条件，内部使用 OR 连接。
+     *
+     * @param getter 属性 getter 引用
+     * @param values 输入值集合
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> in(SerializableFunction<T, ?> getter, Collection<?> values) {
         return collectionCondition(getter, values, "=", "OR");
     }
 
-    /** 添加集合排除条件，内部使用 AND 连接。 */
+    /**
+     * 添加集合排除条件，内部使用 AND 连接。
+     *
+     * @param getter 属性 getter 引用
+     * @param values 输入值集合
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> notIn(SerializableFunction<T, ?> getter, Collection<?> values) {
         return collectionCondition(getter, values, "!=", "AND");
     }
 
-    /** 添加一个由 AND 与外层条件连接的条件组。 */
+    /**
+     * 添加一个由 AND 与外层条件连接的条件组。
+     *
+     * @param consumer 消息消费者
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> and(Consumer<LambdaQueryWrapper<T>> consumer) {
         return nested("AND", consumer);
     }
 
-    /** 添加一个由 OR 与外层条件连接的条件组。 */
+    /**
+     * 添加一个由 OR 与外层条件连接的条件组。
+     *
+     * @param consumer 消息消费者
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> or(Consumer<LambdaQueryWrapper<T>> consumer) {
         return nested("OR", consumer);
     }
 
-    /** 添加一个或多个分组列。 */
+    /**
+     * 添加一个或多个分组列。
+     *
+     * @param getters 待查询的实体属性 getter 列表
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     @SafeVarargs
     public final LambdaQueryWrapper<T> groupBy(SerializableFunction<T, ?>... getters) {
         requireGetters(getters);
@@ -165,25 +263,43 @@ public final class LambdaQueryWrapper<T> {
         return this;
     }
 
-    /** 添加时间间隔分组。 */
+    /**
+     * 添加时间间隔分组。
+     *
+     * @param duration 持续时间
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> groupByTime(String duration) {
         groups.add("time(" + InfluxIdentifiers.duration(duration) + ")");
         return this;
     }
 
-    /** 按时间升序排列。 */
+    /**
+     * 按时间升序排列。
+     *
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> orderByTimeAsc() {
         order = "ASC";
         return this;
     }
 
-    /** 按时间降序排列。 */
+    /**
+     * 按时间降序排列。
+     *
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> orderByTimeDesc() {
         order = "DESC";
         return this;
     }
 
-    /** 限制返回记录数。 */
+    /**
+     * 限制返回记录数。
+     *
+     * @param limit 数量上限
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> limit(int limit) {
         if (limit <= 0) {
             throw new IllegalArgumentException("InfluxQL limit must be greater than zero");
@@ -192,7 +308,12 @@ public final class LambdaQueryWrapper<T> {
         return this;
     }
 
-    /** 设置跳过的记录数。 */
+    /**
+     * 设置跳过的记录数。
+     *
+     * @param offset 偏移量
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> offset(int offset) {
         if (offset < 0) {
             throw new IllegalArgumentException("InfluxQL offset must not be negative");
@@ -201,7 +322,13 @@ public final class LambdaQueryWrapper<T> {
         return this;
     }
 
-    /** 使用从 1 开始的页码设置 limit 与 offset。 */
+    /**
+     * 使用从 1 开始的页码设置 limit 与 offset。
+     *
+     * @param current 当前值
+     * @param pageSize 分页大小
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> page(int current, int pageSize) {
         if (current <= 0 || pageSize <= 0) {
             throw new IllegalArgumentException("InfluxQL page and page size must be greater than zero");
@@ -226,7 +353,11 @@ public final class LambdaQueryWrapper<T> {
         return metadata.getDatabaseName();
     }
 
-    /** 创建当前查询状态的独立副本。 */
+    /**
+     * 创建当前查询状态的独立副本。
+     *
+     * @return 返回的 {@code LambdaQueryWrapper<T>} 结果
+     */
     public LambdaQueryWrapper<T> copy() {
         return new LambdaQueryWrapper<>(this);
     }
@@ -236,6 +367,10 @@ public final class LambdaQueryWrapper<T> {
      *
      * <p>InfluxQL 的 count 只统计指定 field 的非空值，
      * 调用方应选择业务上始终非空的普通 field。</p>
+
+     *
+     * @param countGetter 用于统计的实体属性 getter
+     * @return 匹配数量
      */
     public String buildCount(SerializableFunction<T, ?> countGetter) {
         InfluxFieldMetadata countField = mappedField(countGetter);
@@ -258,7 +393,11 @@ public final class LambdaQueryWrapper<T> {
         return query.toString();
     }
 
-    /** 构建完整 InfluxQL 查询。 */
+    /**
+     * 构建完整 InfluxQL 查询。
+     *
+     * @return 构建完成的结果对象
+     */
     public String build() {
         if (tagGrouping && paginationRequested) {
             throw new IllegalArgumentException("InfluxDB pagination does not support tag grouping");

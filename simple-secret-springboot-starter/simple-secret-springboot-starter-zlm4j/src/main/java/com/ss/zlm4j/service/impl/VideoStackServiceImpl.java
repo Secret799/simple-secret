@@ -38,6 +38,12 @@ public class VideoStackServiceImpl implements IVideoStackService {
     private final Supplier<com.aizuda.zlm4j.core.ZLMApi> zlmApiSupplier;
     private final Function<VideoStackBO, VideoStackContext> contextFactory;
 
+    /**
+     * 创建并初始化实例。
+     *
+     * @param mediaResourcePolicy 媒体资源访问策略
+     * @param validator 视频拼接参数校验器
+     */
     @Autowired
     public VideoStackServiceImpl(MediaResourcePolicy mediaResourcePolicy, VideoStackValidator validator) {
         this(mediaResourcePolicy, validator, ZlmMediaHelper::getZlmApi, VideoStackContext::new);

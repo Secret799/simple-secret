@@ -18,6 +18,14 @@ import java.util.function.Function;
  */
 public final class ExcelTreeExporter {
 
+    /**
+     * 将树按根到叶路径展平，并生成父节点列的合并处理器。
+     *
+     * @param roots 待导出的根节点列表
+     * @param valueExtractors 每层节点使用的列值提取函数
+     * @param dataBeginRowIndex 数据区域在工作表中的零基起始行
+     * @return 展平的数据行与单元格合并处理器
+     */
     public <T> ExcelTreeExport assemble(List<ExcelTreeNode<T>> roots,
                                         List<? extends Function<? super T, ?>> valueExtractors,
                                         int dataBeginRowIndex) {
