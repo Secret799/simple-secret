@@ -4,9 +4,9 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 
 ## 模块说明
 
-- `simple-secret-application`：应用聚合模块，当前包含可运行的 EasyMedia 测试应用。
+- `simple-secret-application`：应用聚合模块，包含可运行的 EasyMedia 测试应用和本地媒体推流工具。
 - `simple-secret-common`：内部基础公共构件和对外 BOM。
-- `simple-secret-common-toolbox`：零第三方运行时依赖的 Lambda 属性、URI 和线程安全过期缓存工具。
+- `simple-secret-common-toolbox`：零第三方运行时依赖的 Lambda 属性、URI、缓存、动态列和时间工具。
 - `simple-secret-common-core`：零第三方依赖的 Result、异常、HTTP 状态码和校验分组。
 - `simple-secret-common-dict`：只依赖 toolbox 的显式字典注册、枚举查询、TTL 缓存和对象字段翻译。
 - `simple-secret-plugins`：纯 Java 插件聚合模块，当前包含 Geo Referencing、KMZ/KML、UDP 和 Excel。
@@ -15,7 +15,7 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 - `simple-secret-plugin-udp`：零运行时依赖的 UDP 单播、组播监听和生命周期管理。
 - `simple-secret-plugin-excel`：基于 EasyExcel 的多 Sheet 导出、有界批量导入、错误工作簿、合并、下拉、列宽和树导出。
 - `simple-secret-plugin-camera-sdk`：零生产依赖的摄像机厂商 SDK 领域模型、能力 SPI 和实例注册表。
-- `simple-secret-plugin-camera-sdk-hikvision`：只依赖 Camera SDK API 与 JNA 的海康登录、PTZ 和录像月历驱动。
+- `simple-secret-plugin-camera-sdk-hikvision`：只依赖 Camera SDK API 与 JNA 的海康登录、PTZ、录像月历、实时预览和按时间回放驱动。
 - `simple-secret-plugin-camera-sdk-dahua`：只依赖 Camera SDK API 与 JNA 的大华登录、PTZ、H.264 预览和热成像驱动。
 - `simple-secret-springboot-starter-netty-websocket`：默认关闭的独立 Netty WebSocket 端口、多端点认证、文本处理和多连接推送。
 - `simple-secret-springboot-starter-mqttv3`：MQTT 3.1.1 多客户端、发布订阅和请求响应。
@@ -25,10 +25,17 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 - `simple-secret-springboot-starter-influxdb`：InfluxDB 1.x 注解映射、安全 InfluxQL DSL、写入、查询和初始化。
 - `simple-secret-springboot-starter-zlm4j`：嵌入式 ZLMediaKit、媒体代理、录像、RTP、截图和转码。
 - `simple-secret-springboot-starter-easymedia`：基于 zlm4j 的 WebRTC 网关、媒体管理 API、H.264 裸流，并复用 UDP 插件提供组播能力。
+- `simple-secret-springboot-starter-camera-zlm`：默认关闭的大华 H.264 Annex-B 到 EasyMedia/ZLM 独立适配层。
+- `simple-secret-application-pushstream`：扫描受控本地目录，通过受管 FFmpeg 进程循环推送到内嵌 ZLMediaKit。
 
 本项目不迁移 `auth`、`core` starter、`doc`、`encrypt`、`idempotent`、`json`、`magic-api`、
 `mybatis-plus`、`redis`、`security`、`sensitive`、`tenant`、`web` 和 Servlet `websocket` starter。
 需要这些能力时，应用应根据自身架构显式选择实现和依赖；`simple-secret-common-core` 等公共模块不受影响。
+
+Honeybee 的 `dynamic-columns` 契约和通用内存缓存已经合并到 toolbox，不再建立只有接口或工具类的独立
+starter。`cache-manager` 中绑定 MyBatis-Plus 的部分不迁移；`spring-extends` 依赖已禁止的 Commons
+Configuration/BeanUtils 且只处理旧式 INI 装载，也不迁移。此取舍避免为了少量工具能力引入 Spring、
+Hutool、MyBatis-Plus 或存在安全维护负担的传递依赖。
 
 ## 整体架构
 
@@ -43,7 +50,10 @@ flowchart TD
     APP --> STARTER["Spring Boot starter"]
     STARTER --> COMMON
     STARTER --> PLUGIN
+    CAMERA["大华 Camera SDK"] --> ADAPTER["Camera-to-ZLM adapter"]
+    ADAPTER --> STARTER
     SAMPLE["EasyMedia 测试应用"] --> STARTER
+    PUSH["Pushstream 工具应用"] --> STARTER
     TEST["consumer integration tests"] --> BOM
     TEST --> COMMON
     TEST --> PLUGIN
@@ -694,7 +704,7 @@ List<PlaybackTimePeriodDomain> month = registry.requirePlayQuery("Hikvision")
 </dependency>
 ```
 
-该驱动仅增加 JNA 依赖，不携带厂商原生库，不依赖 Spring、JSON 或 ZLM；支持显式生命周期、登录、同步/有界异步 PTZ 和录像月历查询。完整原生库布局、调用案例和安全边界见 [Hikvision Camera SDK Plugin README](simple-secret-plugins/simple-secret-plugin-camera-sdk-hikvision/README.md)。
+该驱动仅增加 JNA 依赖，不携带厂商原生库，不依赖 Spring、JSON、ZLM、FFmpeg 或 PlayCtrl；支持显式生命周期、登录、同步/有界异步 PTZ、录像月历查询、实时预览和按时间历史回放。取流流程为“设备登录 -> HCNetSDK 预览或回放 -> 原生数据复制 -> 业务 handler -> 会话关闭”，返回的是 HCNetSDK 原始数据而不是已解码视频帧。完整原生库布局、调用案例、线程约束和安全边界见 [Hikvision Camera SDK Plugin README](simple-secret-plugins/simple-secret-plugin-camera-sdk-hikvision/README.md)。
 
 大华 NetSDK 用户可额外按需引入：
 
@@ -712,6 +722,26 @@ List<PlaybackTimePeriodDomain> month = registry.requirePlayQuery("Hikvision")
 JNA 加载实现放入 `internal.*` 子包。第三方应用不应依赖 `internal.*`；根包中的
 `DahuaJnaStructures`、`HikvisionJnaStructures` 仅为保持已有完整类名兼容而保留；
 大华结构公开字段引用的 `DahuaNativeLibrary` 回调类型也保留在根包，但实际厂商函数绑定位于内部包。
+
+### Camera SDK 转推 ZLM
+
+需要把大华实时 H.264 转推 ZLM 时，额外按需引入独立适配 starter：
+
+```xml
+<dependency>
+    <groupId>com.ss</groupId>
+    <artifactId>simple-secret-springboot-starter-camera-zlm</artifactId>
+</dependency>
+```
+
+该模块默认关闭，且要求宿主显式提供 `DahuaCameraSdkService` Bean。启用
+`simple-secret.camera-zlm.enabled=true` 后，通过 `DahuaZlmStreamService.start(device, play, app, stream)`
+创建可关闭会话。每路流使用有界队列和单线程顺序消费；队列溢出或 publisher 失败会自动停止设备预览
+和 ZLM 流，并在 `session.failure()` 中保留异常。
+
+海康原始回调可能是系统头或 PS 流，不能直接作为 Annex-B H.264 推送，因此本阶段只支持大华。
+模块架构、Bean 创建、完整代码案例、关闭顺序和真实环境联调要求见
+[Camera-to-ZLM Starter README](simple-secret-springboot-starter/simple-secret-springboot-starter-camera-zlm/README.md)。
 
 ## Camera Starter
 
@@ -1160,6 +1190,16 @@ java -Djna.library.path=/path/to/zlmediakit/lib \
 ```
 
 运行环境必须提供与当前平台匹配的 ZLMediaKit `mk_api` 动态库。`jna.library.path` 负责定位直接加载的 `mk_api`，其传递动态库依赖仍由系统链接器通过 macOS `DYLD_LIBRARY_PATH`、Linux `LD_LIBRARY_PATH`、Windows `PATH`、rpath 或系统安装目录解析。完整的管理令牌、WHIP/WHEP 请求和真实合约测试示例见该模块 README。
+
+## Pushstream Application
+
+[`simple-secret-application-pushstream`](simple-secret-application/simple-secret-application-pushstream/README.md)
+迁移了 Honeybee 的本地文件自动推流能力。新实现使用纯 JDK 文件扫描、实例级快照、单线程调度和
+`ProcessBuilder(List<String>)`，不再生成 Shell 脚本，也不使用静态全局 Map、`nohup` 或并行修改共享状态。
+
+应用默认关闭。启用时必须同时启用 zlm4j、提供已存在的绝对扫描目录和 FFmpeg 可执行文件。状态接口也默认关闭，
+开启后只返回文件名和流状态，不暴露本地绝对路径。完整配置、启动、播放地址、故障恢复和安全边界见
+[Pushstream README](simple-secret-application/simple-secret-application-pushstream/README.md)。
 
 ## 构建验证
 

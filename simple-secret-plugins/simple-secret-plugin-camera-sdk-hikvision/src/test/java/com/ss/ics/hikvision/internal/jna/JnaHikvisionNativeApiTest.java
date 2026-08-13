@@ -5,9 +5,12 @@ import com.ss.ics.hikvision.HikvisionJnaStructures;
 import com.ss.ics.hikvision.HikvisionSdkException;
 import com.ss.ics.hikvision.HikvisionSdkOptions;
 import com.ss.ics.hikvision.internal.HikvisionNativeApi;
+import com.ss.ics.hikvision.internal.HikvisionNativeStreamStartException;
 import com.ss.ics.hikvision.internal.model.HikvisionFileSearchCondition;
 import com.ss.ics.hikvision.internal.model.HikvisionFileSearchResult;
 import com.ss.ics.hikvision.internal.model.HikvisionNativeLoginResult;
+import com.ss.ics.hikvision.internal.model.HikvisionPlaybackRequest;
+import com.ss.ics.hikvision.internal.model.HikvisionPreviewRequest;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
 import org.junit.jupiter.api.Test;
@@ -20,8 +23,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -153,6 +158,212 @@ class JnaHikvisionNativeApiTest {
     }
 
     @Test
+    void mapsRealPlayParametersAndCopiesCallbackData() throws IOException {
+        Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
+        FakeNativeLibrary library = new FakeNativeLibrary();
+        JnaHikvisionNativeApi nativeApi = JnaHikvisionNativeApi.load(
+                HikvisionSdkOptions.defaults(tempDirectory), "Windows", path -> library);
+        List<byte[]> dataBlocks = new ArrayList<>();
+
+        long handle = nativeApi.startRealPlay(
+                42, new HikvisionPreviewRequest(34, 1, 1),
+                (streamHandle, dataType, data) -> dataBlocks.add(data));
+        Memory memory = new Memory(3);
+        memory.write(0, new byte[]{1, 2, 3}, 0, 3);
+        library.realDataCallback.invoke(101, 2, memory, 3, Pointer.NULL);
+        memory.setByte(0, (byte) 9);
+
+        assertThat(handle).isEqualTo(101L);
+        assertThat(library.lastPreviewInfo.lChannel).isEqualTo(34);
+        assertThat(library.lastPreviewInfo.dwStreamType).isEqualTo(1);
+        assertThat(library.lastPreviewInfo.dwLinkMode).isZero();
+        assertThat(library.lastPreviewInfo.bBlocked).isZero();
+        assertThat(library.lastPreviewInfo.byProtoType).isEqualTo((byte) 1);
+        assertThat(dataBlocks).singleElement()
+                .satisfies(data -> assertThat(data).containsExactly(1, 2, 3));
+        assertThat(nativeApi.stopRealPlay(handle)).isTrue();
+        assertThat(library.stoppedRealPlayHandle).isEqualTo(101);
+    }
+
+    @Test
+    void isolatesUncheckedFailuresAtNativeCallbackBoundary() throws IOException {
+        Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
+        FakeNativeLibrary library = new FakeNativeLibrary();
+        JnaHikvisionNativeApi nativeApi = JnaHikvisionNativeApi.load(
+                HikvisionSdkOptions.defaults(tempDirectory), "Windows", path -> library);
+        nativeApi.startRealPlay(42, new HikvisionPreviewRequest(33, 0, 0),
+                (streamHandle, dataType, data) -> {
+                    throw new IllegalStateException("consumer failure");
+                });
+        Memory memory = new Memory(1);
+        memory.setByte(0, (byte) 1);
+
+        assertThatCode(() -> library.realDataCallback.invoke(
+                101, 1, memory, 1, Pointer.NULL)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void rejectsOversizedNativeCallbackBufferWithoutReadingIt() throws IOException {
+        Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
+        FakeNativeLibrary library = new FakeNativeLibrary();
+        JnaHikvisionNativeApi nativeApi = JnaHikvisionNativeApi.load(
+                HikvisionSdkOptions.defaults(tempDirectory), "Windows", path -> library);
+        List<byte[]> dataBlocks = new ArrayList<>();
+        nativeApi.startRealPlay(42, new HikvisionPreviewRequest(33, 0, 0),
+                (streamHandle, dataType, data) -> dataBlocks.add(data));
+        Memory memory = new Memory(1);
+
+        assertThatCode(() -> library.realDataCallback.invoke(
+                101, 1, memory, 16 * 1024 * 1024 + 1, Pointer.NULL))
+                .doesNotThrowAnyException();
+        assertThat(dataBlocks).isEmpty();
+    }
+
+    @Test
+    void isolatesErrorsAtNativeCallbackBoundary() throws IOException {
+        Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
+        FakeNativeLibrary library = new FakeNativeLibrary();
+        JnaHikvisionNativeApi nativeApi = JnaHikvisionNativeApi.load(
+                HikvisionSdkOptions.defaults(tempDirectory), "Windows", path -> library);
+        nativeApi.startRealPlay(42, new HikvisionPreviewRequest(33, 0, 0),
+                (streamHandle, dataType, data) -> {
+                    throw new AssertionError("consumer failure");
+                });
+        Memory memory = new Memory(1);
+
+        assertThatCode(() -> library.realDataCallback.invoke(
+                101, 1, memory, 1, Pointer.NULL)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void startsPlaybackOnlyAfterCallbackAndPlayControlSucceed() throws IOException {
+        Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
+        FakeNativeLibrary library = new FakeNativeLibrary();
+        JnaHikvisionNativeApi nativeApi = JnaHikvisionNativeApi.load(
+                HikvisionSdkOptions.defaults(tempDirectory), "Windows", path -> library);
+        LocalDateTime begin = LocalDateTime.of(2026, 8, 12, 10, 0);
+        LocalDateTime end = begin.plusMinutes(30);
+
+        long handle = nativeApi.startPlayback(
+                42, new HikvisionPlaybackRequest(33, 0, begin, end),
+                (streamHandle, dataType, data) -> { });
+
+        assertThat(handle).isEqualTo(202L);
+        assertThat(library.lastPlaybackParameters.dwSize)
+                .isEqualTo(library.lastPlaybackParameters.size());
+        assertThat(library.lastPlaybackParameters.struIDInfo.dwSize)
+                .isEqualTo(library.lastPlaybackParameters.struIDInfo.size());
+        assertThat(library.lastPlaybackParameters.struIDInfo.dwChannel).isEqualTo(33);
+        assertThat(library.lastPlaybackParameters.byStreamType).isZero();
+        assertThat(toDateTime(library.lastPlaybackParameters.struBeginTime)).isEqualTo(begin);
+        assertThat(toDateTime(library.lastPlaybackParameters.struEndTime)).isEqualTo(end);
+        assertThat(library.playbackEvents)
+                .containsExactly("create:42", "callback:202", "control:202:1");
+        assertThat(nativeApi.stopPlayback(handle)).isTrue();
+        assertThat(library.playbackEvents).endsWith("stop:202");
+    }
+
+    @Test
+    void stopsPlaybackWhenCallbackRegistrationFails() throws IOException {
+        Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
+        FakeNativeLibrary library = new FakeNativeLibrary();
+        library.playbackCallbackResult = false;
+        JnaHikvisionNativeApi nativeApi = JnaHikvisionNativeApi.load(
+                HikvisionSdkOptions.defaults(tempDirectory), "Windows", path -> library);
+        LocalDateTime begin = LocalDateTime.of(2026, 8, 12, 10, 0);
+
+        long handle = nativeApi.startPlayback(
+                42, new HikvisionPlaybackRequest(33, 0, begin, begin.plusMinutes(1)),
+                (streamHandle, dataType, data) -> { });
+
+        assertThat(handle).isEqualTo(-1L);
+        assertThat(library.playbackEvents)
+                .containsExactly("create:42", "callback:202", "stop:202");
+    }
+
+    @Test
+    void stopsPlaybackWhenPlayControlFails() throws IOException {
+        Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
+        FakeNativeLibrary library = new FakeNativeLibrary();
+        library.playbackControlResult = false;
+        JnaHikvisionNativeApi nativeApi = JnaHikvisionNativeApi.load(
+                HikvisionSdkOptions.defaults(tempDirectory), "Windows", path -> library);
+        LocalDateTime begin = LocalDateTime.of(2026, 8, 12, 10, 0);
+
+        long handle = nativeApi.startPlayback(
+                42, new HikvisionPlaybackRequest(33, 0, begin, begin.plusMinutes(1)),
+                (streamHandle, dataType, data) -> { });
+
+        assertThat(handle).isEqualTo(-1L);
+        assertThat(library.playbackEvents).containsExactly(
+                "create:42", "callback:202", "control:202:1", "stop:202");
+    }
+
+    @Test
+    void preservesPlaybackHandleWhenCallbackLinkageFailureCannotStop() throws Exception {
+        Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
+        FakeNativeLibrary library = new FakeNativeLibrary();
+        library.playbackCallbackLinkageFailure = true;
+        library.stopPlaybackResult = false;
+        JnaHikvisionNativeApi nativeApi = JnaHikvisionNativeApi.load(
+                HikvisionSdkOptions.defaults(tempDirectory), "Windows", path -> library);
+        LocalDateTime begin = LocalDateTime.of(2026, 8, 12, 10, 0);
+
+        assertThatThrownBy(() -> nativeApi.startPlayback(
+                42, new HikvisionPlaybackRequest(33, 0, begin, begin.plusMinutes(1)),
+                (streamHandle, dataType, data) -> { }))
+                .isInstanceOfSatisfying(HikvisionNativeStreamStartException.class,
+                        exception -> assertThat(exception.streamHandle()).isEqualTo(202L));
+
+        assertThat(streamCallbacks(nativeApi)).hasSize(1);
+        assertThat(library.playbackEvents).containsExactly(
+                "create:42", "callback:202", "stop:202");
+    }
+
+    @Test
+    void retainsCallbackAndHandleWhenFailedPlaybackCannotStop() throws Exception {
+        Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
+        FakeNativeLibrary library = new FakeNativeLibrary();
+        library.playbackControlResult = false;
+        library.stopPlaybackResult = false;
+        JnaHikvisionNativeApi nativeApi = JnaHikvisionNativeApi.load(
+                HikvisionSdkOptions.defaults(tempDirectory), "Windows", path -> library);
+        LocalDateTime begin = LocalDateTime.of(2026, 8, 12, 10, 0);
+
+        assertThatThrownBy(() -> nativeApi.startPlayback(
+                42, new HikvisionPlaybackRequest(33, 0, begin, begin.plusMinutes(1)),
+                (streamHandle, dataType, data) -> { }))
+                .isInstanceOfSatisfying(HikvisionNativeStreamStartException.class,
+                        exception -> assertThat(exception.streamHandle()).isEqualTo(202L));
+
+        assertThat(streamCallbacks(nativeApi)).hasSize(1);
+        assertThat(library.playbackEvents).containsExactly(
+                "create:42", "callback:202", "control:202:1", "stop:202");
+    }
+
+    @Test
+    void keepsCallbacksIndependentWhenStreamTypesShareNumericHandle() throws Exception {
+        Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
+        FakeNativeLibrary library = new FakeNativeLibrary();
+        library.playbackHandle = library.realPlayHandle;
+        JnaHikvisionNativeApi nativeApi = JnaHikvisionNativeApi.load(
+                HikvisionSdkOptions.defaults(tempDirectory), "Windows", path -> library);
+        LocalDateTime begin = LocalDateTime.of(2026, 8, 12, 10, 0);
+
+        nativeApi.startRealPlay(42, new HikvisionPreviewRequest(33, 0, 0),
+                (streamHandle, dataType, data) -> { });
+        nativeApi.startPlayback(43,
+                new HikvisionPlaybackRequest(33, 0, begin, begin.plusMinutes(1)),
+                (streamHandle, dataType, data) -> { });
+
+        assertThat(streamCallbacks(nativeApi)).hasSize(2);
+        nativeApi.stopRealPlay(library.realPlayHandle);
+        assertThat(streamCallbacks(nativeApi)).hasSize(1);
+        nativeApi.stopPlayback(library.playbackHandle);
+        assertThat(streamCallbacks(nativeApi)).isEmpty();
+    }
+
+    @Test
     void doesNotExposeNativeLibraryPathWhenLoadingFails() throws IOException {
         Path networkLibrary = Files.createFile(tempDirectory.resolve("HCNetSDK.dll"));
 
@@ -164,7 +375,8 @@ class JnaHikvisionNativeApiTest {
                 }))
                 .isInstanceOf(HikvisionSdkException.class)
                 .hasMessage("Hikvision native library load failed (code=-1)")
-                .hasMessageNotContaining(networkLibrary.toString());
+                .hasMessageNotContaining(networkLibrary.toString())
+                .hasCauseInstanceOf(UnsatisfiedLinkError.class);
     }
 
     private static String readCString(byte[] value) {
@@ -185,6 +397,21 @@ class JnaHikvisionNativeApiTest {
                 Byte.toUnsignedInt(value.bySecond));
     }
 
+    private static LocalDateTime toDateTime(HikvisionJnaStructures.PlaybackTime value) {
+        return LocalDateTime.of(
+                Short.toUnsignedInt(value.wYear), Byte.toUnsignedInt(value.byMonth),
+                Byte.toUnsignedInt(value.byDay), Byte.toUnsignedInt(value.byHour),
+                Byte.toUnsignedInt(value.byMinute), Byte.toUnsignedInt(value.bySecond),
+                Short.toUnsignedInt(value.wMillisecond) * 1_000_000);
+    }
+
+    private static Map<?, ?> streamCallbacks(JnaHikvisionNativeApi nativeApi) throws Exception {
+        java.lang.reflect.Field field = JnaHikvisionNativeApi.class
+                .getDeclaredField("streamCallbacks");
+        field.setAccessible(true);
+        return (Map<?, ?>) field.get(nativeApi);
+    }
+
     private static final class FakeNativeLibrary implements HikvisionNativeLibrary {
         private final List<Integer> initConfigTypes = new ArrayList<>();
         private final List<Long> initConfigBufferSizes = new ArrayList<>();
@@ -197,6 +424,17 @@ class JnaHikvisionNativeApiTest {
         private String lastPtz;
         private HikvisionJnaStructures.FileSearchCondition lastFileCondition;
         private int closedFindHandle;
+        private HikvisionJnaStructures.PreviewInfo lastPreviewInfo;
+        private HikvisionNativeDataCallback realDataCallback;
+        private int stoppedRealPlayHandle;
+        private HikvisionJnaStructures.PlaybackParameters lastPlaybackParameters;
+        private final List<String> playbackEvents = new ArrayList<>();
+        private boolean playbackCallbackResult = true;
+        private boolean playbackControlResult = true;
+        private boolean playbackCallbackLinkageFailure;
+        private boolean stopPlaybackResult = true;
+        private int realPlayHandle = 101;
+        private int playbackHandle = 202;
 
         @Override
         public boolean NET_DVR_SetSDKInitCfg(int type, Pointer buffer) {
@@ -274,6 +512,55 @@ class JnaHikvisionNativeApiTest {
         public boolean NET_DVR_FindClose_V30(int findHandle) {
             closedFindHandle = findHandle;
             return true;
+        }
+
+        @Override
+        public int NET_DVR_RealPlay_V40(
+                int userId, HikvisionJnaStructures.PreviewInfo previewInfo,
+                HikvisionNativeDataCallback callback, Pointer userData) {
+            previewInfo.read();
+            lastPreviewInfo = previewInfo;
+            realDataCallback = callback;
+            return realPlayHandle;
+        }
+
+        @Override
+        public boolean NET_DVR_StopRealPlay(int streamHandle) {
+            stoppedRealPlayHandle = streamHandle;
+            return true;
+        }
+
+        @Override
+        public int NET_DVR_PlayBackByTime_V50(
+                int userId, HikvisionJnaStructures.PlaybackParameters parameters) {
+            parameters.read();
+            lastPlaybackParameters = parameters;
+            playbackEvents.add("create:" + userId);
+            return playbackHandle;
+        }
+
+        @Override
+        public boolean NET_DVR_SetPlayDataCallBack_V40(
+                int streamHandle, HikvisionNativeDataCallback callback, Pointer userData) {
+            playbackEvents.add("callback:" + streamHandle);
+            if (playbackCallbackLinkageFailure) {
+                throw new UnsatisfiedLinkError("missing playback callback symbol");
+            }
+            return playbackCallbackResult;
+        }
+
+        @Override
+        public boolean NET_DVR_PlayBackControl_V40(
+                int streamHandle, int command, Pointer input, int inputLength,
+                Pointer output, com.sun.jna.ptr.IntByReference outputLength) {
+            playbackEvents.add("control:" + streamHandle + ":" + command);
+            return playbackControlResult;
+        }
+
+        @Override
+        public boolean NET_DVR_StopPlayBack(int streamHandle) {
+            playbackEvents.add("stop:" + streamHandle);
+            return stopPlaybackResult;
         }
 
         private static HikvisionJnaStructures.TimeSearch time(

@@ -22,6 +22,18 @@ public final class DahuaSdkException extends RuntimeException {
     }
 
     /**
+     * 创建保留原始原因的大华 SDK 异常。
+     *
+     * @param message 错误描述
+     * @param errorCode 厂商 SDK 错误码
+     * @param cause 原始异常
+     */
+    public DahuaSdkException(String message, int errorCode, Throwable cause) {
+        super(message + " (code=" + errorCode + ")", cause);
+        this.errorCode = errorCode;
+    }
+
+    /**
      * 获取厂商 SDK 错误码。
      *
      * @return 厂商 SDK 错误码

@@ -20,6 +20,7 @@
         <module>simple-secret-springboot-starter-netty-websocket</module>
         <module>simple-secret-springboot-starter-zlm4j</module>
         <module>simple-secret-springboot-starter-easymedia</module>
+        <module>simple-secret-springboot-starter-camera-zlm</module>
     </modules>
 
     <properties>

@@ -3,6 +3,8 @@ package com.ss.ics.hikvision.internal;
 import com.ss.ics.hikvision.internal.model.HikvisionFileSearchCondition;
 import com.ss.ics.hikvision.internal.model.HikvisionFileSearchResult;
 import com.ss.ics.hikvision.internal.model.HikvisionNativeLoginResult;
+import com.ss.ics.hikvision.internal.model.HikvisionPlaybackRequest;
+import com.ss.ics.hikvision.internal.model.HikvisionPreviewRequest;
 import com.ss.ics.domain.LoginDomain;
 
 /**
@@ -97,5 +99,53 @@ public interface HikvisionNativeApi {
      */
     default boolean closeFind(long findHandle) {
         throw new UnsupportedOperationException("file search is not implemented");
+    }
+
+    /**
+     * 启动实时预览。
+     *
+     * @param userId 原生用户编号
+     * @param request 实时预览参数
+     * @param callback 码流数据回调
+     * @return 原生预览句柄，失败时返回负值
+     */
+    default long startRealPlay(
+            int userId, HikvisionPreviewRequest request,
+            HikvisionNativeStreamCallback callback) {
+        throw new UnsupportedOperationException("real-time preview is not implemented");
+    }
+
+    /**
+     * 停止实时预览。
+     *
+     * @param streamHandle 原生预览句柄
+     * @return 停止是否成功
+     */
+    default boolean stopRealPlay(long streamHandle) {
+        throw new UnsupportedOperationException("real-time preview is not implemented");
+    }
+
+    /**
+     * 启动按时间历史回放。
+     *
+     * @param userId 原生用户编号
+     * @param request 历史回放参数
+     * @param callback 码流数据回调
+     * @return 原生回放句柄，失败时返回负值
+     */
+    default long startPlayback(
+            int userId, HikvisionPlaybackRequest request,
+            HikvisionNativeStreamCallback callback) {
+        throw new UnsupportedOperationException("playback is not implemented");
+    }
+
+    /**
+     * 停止历史回放。
+     *
+     * @param streamHandle 原生回放句柄
+     * @return 停止是否成功
+     */
+    default boolean stopPlayback(long streamHandle) {
+        throw new UnsupportedOperationException("playback is not implemented");
     }
 }

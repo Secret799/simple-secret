@@ -6,6 +6,9 @@ import com.ss.common.toolbox.dynamiccolumn.ColumnData;
 import com.ss.common.toolbox.dynamiccolumn.ColumnProperties;
 import com.ss.common.toolbox.dynamiccolumn.IDynamicColumnsService;
 import com.ss.common.toolbox.dynamiccolumn.converter.ColumnDataConverter;
+import com.ss.common.toolbox.time.DateTimeUnit;
+import com.ss.common.toolbox.time.DurationUtils;
+import com.ss.common.toolbox.time.LocalDateTimeRanges;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -14,6 +17,7 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -83,6 +87,22 @@ class ToolboxConsumerTest {
         assertThat(data.businessId()).isEqualTo("ticket-42");
         assertThat(converter.ori2db("42")).isEqualTo(42);
         assertThat(converter.db2ori(42)).isEqualTo("42");
+    }
+
+    @Test
+    void shouldUseTimeUtilitiesWithoutAdditionalDependencies() {
+        LocalDateTime start = LocalDateTime.of(2026, 1, 15, 12, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 3, 2, 8, 30);
+
+        assertThat(DurationUtils.parse("30s")).isEqualTo(Duration.ofSeconds(30L));
+        assertThat(LocalDateTimeRanges.split(start, end, DateTimeUnit.MONTH))
+                .hasSize(3)
+                .first()
+                .satisfies(range -> {
+                    assertThat(range.startInclusive()).isEqualTo(start);
+                    assertThat(range.endInclusive()).isEqualTo(
+                            LocalDateTime.of(2026, 1, 31, 23, 59, 59, 999_999_999));
+                });
     }
 
     private static Element dependency(Element project, String groupId, String artifactId) {

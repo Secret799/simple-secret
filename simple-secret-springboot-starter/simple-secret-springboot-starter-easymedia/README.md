@@ -166,10 +166,16 @@ H264NakedFlowPushZlmManager h264PushManager(
 }
 ```
 
-默认队列容量为 150。自定义 `processQueueSize` 时必须大于 0，不支持无界队列。队列满时 `push` 会阻塞形成背压；对应流停止后，等待写入会快速失败，不会永久阻塞。单个未完成 NALU 最多累积 16 MiB，超过上限会丢弃该不完整 NALU 并继续处理后续数据。
+默认队列容量为 150。自定义 `processQueueSize` 时必须大于 0，不支持无界队列。队列满时 `push`
+会阻塞形成背压；对应流停止后，等待写入会快速失败，不会永久阻塞。需要精确控制上游内存预算时，
+调用 `pushWithBackpressure`，它会等待当前片段解析完成并返回解析器仍保留的未完成 NALU 字节数。
+该同步入口在调用期间直接持有输入数组，调用返回前不得复用或修改数组内容。
+单个未完成 NALU 最多累积 16 MiB，超过上限会丢弃该不完整 NALU 并继续处理后续数据。
 
 ```java
 h264PushManager.push("live", "camera-01", h264Bytes);
+int retainedBytes = h264PushManager.pushWithBackpressure(
+        "live", "camera-01", h264Bytes);
 h264PushManager.stopPush("live", "camera-01");
 ```
 

@@ -105,6 +105,27 @@ class DahuaCameraSdkServicePtzTest {
                 .setCommand(PtzControlCommandEnums.LEFT).setIsBegin(true))).isFalse();
     }
 
+    @Test
+    void releasesAsyncCapacityWhenNativeLoginLinkageFails() {
+        FakeDahuaNativeApi nativeApi = new FakeDahuaNativeApi();
+        nativeApi.loginLinkageFailure = true;
+        DahuaSdkOptions options = new DahuaSdkOptions(
+                Path.of("sdk"), Duration.ofSeconds(3), Duration.ofSeconds(5), 1, 10_000);
+        DahuaCameraSdkService service = DahuaCameraSdkService.createForTesting(
+                DahuaSdkRuntime.openForTesting(options, nativeApi));
+        PTZControlDomain control = new PTZControlDomain()
+                .setCommand(PtzControlCommandEnums.LEFT).setIsBegin(true);
+
+        assertThat(catchThrowable(() -> service.asyncControl(device(), control)))
+                .isInstanceOf(UnsatisfiedLinkError.class);
+        assertThat(catchThrowable(() -> service.asyncControl(device(), control)))
+                .isInstanceOf(UnsatisfiedLinkError.class);
+        nativeApi.loginLinkageFailure = false;
+
+        assertThat(service.asyncControl(device(), control)).isTrue();
+        service.close();
+    }
+
     private static DeviceDomain device() {
         return new DeviceDomain().setIp("192.0.2.10").setPort("37777")
                 .setUsername("operator").setPassword("secret");

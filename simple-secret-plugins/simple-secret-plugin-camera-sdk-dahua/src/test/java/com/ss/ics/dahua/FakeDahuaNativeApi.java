@@ -30,6 +30,10 @@ final class FakeDahuaNativeApi implements DahuaNativeApi {
     boolean ptzResult = true;
     boolean blockFirstPtz;
     boolean stopPreviewResult = true;
+    boolean previewLinkageFailure;
+    boolean stopPreviewLinkageFailure;
+    boolean thermalLinkageFailure;
+    boolean loginLinkageFailure;
     long previewHandle = 99L;
     DahuaNativeStreamCallback streamCallback;
     DahuaNativeThermalCallback thermalCallback;
@@ -66,6 +70,9 @@ final class FakeDahuaNativeApi implements DahuaNativeApi {
     public DahuaNativeLoginResult login(LoginDomain login) {
         lastLogin = login;
         events.add("login");
+        if (loginLinkageFailure) {
+            throw new UnsatisfiedLinkError("missing login symbol");
+        }
         return new DahuaNativeLoginResult(42L, 0, 71, 4, "serial-01");
     }
 
@@ -98,6 +105,9 @@ final class FakeDahuaNativeApi implements DahuaNativeApi {
     public long startPreview(
             long userId, int channel, int streamType, DahuaNativeStreamCallback callback) {
         events.add("preview:start:" + userId + ":" + channel + ":" + streamType);
+        if (previewLinkageFailure) {
+            throw new UnsatisfiedLinkError("missing preview symbol");
+        }
         streamCallback = callback;
         return previewHandle;
     }
@@ -105,6 +115,9 @@ final class FakeDahuaNativeApi implements DahuaNativeApi {
     @Override
     public boolean stopPreview(long handle) {
         events.add("preview:stop:" + handle);
+        if (stopPreviewLinkageFailure) {
+            throw new UnsatisfiedLinkError("missing stop preview symbol");
+        }
         return stopPreviewResult;
     }
 
@@ -112,6 +125,9 @@ final class FakeDahuaNativeApi implements DahuaNativeApi {
     public long attachRadiometry(
             long userId, int channel, DahuaNativeThermalCallback callback) {
         events.add("thermal:attach:" + userId + ":" + channel);
+        if (thermalLinkageFailure) {
+            throw new UnsatisfiedLinkError("missing radiometry symbol");
+        }
         thermalCallback = callback;
         return thermalHandle;
     }

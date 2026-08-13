@@ -84,6 +84,19 @@ class DahuaCameraSdkServiceThermalTest {
         assertThat(nativeApi.events).endsWith("cleanup");
     }
 
+    @Test
+    void logsOutWhenNativeLinkageFailsDuringThermalSubscription() {
+        FakeDahuaNativeApi nativeApi = new FakeDahuaNativeApi();
+        nativeApi.thermalLinkageFailure = true;
+        DahuaCameraSdkService service = service(nativeApi);
+
+        assertThatThrownBy(() -> service.subscribeThermal(device(), ignored -> { }))
+                .isInstanceOf(UnsatisfiedLinkError.class);
+        assertThat(nativeApi.events).containsExactly(
+                "login", "thermal:attach:42:0", "logout:42");
+        service.close();
+    }
+
     private static DeviceDomain device() {
         return new DeviceDomain().setIp("192.0.2.10").setPort("37777")
                 .setUsername("operator").setPassword("secret");

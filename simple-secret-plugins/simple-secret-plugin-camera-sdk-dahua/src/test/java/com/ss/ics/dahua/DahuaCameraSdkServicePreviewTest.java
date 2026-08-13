@@ -54,6 +54,19 @@ class DahuaCameraSdkServicePreviewTest {
     }
 
     @Test
+    void logsOutWhenNativeLinkageFailsDuringPreviewStartup() {
+        FakeDahuaNativeApi nativeApi = new FakeDahuaNativeApi();
+        nativeApi.previewLinkageFailure = true;
+        DahuaCameraSdkService service = service(nativeApi);
+
+        assertThatThrownBy(() -> service.realPlay(device(), play(0), ignored -> { }))
+                .isInstanceOf(UnsatisfiedLinkError.class);
+        assertThat(nativeApi.events).containsExactly(
+                "login", "preview:start:42:0:0", "logout:42");
+        service.close();
+    }
+
+    @Test
     void serviceCloseStopsOpenPreviewBeforeRuntimeCleanup() {
         FakeDahuaNativeApi nativeApi = new FakeDahuaNativeApi();
         DahuaCameraSdkService service = service(nativeApi);
@@ -63,6 +76,30 @@ class DahuaCameraSdkServicePreviewTest {
 
         assertThat(nativeApi.events).containsExactly(
                 "login", "preview:start:42:0:0", "preview:stop:99", "logout:42", "cleanup");
+    }
+
+    @Test
+    void serviceCloseContinuesCleanupAfterNativePreviewStopLinkageFailure() {
+        FakeDahuaNativeApi nativeApi = new FakeDahuaNativeApi();
+        DahuaCameraSdkService service = service(nativeApi);
+        DahuaRealPlaySession session = service.realPlay(
+                device(), play(0), ignored -> { });
+        nativeApi.stopPreviewLinkageFailure = true;
+
+        assertThatThrownBy(service::close)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Dahua native resource cleanup failed")
+                .hasCauseInstanceOf(UnsatisfiedLinkError.class);
+
+        assertThat(nativeApi.events).containsExactly(
+                "login", "preview:start:42:0:0", "preview:stop:99");
+
+        nativeApi.stopPreviewLinkageFailure = false;
+        session.close();
+        service.close();
+        assertThat(nativeApi.events).containsExactly(
+                "login", "preview:start:42:0:0", "preview:stop:99",
+                "preview:stop:99", "logout:42", "cleanup");
     }
 
     @Test

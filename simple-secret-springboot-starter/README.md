@@ -12,6 +12,7 @@
 - `netty-websocket`：独立 Netty WebSocket 服务端。
 - `zlm4j`：嵌入式 ZLMediaKit 管理能力。
 - `easymedia`：基于 zlm4j 的 WebRTC 网关和媒体管理能力。
+- `camera-zlm`：默认关闭的大华 H.264 Annex-B 到 EasyMedia/ZLM 独立适配层。
 
 ## 自动配置流程
 
@@ -31,6 +32,8 @@ flowchart LR
 
 starter 只传递运行功能必需的依赖。MQTT v3/v5 直接依赖 Jackson 处理消息 payload，不依赖已删除的 JSON
 starter。Netty WebSocket 不依赖 Servlet WebSocket。各 starter 的配置前缀、Bean 名和生命周期彼此隔离。
+Camera-to-ZLM 只有显式启用且宿主提供大华 SDK Bean 时才初始化，不会把厂商 SDK 或 ZLM 反向加入
+纯 Camera SDK、Camera URL 或普通 EasyMedia 使用场景。
 
 ## 验证
 

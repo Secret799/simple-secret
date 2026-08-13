@@ -114,8 +114,13 @@ String streamId = play.realPlay(device, request, target);
 
 - `simple-secret-springboot-starter-camera` 只根据参数组装 RTSP URL，不调用厂商 SDK。
 - `simple-secret-plugin-camera-sdk` 只定义厂商 SDK 领域对象和 SPI，不依赖 Spring。
-- 海康/大华 JNA 驱动将作为独立 opt-in 构件迁移。
-- SDK 数据转推 ZLM4J 将作为独立适配层迁移，不会强制传递给只使用登录或 PTZ 的应用。
+- 海康/大华 JNA 驱动作为独立 opt-in 构件提供；海康驱动已支持原始实时预览和按时间回放数据回调。
+- 大华 H.264 数据转推已由独立的 `simple-secret-springboot-starter-camera-zlm` 提供，不会强制传递给只使用登录或 PTZ 的应用。
+
+`PlayService` 的 target 和返回类型由厂商驱动定义。海康实现接收 `HikvisionStreamDataHandler` 并返回可关闭的 `HikvisionStreamSession`；回调数据是已经脱离 native 内存生命周期的 HCNetSDK 原始数据，而不是通用解码帧。调用方不得假设不同厂商驱动返回相同封装格式。
+
+海康原始回调可能包含系统头或 PS 流，不能直接输入 H.264 Annex-B publisher；需要成熟 PS 解复用或
+HCNetSDK/PlayCtrl ES 回调的额外 opt-in 能力后才能转推。Camera SDK API 和海康驱动不会因此依赖 ZLM。
 
 ## 原生库安全边界
 

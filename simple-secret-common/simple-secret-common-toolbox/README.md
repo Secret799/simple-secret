@@ -1,7 +1,8 @@
 # Simple Secret Toolbox
 
 `simple-secret-common-toolbox` 提供可在普通 Java 17 项目中使用的基础工具，不依赖 Spring、Hutool、
-Lombok 或其他第三方运行时库。当前包含安全 URI 格式化、getter 属性解析和线程安全过期缓存。
+Lombok 或其他第三方运行时库。当前包含安全 URI 格式化、getter 属性解析、线程安全过期缓存、
+动态列契约和现代 Java 时间工具。
 
 ## Maven 依赖
 
@@ -145,6 +146,47 @@ final class DynamicColumnExample {
     }
 }
 ```
+
+## 时间工具
+
+时间包只使用 `java.time`，不引入旧 `Date`、默认时区转换或第三方日期库。短格式 Duration 适合读取
+应用自己的轻量配置：
+
+```java
+import com.ss.common.toolbox.time.DurationUtils;
+
+Duration timeout = DurationUtils.parse("30s");
+Duration retention = DurationUtils.parse("7d");
+```
+
+支持 `s`、`m`、`h` 和 `d`，数字与单位之间不能有空格。不支持的单位和非法数字会抛出
+`IllegalArgumentException`，不会静默采用默认值。
+
+自然时间边界与区间分段使用纳秒精度闭区间：
+
+```java
+import com.ss.common.toolbox.time.DateTimeUnit;
+import com.ss.common.toolbox.time.LocalDateTimeRange;
+import com.ss.common.toolbox.time.LocalDateTimeRanges;
+
+LocalDateTime start = LocalDateTime.of(2026, 1, 15, 12, 0);
+LocalDateTime end = LocalDateTime.of(2026, 3, 2, 8, 30);
+
+LocalDateTime monthStart = DateTimeUnit.MONTH.startOf(start);
+LocalDateTime monthEnd = DateTimeUnit.MONTH.endOf(start);
+List<LocalDateTimeRange> months =
+        LocalDateTimeRanges.split(start, end, DateTimeUnit.MONTH);
+```
+
+支持年、季度、月、ISO 周、日和小时；周一为每周第一天。相邻分段连续且互不重叠，前一段终点加
+1 纳秒等于后一段起点。默认最多生成 10,000 段，也可通过四参数 `split` 显式收紧上限，避免超大范围
+造成无界内存占用。仅当输入位于 `LocalDateTime.MIN/MAX` 且自然边界超过 Java 可表示范围时，
+边界才饱和为 `LocalDateTime.MIN` 或 `LocalDateTime.MAX`；其他日期异常不会被吞掉。
+`LocalDateTime` 不携带时区；涉及跨时区或夏令时的业务应使用 `Instant`、
+`OffsetDateTime` 或 `ZonedDateTime` 在业务边界显式转换。
+
+本次没有复制 Honeybee 旧版 1,200 行 `LocalDateTimeUtils`：其中包含 Hutool、旧 `Date`、系统默认时区
+和大量彼此无关的方法。Simple Secret 只保留上述边界明确、零依赖且可独立测试的能力。
 
 ## 验证
 

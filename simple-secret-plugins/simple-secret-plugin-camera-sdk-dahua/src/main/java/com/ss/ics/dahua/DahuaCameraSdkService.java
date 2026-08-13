@@ -163,6 +163,9 @@ public final class DahuaCameraSdkService
             } catch (RuntimeException exception) {
                 cleanupRejectedAsyncHandle(handle, exception);
                 throw exception;
+            } catch (LinkageError error) {
+                cleanupRejectedAsyncHandle(handle, error);
+                throw error;
             }
         } finally {
             readLock.unlock();
@@ -210,6 +213,9 @@ public final class DahuaCameraSdkService
         } catch (RuntimeException exception) {
             primaryFailure = exception;
             throw exception;
+        } catch (LinkageError error) {
+            cleanupPreviewLoginAfterLinkageError(loginHandle, error);
+            throw error;
         } finally {
             if (primaryFailure != null && !ownsLogin(loginHandle)) {
                 try {
@@ -218,6 +224,15 @@ public final class DahuaCameraSdkService
                     primaryFailure.addSuppressed(cleanupFailure);
                 }
             }
+        }
+    }
+
+    private void cleanupPreviewLoginAfterLinkageError(
+            long loginHandle, LinkageError primaryFailure) {
+        try {
+            logoutHandle(loginHandle);
+        } catch (RuntimeException | LinkageError cleanupFailure) {
+            primaryFailure.addSuppressed(cleanupFailure);
         }
     }
 
@@ -313,6 +328,9 @@ public final class DahuaCameraSdkService
         } catch (RuntimeException exception) {
             primaryFailure = exception;
             throw exception;
+        } catch (LinkageError error) {
+            cleanupThermalLoginAfterLinkageError(loginHandle, error);
+            throw error;
         } finally {
             if (primaryFailure != null && !ownsThermalLogin(loginHandle)) {
                 try {
@@ -327,6 +345,15 @@ public final class DahuaCameraSdkService
     private boolean ownsThermalLogin(long loginHandle) {
         return activeThermalSubscriptions.values().stream()
                 .anyMatch(resource -> resource.ownsLogin(loginHandle));
+    }
+
+    private void cleanupThermalLoginAfterLinkageError(
+            long loginHandle, LinkageError primaryFailure) {
+        try {
+            logoutHandle(loginHandle);
+        } catch (RuntimeException | LinkageError cleanupFailure) {
+            primaryFailure.addSuppressed(cleanupFailure);
+        }
     }
 
     private int fetchThermal(long subscriptionHandle) {
@@ -638,13 +665,17 @@ public final class DahuaCameraSdkService
         }
     }
 
-    private void cleanupRejectedAsyncHandle(Long handle, RuntimeException primaryFailure) {
+    private void cleanupRejectedAsyncHandle(Long handle, Throwable primaryFailure) {
         try {
             if (handle != null) {
                 logoutHandle(handle);
             }
-        } catch (RuntimeException cleanupFailure) {
-            suppressOrThrow(primaryFailure, cleanupFailure);
+        } catch (RuntimeException | LinkageError cleanupFailure) {
+            if (primaryFailure != null) {
+                primaryFailure.addSuppressed(cleanupFailure);
+            } else {
+                throw cleanupFailure;
+            }
         } finally {
             asyncPtzSlots.release();
         }
@@ -679,38 +710,41 @@ public final class DahuaCameraSdkService
                     Set.copyOf(activeThermalSubscriptions.keySet())) {
                 try {
                     closeThermalResource(subscriptionHandle);
-                } catch (RuntimeException exception) {
-                    firstFailure = combine(firstFailure, exception);
+                } catch (RuntimeException | LinkageError exception) {
+                    firstFailure = combine(firstFailure, asRuntimeFailure(exception));
                 }
             }
             for (Long previewHandle : Set.copyOf(activePreviews.keySet())) {
                 try {
                     closePreviewResource(previewHandle);
-                } catch (RuntimeException exception) {
-                    firstFailure = combine(firstFailure, exception);
+                } catch (RuntimeException | LinkageError exception) {
+                    firstFailure = combine(firstFailure, asRuntimeFailure(exception));
                 }
             }
-            if (firstFailure != null) {
-                throw firstFailure;
-            }
             for (Long handle : Set.copyOf(activeSessions.keySet())) {
+                if (ownsLogin(handle) || ownsThermalLogin(handle)) {
+                    continue;
+                }
                 AtomicInteger count = activeSessions.get(handle);
                 while (count != null && count.get() > 0) {
                     try {
                         logoutHandle(handle);
-                    } catch (RuntimeException exception) {
-                        firstFailure = combine(firstFailure, exception);
+                    } catch (RuntimeException | LinkageError exception) {
+                        firstFailure = combine(firstFailure, asRuntimeFailure(exception));
                         break;
                     }
                     count = activeSessions.get(handle);
                 }
             }
             boolean runtimeClosed = false;
-            try {
-                runtime.close();
-                runtimeClosed = true;
-            } catch (RuntimeException exception) {
-                firstFailure = combine(firstFailure, exception);
+            if (activeThermalSubscriptions.isEmpty()
+                    && activePreviews.isEmpty() && activeSessions.isEmpty()) {
+                try {
+                    runtime.close();
+                    runtimeClosed = true;
+                } catch (RuntimeException | LinkageError exception) {
+                    firstFailure = combine(firstFailure, asRuntimeFailure(exception));
+                }
             }
             cleanupComplete = runtimeClosed;
             if (firstFailure != null) {
@@ -891,6 +925,13 @@ public final class DahuaCameraSdkService
         }
         first.addSuppressed(next);
         return first;
+    }
+
+    private static RuntimeException asRuntimeFailure(Throwable failure) {
+        if (failure instanceof RuntimeException runtimeException) {
+            return runtimeException;
+        }
+        return new IllegalStateException("Dahua native resource cleanup failed", failure);
     }
 
     private static void suppressOrThrow(

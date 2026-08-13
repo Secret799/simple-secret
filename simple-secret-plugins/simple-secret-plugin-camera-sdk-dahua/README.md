@@ -58,7 +58,7 @@ try (DahuaCameraSdkService dahua =
 }
 ```
 
-`close()` 幂等，会先停止异步 PTZ，再关闭仍存活的热成像订阅与预览、注销会话，最后清理 NetSDK。NetSDK 是进程级运行时，同一进程同时只允许打开一个服务实例；关闭后才能重新打开。可显式设置单次操作超时、历史查询超时、异步 PTZ 队列容量和查询结果上限：
+`close()` 幂等，会先停止异步 PTZ，再关闭仍存活的热成像订阅与预览、注销会话，最后清理 NetSDK。单个 native 资源关闭失败不会阻止后续资源和 NetSDK 清理；全部清理尝试结束后，首个失败会携带原始 cause 返回。预览启动遇到动态链接错误时也会注销已建立的临时登录。NetSDK 是进程级运行时，同一进程同时只允许打开一个服务实例；关闭后才能重新打开。可显式设置单次操作超时、历史查询超时、异步 PTZ 队列容量和查询结果上限：
 
 ```java
 DahuaSdkOptions options = new DahuaSdkOptions(

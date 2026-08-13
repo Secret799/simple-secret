@@ -11,6 +11,7 @@ import org.mockito.InOrder;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -153,6 +154,54 @@ class H264NakedFlowPushZlmManagerTest {
         order.verify(zlmApi).mk_media_input_frame(mkMedia, frame);
         order.verify(zlmApi).mk_frame_unref(frame);
         order.verify(zlmApi).mk_media_release(mkMedia);
+        manager.close();
+    }
+
+    @Test
+    void backpressurePushShouldWaitUntilFragmentProcessingCompletes() throws Exception {
+        ZLMApi zlmApi = mock(ZLMApi.class);
+        MK_INI mkIni = mock(MK_INI.class);
+        MK_MEDIA mkMedia = mock(MK_MEDIA.class);
+        MK_FRAME frame = mock(MK_FRAME.class);
+        CountDownLatch inputStarted = new CountDownLatch(1);
+        CountDownLatch allowInputToFinish = new CountDownLatch(1);
+        AtomicBoolean pushFinished = new AtomicBoolean(false);
+        when(zlmApi.mk_ini_create()).thenReturn(mkIni);
+        when(zlmApi.mk_media_create2("__defaultVhost__", "live", "camera-bp", 0, mkIni))
+                .thenReturn(mkMedia);
+        when(zlmApi.mk_frame_create(
+                org.mockito.ArgumentMatchers.anyInt(),
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.any()))
+                .thenReturn(frame);
+        when(zlmApi.mk_media_input_frame(mkMedia, frame)).thenAnswer(invocation -> {
+            inputStarted.countDown();
+            allowInputToFinish.await(1, TimeUnit.SECONDS);
+            return 1;
+        });
+        H264NakedFlowPushZlmManager manager = new H264NakedFlowPushZlmManager(
+                new ZlmMediaProperties(), 30, 10, zlmApi);
+        Thread pushThread = new Thread(() -> {
+            try {
+                manager.pushWithBackpressure(
+                        "live", "camera-bp", completeNalUnitFragment());
+                pushFinished.set(true);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        pushThread.start();
+        assertThat(inputStarted.await(1, TimeUnit.SECONDS)).isTrue();
+        assertThat(pushFinished.get()).isFalse();
+        allowInputToFinish.countDown();
+        pushThread.join(1_000);
+
+        assertThat(pushFinished.get()).isTrue();
         manager.close();
     }
 

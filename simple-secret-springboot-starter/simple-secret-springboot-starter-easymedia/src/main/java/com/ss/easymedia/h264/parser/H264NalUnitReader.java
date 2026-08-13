@@ -69,8 +69,35 @@ public class H264NalUnitReader implements AutoCloseable {
      */
     public void writeFragment(byte[] data) throws InterruptedException {
         H264DataFragment fragment = new H264DataFragment(Objects.requireNonNull(data, "data"));
+        enqueueFragment(fragment);
+    }
+
+    /**
+     * 写入数据片段并等待解析线程完成该片段。
+     *
+     * @param data 数据片段
+     * @return 处理完成后解析器仍保留的累积字节数
+     * @throws InterruptedException 等待队列或处理完成时线程被中断
+     */
+    public int writeFragmentWithBackpressure(byte[] data) throws InterruptedException {
+        H264DataFragment fragment = new H264DataFragment(
+                Objects.requireNonNull(data, "data"), false);
+        enqueueFragment(fragment);
+        return fragment.awaitProcessed();
+    }
+
+    /**
+     * 将片段放入有界解析队列。
+     *
+     * @param fragment 数据片段
+     * @throws InterruptedException 等待队列容量时线程被中断
+     */
+    private void enqueueFragment(H264DataFragment fragment) throws InterruptedException {
         while (running.get()) {
             if (fragmentQueue.offer(fragment, 100, TimeUnit.MILLISECONDS)) {
+                if (!running.get() && fragmentQueue.remove(fragment)) {
+                    throw new IllegalStateException("H264 reader is not running");
+                }
                 return;
             }
         }
@@ -86,13 +113,22 @@ public class H264NalUnitReader implements AutoCloseable {
                 log.info("H264NalUnitReader thread started.");
                 try {
                     while (running.get()) {
+                        H264DataFragment fragment = fragmentQueue.take();
+                        RuntimeException processingFailure = null;
                         try {
-                            H264DataFragment fragment = fragmentQueue.take();
                             synchronized (reassemblyLock) {
                                 accumulateAndProcessFragment(fragment);
                             }
-                        } catch (RuntimeException e) {
-                            log.error("Error during reading/accumulation/reassembly: {}", e.getMessage(), e);
+                        } catch (RuntimeException exception) {
+                            processingFailure = exception;
+                            log.error("Error during reading/accumulation/reassembly: {}",
+                                    exception.getMessage(), exception);
+                        } catch (LinkageError error) {
+                            processingFailure = new IllegalStateException(
+                                    "Native H264 processing failed", error);
+                            log.error("Native error during H264 processing", error);
+                        } finally {
+                            fragment.complete(processingFailure, accumulatorBuffer.position());
                         }
                     }
                 } catch (InterruptedException e) {
@@ -102,6 +138,7 @@ public class H264NalUnitReader implements AutoCloseable {
                     }
                 } finally {
                     running.set(false);
+                    failQueuedFragments();
                     readerThread = null;
                     log.info("H264NalUnitReader thread stopped.");
                 }
@@ -118,6 +155,7 @@ public class H264NalUnitReader implements AutoCloseable {
     public synchronized void stopReading() {
         log.info("Stopping H264NalUnitReader...");
         running.set(false);
+        failQueuedFragments();
         Thread currentReaderThread = readerThread;
         if (currentReaderThread == null || currentReaderThread == Thread.currentThread()) {
             return;
@@ -131,6 +169,15 @@ public class H264NalUnitReader implements AutoCloseable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Interrupted while waiting for H264NalUnitReader to stop.", e);
+        }
+    }
+
+    /** 让仍在等待队列消费的生产者收到 reader 已停止的失败。 */
+    private void failQueuedFragments() {
+        RuntimeException failure = new IllegalStateException("H264 reader is not running");
+        H264DataFragment fragment;
+        while ((fragment = fragmentQueue.poll()) != null) {
+            fragment.complete(failure, accumulatorBuffer.position());
         }
     }
 

@@ -103,6 +103,23 @@ public class H264NakedFlowPushZlmManager implements AutoCloseable {
     }
 
     /**
+     * 推送 H.264 裸流并等待解析器消费该片段，向上游传播真实背压。
+     *
+     * @param app 应用名
+     * @param stream 流名
+     * @param data 数据；调用返回前不得修改其内容
+     * @return 处理完成后解析器仍保留的累积字节数
+     * @throws InterruptedException 等待处理时线程被中断
+     */
+    public int pushWithBackpressure(
+            String app, String stream, byte[] data) throws InterruptedException {
+        String cacheKey = generateKey(app, stream);
+        StreamResource streamResource = streamReaderCache.get(
+                cacheKey, true, () -> createStreamResource(app, stream));
+        return streamResource.writeFragmentWithBackpressure(data);
+    }
+
+    /**
      * 停止指定裸流并释放对应的 ZLM 媒体资源。
      *
      * @param app    应用名
@@ -192,6 +209,13 @@ public class H264NakedFlowPushZlmManager implements AutoCloseable {
                 throw new IllegalStateException("H264 stream resource is closed");
             }
             reader.writeFragment(data);
+        }
+
+        private int writeFragmentWithBackpressure(byte[] data) throws InterruptedException {
+            if (closed.get()) {
+                throw new IllegalStateException("H264 stream resource is closed");
+            }
+            return reader.writeFragmentWithBackpressure(data);
         }
 
         private void inputNalUnit(H264NalUnit nalUnit) {

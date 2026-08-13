@@ -74,7 +74,21 @@ class JnaDahuaNativeApiTest {
                 }))
                 .isInstanceOf(DahuaSdkException.class)
                 .hasMessage("Dahua native library load failed (code=-1)")
-                .hasMessageNotContaining(tempDirectory.toString());
+                .hasMessageNotContaining(tempDirectory.toString())
+                .hasCauseInstanceOf(UnsatisfiedLinkError.class);
+    }
+
+    @Test
+    void cleansUpWhenInitializationConfigurationFails() throws IOException {
+        Files.createFile(tempDirectory.resolve("dhnetsdk.dll"));
+        CapturingLibrary library = new CapturingLibrary();
+        library.reconnectLinkageFailure = true;
+        JnaDahuaNativeApi api = JnaDahuaNativeApi.load(
+                DahuaSdkOptions.defaults(tempDirectory), "Windows", ignored -> library);
+
+        assertThatThrownBy(api::initialize).isInstanceOf(UnsatisfiedLinkError.class);
+
+        assertThat(library.cleanupCalls).isEqualTo(1);
     }
 
     @Test
@@ -368,6 +382,8 @@ class JnaDahuaNativeApiTest {
                 new ArrayList<>();
         private DahuaNetSdkLibrary.RadiometryCallback radiometryCallback;
         private int radiometryParseCalls;
+        private int cleanupCalls;
+        private boolean reconnectLinkageFailure;
         private final CountDownLatch previewStopCalled = new CountDownLatch(1);
         private final CountDownLatch radiometryDetachCalled = new CountDownLatch(1);
 
@@ -378,6 +394,14 @@ class JnaDahuaNativeApiTest {
 
         @Override
         public void CLIENT_SetAutoReconnect(ReconnectCallback callback, Pointer user) {
+            if (reconnectLinkageFailure) {
+                throw new UnsatisfiedLinkError("missing reconnect symbol");
+            }
+        }
+
+        @Override
+        public void CLIENT_Cleanup() {
+            cleanupCalls++;
         }
 
         @Override
@@ -566,8 +590,5 @@ class JnaDahuaNativeApiTest {
             return 0;
         }
 
-        @Override
-        public void CLIENT_Cleanup() {
-        }
     }
 }

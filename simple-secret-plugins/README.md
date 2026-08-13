@@ -9,7 +9,7 @@
 - `simple-secret-plugin-udp`：UDP 单播和组播监听。
 - `simple-secret-plugin-excel`：有界 Excel 导入、导出和错误工作簿。
 - `simple-secret-plugin-camera-sdk`：摄像机 SDK 领域接口和服务注册表。
-- `simple-secret-plugin-camera-sdk-hikvision`：海康 JNA 驱动。
+- `simple-secret-plugin-camera-sdk-hikvision`：海康登录、PTZ、录像查询、实时预览和按时间回放 JNA 驱动。
 - `simple-secret-plugin-camera-sdk-dahua`：大华 JNA 驱动。
 
 ## 架构与流程
@@ -24,6 +24,8 @@ flowchart LR
 
 插件不依赖 Spring 容器。带资源的插件通过显式 `start`、`stop`、`open`、`close` 管理生命周期；输入流和
 输出流的所有权以各模块 README 为准。摄像机厂商插件只通过 Camera SDK API 模块暴露统一能力。
+
+海康取流流程为“设备登录 -> HCNetSDK 预览或回放 -> 原生数据复制 -> 业务 handler -> 会话关闭”。驱动只返回 HCNetSDK 原始数据，不负责解码或转推，也不引入 ZLM、Spring、JSON、FFmpeg 或 PlayCtrl。调用方必须及时关闭会话，并把耗时消费交给受控的有界线程池。
 
 ## 使用原则
 

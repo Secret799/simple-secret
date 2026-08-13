@@ -7,7 +7,7 @@
 
 - `simple-secret-common-bom`：统一管理保留模块与关键第三方库版本。
 - `simple-secret-common-core`：零第三方依赖的响应、异常、HTTP 状态码和校验分组。
-- `simple-secret-common-toolbox`：零第三方运行时依赖的缓存、Lambda 属性和 URI 工具。
+- `simple-secret-common-toolbox`：零第三方运行时依赖的缓存、动态列、时间、Lambda 属性和 URI 工具。
 - `simple-secret-common-dict`：只依赖 toolbox 的字典注册、查询、缓存和字段翻译。
 
 ## 依赖架构

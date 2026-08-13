@@ -302,6 +302,141 @@ public final class HikvisionJnaStructures {
     }
 
     /**
+     * 海康 HCNetSDK 实时预览参数，字段顺序必须与厂商 C 结构保持一致。
+     */
+    @Structure.FieldOrder({
+            "lChannel", "dwStreamType", "dwLinkMode", "hPlayWnd", "bBlocked",
+            "bPassbackRecord", "byPreviewMode", "byStreamID", "byProtoType", "byRes1",
+            "byVideoCodingType", "dwDisplayBufNum", "byNPQMode", "byRecvMetaData",
+            "byDataType", "byRes"
+    })
+    public static class PreviewInfo extends Structure {
+        /** 设备原生通道号。 */
+        public int lChannel;
+        /** 码流类型。 */
+        public int dwStreamType;
+        /** 传输连接方式。 */
+        public int dwLinkMode;
+        /** 本地播放窗口句柄，服务端取流时为空。 */
+        public Pointer hPlayWnd;
+        /** 是否阻塞取流。 */
+        public int bBlocked;
+        /** 是否启用录像回传。 */
+        public int bPassbackRecord;
+        /** 预览模式。 */
+        public byte byPreviewMode;
+        /** 流标识。 */
+        public byte[] byStreamID = new byte[STREAM_ID_LENGTH];
+        /** 应用层取流协议类型。 */
+        public byte byProtoType;
+        /** 厂商 SDK 保留字段。 */
+        public byte byRes1;
+        /** 视频编码数据类型。 */
+        public byte byVideoCodingType;
+        /** 显示缓冲帧数。 */
+        public int dwDisplayBufNum;
+        /** NPQ 模式。 */
+        public byte byNPQMode;
+        /** 是否接收元数据。 */
+        public byte byRecvMetaData;
+        /** 数据类型。 */
+        public byte byDataType;
+        /** 厂商 SDK 保留字段。 */
+        public byte[] byRes = new byte[213];
+    }
+
+    /**
+     * 海康 HCNetSDK V50 回放时间，字段顺序必须与厂商 C 结构保持一致。
+     */
+    @Structure.FieldOrder({
+            "wYear", "byMonth", "byDay", "byHour", "byMinute", "bySecond",
+            "byISO8601", "wMillisecond", "cTimeDifferenceH", "cTimeDifferenceM"
+    })
+    public static class PlaybackTime extends Structure {
+        /** 年份。 */
+        public short wYear;
+        /** 月份。 */
+        public byte byMonth;
+        /** 日期。 */
+        public byte byDay;
+        /** 小时。 */
+        public byte byHour;
+        /** 分钟。 */
+        public byte byMinute;
+        /** 秒。 */
+        public byte bySecond;
+        /** ISO8601 时区字段是否有效。 */
+        public byte byISO8601;
+        /** 毫秒。 */
+        public short wMillisecond;
+        /** 时区小时偏移。 */
+        public byte cTimeDifferenceH;
+        /** 时区分钟偏移。 */
+        public byte cTimeDifferenceM;
+    }
+
+    /**
+     * 海康 HCNetSDK V50 按时间回放参数，字段顺序必须与厂商 C 结构保持一致。
+     */
+    @Structure.FieldOrder({
+            "dwSize", "struIDInfo", "struBeginTime", "struEndTime", "hWnd",
+            "byDrawFrame", "byVolumeType", "byVolumeNum", "byStreamType", "dwFileIndex",
+            "byAudioFile", "byCourseFile", "byPlayMode", "byLinkMode", "byDownload",
+            "byOptimalStreamType", "byDisplayBufNum", "byNPQMode", "sUserName", "sPassword",
+            "byRemoteFile", "byRes2", "byHls", "pSavedFileName"
+    })
+    public static class PlaybackParameters extends Structure {
+        /** 原生结构大小。 */
+        public int dwSize;
+        /** 回放码流信息。 */
+        public StreamInfo struIDInfo = new StreamInfo();
+        /** 回放开始时间。 */
+        public PlaybackTime struBeginTime = new PlaybackTime();
+        /** 回放结束时间。 */
+        public PlaybackTime struEndTime = new PlaybackTime();
+        /** 本地显示窗口句柄，服务端取流时为空。 */
+        public Pointer hWnd;
+        /** 是否抽帧。 */
+        public byte byDrawFrame;
+        /** 存储卷类型。 */
+        public byte byVolumeType;
+        /** 存储卷编号。 */
+        public byte byVolumeNum;
+        /** 码流类型。 */
+        public byte byStreamType;
+        /** 录像文件索引。 */
+        public int dwFileIndex;
+        /** 是否仅回放音频。 */
+        public byte byAudioFile;
+        /** 是否为课程文件。 */
+        public byte byCourseFile;
+        /** 正放或倒放模式。 */
+        public byte byPlayMode;
+        /** 回放连接方式。 */
+        public byte byLinkMode;
+        /** 是否下载录像。 */
+        public byte byDownload;
+        /** 是否使用最优码流。 */
+        public byte byOptimalStreamType;
+        /** 显示缓冲帧数。 */
+        public byte byDisplayBufNum;
+        /** NPQ 模式。 */
+        public byte byNPQMode;
+        /** 二次认证用户名。 */
+        public byte[] sUserName = new byte[64];
+        /** 二次认证密码。 */
+        public byte[] sPassword = new byte[64];
+        /** 是否回放远程文件。 */
+        public byte byRemoteFile;
+        /** 厂商 SDK 保留字段。 */
+        public byte[] byRes2 = new byte[202];
+        /** 是否使用 HLS 回放。 */
+        public byte byHls;
+        /** 下载保存文件名指针。 */
+        public Pointer pSavedFileName;
+    }
+
+    /**
      * 海康 HCNetSDK 录像检索码流标识，字段顺序必须与厂商 C 结构保持一致。
      */
     @Structure.FieldOrder({"dwSize", "byId", "dwChannel", "byRes"})

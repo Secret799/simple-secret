@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -64,6 +65,7 @@ class HikvisionCameraSdkServicePtzTest {
     void boundsAsyncQueueAndCompletesAcceptedCommandsInOrder() throws InterruptedException {
         FakeNativeApi nativeApi = new FakeNativeApi();
         nativeApi.blockFirstPtz = true;
+        nativeApi.interruptedPtzResult = true;
         HikvisionSdkOptions options = new HikvisionSdkOptions(
                 Path.of("sdk"), Duration.ofSeconds(5), 1);
         HikvisionSdkRuntime runtime = HikvisionSdkRuntime.openForTesting(options, nativeApi);
@@ -182,6 +184,75 @@ class HikvisionCameraSdkServicePtzTest {
         service.close();
     }
 
+    @Test
+    void releasesAsyncCapacityWhenNativeLoginLinkageFails() {
+        FakeNativeApi nativeApi = new FakeNativeApi();
+        nativeApi.loginLinkageFailure = true;
+        HikvisionSdkOptions options = new HikvisionSdkOptions(
+                Path.of("sdk"), Duration.ofSeconds(5), 1);
+        HikvisionCameraSdkService service = HikvisionCameraSdkService.createForTesting(
+                HikvisionSdkRuntime.openForTesting(options, nativeApi));
+        PTZControlDomain control = new PTZControlDomain()
+                .setCommand(PtzControlCommandEnums.LEFT).setIsBegin(true);
+
+        assertThat(catchThrowable(() -> service.asyncControl(device(), control)))
+                .isInstanceOf(UnsatisfiedLinkError.class);
+        assertThat(catchThrowable(() -> service.asyncControl(device(), control)))
+                .isInstanceOf(UnsatisfiedLinkError.class);
+        nativeApi.loginLinkageFailure = false;
+
+        assertThat(service.asyncControl(device(), control)).isTrue();
+        service.close();
+    }
+
+    @Test
+    void acceptedAsyncFailureRemainsObservableWithoutUncaughtException() throws Exception {
+        FakeNativeApi nativeApi = new FakeNativeApi();
+        nativeApi.ptzResult = false;
+        HikvisionCameraSdkService service = service(nativeApi);
+        AtomicReference<Throwable> uncaught = new AtomicReference<>();
+        Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, failure) -> uncaught.set(failure));
+        try {
+            assertThat(service.asyncControl(device(), new PTZControlDomain()
+                    .setCommand(PtzControlCommandEnums.LEFT)
+                    .setIsBegin(true))).isTrue();
+            service.close();
+
+            assertThat(service.lastAsyncPtzFailure()).hasValueSatisfying(failure ->
+                    assertThat(failure)
+                            .isInstanceOf(HikvisionSdkException.class)
+                            .hasMessage("Hikvision PTZ control failed (code=0)"));
+            assertThat(uncaught.get()).isNull();
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previous);
+            service.close();
+        }
+    }
+
+    @Test
+    void closeContinuesRuntimeCleanupWhenInterrupted() throws InterruptedException {
+        FakeNativeApi nativeApi = new FakeNativeApi();
+        nativeApi.blockFirstPtz = true;
+        HikvisionCameraSdkService service = service(nativeApi);
+        PTZControlDomain control = new PTZControlDomain()
+                .setCommand(PtzControlCommandEnums.LEFT).setIsBegin(true);
+        assertThat(service.asyncControl(device(), control)).isTrue();
+        assertThat(nativeApi.firstPtzStarted.await(1, TimeUnit.SECONDS)).isTrue();
+
+        Thread.currentThread().interrupt();
+        try {
+            assertThat(catchThrowable(service::close))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Interrupted while closing Hikvision PTZ executor");
+        } finally {
+            Thread.interrupted();
+            nativeApi.releaseFirstPtz.countDown();
+        }
+
+        assertThat(nativeApi.cleanupCalls).isOne();
+    }
+
     private static DeviceDomain device() {
         return new DeviceDomain()
                 .setIp("192.0.2.10")
@@ -207,6 +278,9 @@ class HikvisionCameraSdkServicePtzTest {
         private boolean blockLogin;
         private boolean ptzResult = true;
         private boolean logoutResult = true;
+        private boolean loginLinkageFailure;
+        private boolean interruptedPtzResult;
+        private int cleanupCalls;
         private final Deque<Boolean> ptzResults = new ArrayDeque<>();
 
         @Override
@@ -216,6 +290,7 @@ class HikvisionCameraSdkServicePtzTest {
 
         @Override
         public boolean cleanup() {
+            cleanupCalls++;
             return true;
         }
 
@@ -227,6 +302,9 @@ class HikvisionCameraSdkServicePtzTest {
         @Override
         public HikvisionNativeLoginResult login(LoginDomain login) {
             events.add("login");
+            if (loginLinkageFailure) {
+                throw new UnsatisfiedLinkError("missing login symbol");
+            }
             if (blockLogin) {
                 loginStarted.countDown();
                 try {
@@ -256,7 +334,7 @@ class HikvisionCameraSdkServicePtzTest {
                     releaseFirstPtz.await(2, TimeUnit.SECONDS);
                 } catch (InterruptedException exception) {
                     Thread.currentThread().interrupt();
-                    return false;
+                    return interruptedPtzResult;
                 }
             }
             return ptzResults.isEmpty() ? ptzResult : ptzResults.removeFirst();

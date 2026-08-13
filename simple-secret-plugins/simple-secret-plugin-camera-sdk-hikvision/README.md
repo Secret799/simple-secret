@@ -1,8 +1,8 @@
 # Simple Secret Hikvision Camera SDK Plugin
 
-`simple-secret-plugin-camera-sdk-hikvision` 是海康威视 HCNetSDK 的按需 JNA 驱动，提供显式登录/注销、同步或有界异步 PTZ、录像月历查询和统一 SDK 生命周期。
+`simple-secret-plugin-camera-sdk-hikvision` 是海康威视 HCNetSDK 的按需 JNA 驱动，提供显式登录/注销、同步或有界异步 PTZ、录像月历查询、实时预览、按时间历史回放和统一 SDK 生命周期。
 
-模块只依赖 `simple-secret-plugin-camera-sdk` 与 JNA，不依赖 Spring、JSON、ZLM4J、Hutool 或 Lombok，也不包含、下载或解压任何厂商 `.dll`、`.so`、`.dylib`。
+模块只依赖 `simple-secret-plugin-camera-sdk` 与 JNA，不依赖 Spring、JSON、ZLM4J、FFmpeg、PlayCtrl、Hutool 或 Lombok，也不包含、下载或解压任何厂商 `.dll`、`.so`、`.dylib`。
 
 ## Maven 依赖
 
@@ -55,11 +55,11 @@ Path sdkDirectory = Path.of(System.getenv("HIKVISION_SDK_HOME"));
 
 HikvisionSdkOptions options = HikvisionSdkOptions.defaults(sdkDirectory);
 try (HikvisionCameraSdkService hikvision = HikvisionCameraSdkService.open(options)) {
-    // 登录、PTZ 或录像查询
+    // 登录、PTZ、录像查询或取流
 }
 ```
 
-`close()` 幂等，先停止异步 PTZ 执行器，再注销仍由服务跟踪的会话，最后清理 HCNetSDK。HCNetSDK 是进程级运行时，同一进程同时只允许打开一个 `HikvisionCameraSdkService`；关闭后可重新打开。应用必须为每个成功打开的服务执行关闭。
+`close()` 幂等，先停止异步 PTZ 执行器和所有剩余取流会话，再注销仍由服务跟踪的登录，最后清理 HCNetSDK。HCNetSDK 是进程级运行时，同一进程同时只允许打开一个 `HikvisionCameraSdkService`；关闭后可重新打开。应用必须为每个成功打开的服务执行关闭。
 
 可显式设置录像查询总超时和异步 PTZ 排队容量：
 
@@ -117,6 +117,8 @@ hikvision.syncControl(device, turn);
 ```
 
 `asyncControl` 使用单线程有界队列，保持命令顺序；队列已满或服务正在关闭时返回 `false`。方法在返回 `true` 前完成登录和参数解析，队列中只保存原生句柄及 PTZ 参数，不保存设备账号、密码或 `DeviceDomain`。
+已接受任务的执行或注销失败不会从后台线程抛出到标准错误输出，可通过
+`lastAsyncPtzFailure()` 获取最近一次失败。该状态只保留最近一项，监控系统应在读取后按业务需要记录和告警。
 
 逻辑通道 `1` 映射到设备登录结果中的起始通道，PTZ 速度等级 1 到 10 会限制到海康范围 1 到 7。
 
@@ -132,12 +134,79 @@ List<PlaybackTimePeriodDomain> august = hikvision.playbackRecordExistByMonth(
 
 结果固定包含当月每一天；无录像的日期返回空时间段。跨午夜录像会拆分到对应日期，查找句柄和临时登录在成功、超时和异常路径都会释放。单次查询最多接受 10,000 个录像片段，超过后失败关闭，避免异常设备耗尽堆内存。`streamType` 支持主码流 `0`、子码流 `1`、第三码流 `2` 和全部码流 `255`。
 
+## 取流架构与数据边界
+
+实时预览和历史回放共用同一套资源所有权模型：
+
+```mermaid
+flowchart LR
+    APP["业务调用"] --> LOGIN["临时登录设备"]
+    LOGIN --> SDK["HCNetSDK 预览或回放"]
+    SDK --> COPY["回调边界复制原生内存"]
+    COPY --> HANDLER["HikvisionStreamDataHandler"]
+    HANDLER --> CLOSE["HikvisionStreamSession.close"]
+    CLOSE --> STOP["停止原生取流"]
+    STOP --> LOGOUT["注销临时登录"]
+```
+
+`HikvisionStreamData.dataType()` 是 HCNetSDK 原始回调类型。数据块可能是系统头、PS 流或其他厂商定义数据，不承诺是已经解码的 H.264 帧。插件会在原生回调返回前复制 `Pointer` 数据，业务代码获得的字节数组不依赖 JNA 内存生命周期；每次读取 `data()` 还会返回防御性副本。
+
+业务 handler 在 HCNetSDK 厂商回调线程中执行，必须快速返回。需要解析、存储或转推时，应把数据提交给应用自行管理的有界线程池，并明确容量、拒绝策略和关闭行为。handler 抛出的运行时异常会在原生边界被隔离，不会回传给 HCNetSDK；应用仍应自行记录和监控消费失败。
+
+单个 native 回调数据块最大接受 16 MiB，空指针、非正长度和超限长度会被丢弃，避免异常 ABI 或损坏回调触发无界堆分配。所有 Java 异常和错误均在 JNA 回调边界隔离。厂商返回重复播放句柄时，该句柄会整体失效：停止 native 流并注销关联登录，原会话随后关闭保持幂等。启动或关闭期间发生 native 链接错误时，服务会继续清理能够释放的其他资源，并保留原始错误作为 cause 或 suppressed 异常。
+
+## 实时预览
+
+```java
+DeviceDomain device = new DeviceDomain()
+        .setIp("192.0.2.10")
+        .setPort("8000")
+        .setUsername(System.getenv("CAMERA_USERNAME"))
+        .setPassword(System.getenv("CAMERA_PASSWORD"))
+        .setChannel("1");
+
+PlayDomain request = new PlayDomain().setTakeStreamParam(
+        new PlayDomain.TakeStreamParam()
+                .setStreamType(0)
+                .setByProtoType("0"));
+
+try (HikvisionCameraSdkService hikvision = HikvisionCameraSdkService.open(options);
+        HikvisionStreamSession session = hikvision.realPlay(
+                device, request, data -> consume(data.dataType(), data.data()))) {
+    awaitApplicationShutdown();
+}
+```
+
+`streamType` 使用 HCNetSDK 预览码流类型范围 `0` 到 `10`；`byProtoType` 为 `0` 时使用私有协议，为 `1` 时使用 RTSP。逻辑通道 `1` 会映射到登录结果中的起始通道。
+
+## 按时间历史回放
+
+```java
+PlayDomain request = new PlayDomain()
+        .setTakeStreamParam(new PlayDomain.TakeStreamParam().setStreamType(0))
+        .setPlaybackParam(new PlayDomain.PlaybackParam()
+                .setCode("playback-20260812-01")
+                .setBeginTime(LocalDateTime.of(2026, 8, 12, 10, 0))
+                .setEndTime(LocalDateTime.of(2026, 8, 12, 10, 30))
+                .setMultiplier(1.0D));
+
+try (HikvisionCameraSdkService hikvision = HikvisionCameraSdkService.open(options);
+        HikvisionStreamSession session = hikvision.playback(
+                device, request, data -> consume(data.dataType(), data.data()))) {
+    awaitPlaybackCompletion();
+}
+```
+
+回放时间按设备本地时间传给 HCNetSDK，结束时间必须晚于开始时间。当前版本只支持正常一倍速正向播放；`multiplier` 可以不设置或设置为 `1.0D`，其他倍率会在登录设备前被拒绝。回放 `streamType` 仅支持 `0`、`1`、`2`。
+
+两个入口都返回 `HikvisionStreamSession`。调用方必须使用 try-with-resources 或在 `finally` 中关闭会话；关闭顺序固定为先停止原生取流，再注销该会话的临时登录。停止失败时会话不会被误标记为已关闭，调用方可以重试。即使调用方遗漏关闭，服务 `close()` 也会尝试关闭全部剩余会话；若停止或注销失败，服务会保留未释放资源且不会提前清理 HCNetSDK，再次调用 `close()` 可继续清理。
+
 ## 安全边界
 
 - 不要把 `DeviceDomain`、完整 RTSP 地址、账号或密码写入日志和异常。
 - 原生 SDK 崩溃属于进程级故障，建议在独立服务进程中隔离高风险设备接入。
 - 不要从不可信输入选择原生库目录；部署配置应只允许受控绝对路径。
-- 实时预览、历史回放取流和 ZLM 推流适配不在本构件中，后续作为独立 opt-in 模块迁移。
+- 当前构件只交付 HCNetSDK 原始回调数据；解码、封装转换和 ZLM 推流适配应放在独立 opt-in 模块中。
 
 ## 测试
 
@@ -147,4 +216,4 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn \
   -am clean verify
 ```
 
-单元测试使用窄原生接口替身，不要求安装真实 HCNetSDK，也不会触发 `Native.load`。
+单元测试使用窄原生接口替身，不要求安装真实 HCNetSDK，也不会触发 `Native.load`。真实 HCNetSDK 仅支持 Windows 和 Linux；自动化测试未替代真实摄像机、厂商原生库和网络环境的集成验证。

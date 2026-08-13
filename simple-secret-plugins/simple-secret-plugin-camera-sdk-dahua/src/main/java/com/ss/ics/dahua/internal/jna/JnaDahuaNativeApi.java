@@ -77,7 +77,8 @@ public final class JnaDahuaNativeApi implements DahuaNativeApi {
         try {
             return new JnaDahuaNativeApi(options, loader.apply(paths.netSdkLibrary()));
         } catch (LinkageError | RuntimeException exception) {
-            throw new DahuaSdkException("Dahua native library load failed", -1);
+            throw new DahuaSdkException(
+                    "Dahua native library load failed", -1, exception);
         }
     }
 
@@ -86,16 +87,25 @@ public final class JnaDahuaNativeApi implements DahuaNativeApi {
         if (!library.CLIENT_Init(disconnectCallback, Pointer.NULL)) {
             return false;
         }
-        library.CLIENT_SetAutoReconnect(reconnectCallback, Pointer.NULL);
-        int timeout = Math.toIntExact(options.operationTimeout().toMillis());
-        library.CLIENT_SetConnectTime(timeout, 1);
-        DahuaJnaStructures.NetworkParam networkParam = new DahuaJnaStructures.NetworkParam();
-        networkParam.connectTime = timeout;
-        networkParam.getConnectionInfoTime = timeout;
-        networkParam.getDeviceInfoTime = timeout;
-        networkParam.write();
-        library.CLIENT_SetNetworkParam(networkParam);
-        return true;
+        try {
+            library.CLIENT_SetAutoReconnect(reconnectCallback, Pointer.NULL);
+            int timeout = Math.toIntExact(options.operationTimeout().toMillis());
+            library.CLIENT_SetConnectTime(timeout, 1);
+            DahuaJnaStructures.NetworkParam networkParam = new DahuaJnaStructures.NetworkParam();
+            networkParam.connectTime = timeout;
+            networkParam.getConnectionInfoTime = timeout;
+            networkParam.getDeviceInfoTime = timeout;
+            networkParam.write();
+            library.CLIENT_SetNetworkParam(networkParam);
+            return true;
+        } catch (RuntimeException | LinkageError failure) {
+            try {
+                library.CLIENT_Cleanup();
+            } catch (RuntimeException | LinkageError cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            throw failure;
+        }
     }
 
     @Override

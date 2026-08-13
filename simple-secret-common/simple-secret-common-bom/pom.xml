@@ -136,6 +136,11 @@
             </dependency>
             <dependency>
                 <groupId>com.ss</groupId>
+                <artifactId>simple-secret-springboot-starter-camera-zlm</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ss</groupId>
                 <artifactId>simple-secret-springboot-starter-mqttv3</artifactId>
                 <version>${revision}</version>
             </dependency>
