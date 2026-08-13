@@ -809,9 +809,18 @@ simple-secret:
     rtsp-port: 7554
     http-port: 7080
     rtc-port: 8000
+    http-listener-enabled: true
+    rtsp-listener-enabled: true
+    rtmp-listener-enabled: true
+    rtc-listener-enabled: true
 ```
 
-ZLM 启动时以原生 `mk_ini_default()` 为基础，再应用 `ZlmMediaProperties` 明确暴露的配置字段。starter 内置的 `simple-secret__zlm4j-default__conf.ini` 用于内部默认配置加载，不是任意 INI 键的透传入口；第三方应用应只使用配置元数据中存在的 `simple-secret.zlm4j.*` 属性。启用前应确认配置端口未被占用，并由部署环境提供与操作系统、CPU 架构匹配的 ZLMediaKit 原生库 `mk_api`。
+ZLM 启动时以原生 `mk_ini_default()` 为基础，再应用 `ZlmMediaProperties` 明确暴露的配置字段。starter 内置的
+`simple-secret__zlm4j-default__conf.ini` 用于内部默认配置加载，不是任意 INI 键的透传入口；第三方应用应只
+使用配置元数据中存在的 `simple-secret.zlm4j.*` 属性。四个 `*-listener-enabled` 开关控制原生 HTTP、RTSP、
+RTMP 和 RTC socket listener，默认全部启用且至少必须启用一个；`enable-rtmp`、`enable-rtsp` 等属性只控制
+协议 mux/output，不控制端口监听。启用前应确认实际启用的端口未被占用，并由部署环境提供与操作系统、CPU
+架构匹配的 ZLMediaKit 原生库 `mk_api`。
 
 截图、转码和视频拼接还依赖 JavaCPP FFmpeg native。starter 项目中的 Maven OS profile 只在构建 starter 源码时生效，不会传递给消费项目，因此宿主必须按部署平台显式增加 runtime classifier。Linux x86-64 示例：
 
@@ -1259,6 +1268,9 @@ simple-secret-application-dji-sei-test.jar --spring.profiles.active=local
 `SIMPLE_SECRET_DJI_SEI_MAX_FRAME_BYTES`、`SIMPLE_SECRET_DJI_SEI_MAX_PAYLOAD_BYTES`、
 `SIMPLE_SECRET_DJI_SEI_PREVIEW_BYTES`、`SIMPLE_SECRET_DJI_SEI_SUMMARY_INTERVAL`、
 `SIMPLE_SECRET_DJI_SEI_RTMP_PORT` 和 `SIMPLE_SECRET_DJI_SEI_ROOT` 调整。
+
+该应用的 `local` profile 只启用原生 RTMP listener，不启动 ZLMediaKit HTTP、RTSP 或 RTC listener，因此除
+RTMP 端口外不需要预留 7080、7554 或 8000 端口。
 
 `DJI RTMP SEI detected` 表示解析到标准 SEI；`videoFrames` 为正且 `seiMessages=0` 表示收到视频但未发现
 支持的 SEI；`malformedMessages` 为正表示 SEI-like 数据违反大小或语法约束。先停止推流可触发媒体注销和

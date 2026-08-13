@@ -43,6 +43,22 @@ public class ZlmMediaProperties {
      */
     private Integer rtcPort = 8000;
     /**
+     * 是否启动原生 HTTP 监听器。
+     */
+    private Boolean httpListenerEnabled = true;
+    /**
+     * 是否启动原生 RTSP 监听器。
+     */
+    private Boolean rtspListenerEnabled = true;
+    /**
+     * 是否启动原生 RTMP 监听器。
+     */
+    private Boolean rtmpListenerEnabled = true;
+    /**
+     * 是否启动原生 RTC 监听器。
+     */
+    private Boolean rtcListenerEnabled = true;
+    /**
      * 无人观看时，是否直接关闭(而不是通过on_none_reader hook返回close)
      * 此配置置1时，此流如果无人观看，将不触发on_none_reader hook回调，
      * 而是将直接关闭流

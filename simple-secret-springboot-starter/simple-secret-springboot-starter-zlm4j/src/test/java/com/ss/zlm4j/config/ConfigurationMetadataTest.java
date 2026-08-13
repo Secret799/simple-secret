@@ -18,6 +18,10 @@ class ConfigurationMetadataTest {
             assertNotNull(input, "ZLM starter should generate Spring Boot configuration metadata");
             String metadata = new String(input.readAllBytes(), StandardCharsets.UTF_8);
             assertTrue(metadata.contains("simple-secret.zlm4j.enabled"));
+            assertTrue(metadata.contains("simple-secret.zlm4j.http-listener-enabled"));
+            assertTrue(metadata.contains("simple-secret.zlm4j.rtsp-listener-enabled"));
+            assertTrue(metadata.contains("simple-secret.zlm4j.rtmp-listener-enabled"));
+            assertTrue(metadata.contains("simple-secret.zlm4j.rtc-listener-enabled"));
             assertTrue(metadata.contains("simple-secret.zlm4j.resource-policy.allowed-hosts"));
         }
     }

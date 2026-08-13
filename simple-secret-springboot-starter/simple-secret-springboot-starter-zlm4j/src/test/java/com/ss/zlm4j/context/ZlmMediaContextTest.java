@@ -54,11 +54,64 @@ class ZlmMediaContextTest {
         assertThat(fake.stopCalls()).isEqualTo(1);
     }
 
+    @Test
+    void startsOnlyEnabledRtmpListener() {
+        ZlmMediaProperties properties = rtmpOnlyProperties();
+        FakeZlmApi fake = new FakeZlmApi(Map.of("mk_rtmp_server_start", (short) 7935));
+        ZlmMediaContext context = new TestZlmMediaContext(properties, fake.api());
+
+        assertThat(context.startMediaServer()).isTrue();
+        assertThat(fake.calls("mk_rtmp_server_start")).isEqualTo(1);
+        assertThat(fake.calls("mk_http_server_start")).isZero();
+        assertThat(fake.calls("mk_rtsp_server_start")).isZero();
+        assertThat(fake.calls("mk_rtc_server_start")).isZero();
+        assertThat(fake.stopCalls()).isZero();
+    }
+
+    @Test
+    void rollsBackWhenEnabledRtmpListenerFails() {
+        ZlmMediaProperties properties = rtmpOnlyProperties();
+        FakeZlmApi fake = new FakeZlmApi(Map.of("mk_rtmp_server_start", (short) 0));
+        ZlmMediaContext context = new TestZlmMediaContext(properties, fake.api());
+
+        assertThat(context.startMediaServer()).isFalse();
+        assertThat(fake.calls("mk_rtmp_server_start")).isEqualTo(1);
+        assertThat(fake.calls("mk_http_server_start")).isZero();
+        assertThat(fake.calls("mk_rtsp_server_start")).isZero();
+        assertThat(fake.calls("mk_rtc_server_start")).isZero();
+        assertThat(fake.stopCalls()).isEqualTo(1);
+    }
+
+    @Test
+    void rejectsConfigurationWithAllListenersDisabled() {
+        ZlmMediaProperties properties = rtmpOnlyProperties();
+        properties.setRtmpListenerEnabled(false);
+        FakeZlmApi fake = new FakeZlmApi(Map.of());
+        ZlmMediaContext context = new TestZlmMediaContext(properties, fake.api());
+
+        assertThat(context.startMediaServer()).isFalse();
+        assertThat(fake.totalStartCalls()).isZero();
+        assertThat(fake.stopCalls()).isZero();
+    }
+
+    private static ZlmMediaProperties rtmpOnlyProperties() {
+        ZlmMediaProperties properties = new ZlmMediaProperties();
+        properties.setHttpListenerEnabled(false);
+        properties.setRtspListenerEnabled(false);
+        properties.setRtmpListenerEnabled(true);
+        properties.setRtcListenerEnabled(false);
+        return properties;
+    }
+
     private static final class TestZlmMediaContext extends ZlmMediaContext {
         private final ZLMApi api;
 
         private TestZlmMediaContext(ZLMApi api) {
-            super(new ZlmMediaProperties(), new ZlmCallbackHandlerContext(), api);
+            this(new ZlmMediaProperties(), api);
+        }
+
+        private TestZlmMediaContext(ZlmMediaProperties properties, ZLMApi api) {
+            super(properties, new ZlmCallbackHandlerContext(), api);
             this.api = api;
         }
 
@@ -70,6 +123,7 @@ class ZlmMediaContextTest {
 
     private static final class FakeZlmApi {
         private final Map<String, Short> ports;
+        private final Map<String, AtomicInteger> calls = new HashMap<>();
         private final AtomicInteger stopCalls = new AtomicInteger();
         private final ZLMApi api;
 
@@ -79,6 +133,7 @@ class ZlmMediaContextTest {
                     ZLMApi.class.getClassLoader(),
                     new Class<?>[]{ZLMApi.class},
                     (proxy, method, args) -> {
+                        calls.computeIfAbsent(method.getName(), ignored -> new AtomicInteger()).incrementAndGet();
                         if (ports.containsKey(method.getName())) {
                             return ports.get(method.getName());
                         }
@@ -95,6 +150,18 @@ class ZlmMediaContextTest {
 
         private int stopCalls() {
             return stopCalls.get();
+        }
+
+        private int calls(String methodName) {
+            AtomicInteger count = calls.get(methodName);
+            return count == null ? 0 : count.get();
+        }
+
+        private int totalStartCalls() {
+            return calls.entrySet().stream()
+                    .filter(entry -> entry.getKey().endsWith("_server_start"))
+                    .mapToInt(entry -> entry.getValue().get())
+                    .sum();
         }
     }
 

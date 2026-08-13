@@ -22,7 +22,8 @@ emulation-prevention 字节、变长 `payloadType` 与 `payloadSize`。日志预
 畸形输入只写入当前流统计，不中断原生媒体回调线程。
 
 默认 profile 关闭 zlm4j、EasyMedia、EasyMedia 管理 API 和 DJI SEI 回调，因此普通启动和自动化测试不会加载
-`mk_api`。`local` profile 监听 `0.0.0.0:7935`，允许匿名发布、拒绝匿名播放，并关闭 WebRTC 和管理 API；
+`mk_api`。`local` profile 只启动 `0.0.0.0:7935` 原生 RTMP listener，允许匿名发布、拒绝匿名播放；原生
+HTTP、RTSP、RTC listener 以及 WebRTC 和管理 API 均关闭，因此不需要预留 7080、7554 或 8000 端口。
 该配置只适合受控诊断网络，不能直接暴露到公网。
 
 ## 前置条件
@@ -74,7 +75,8 @@ rtmp://<application-host>:7935/live/<streamId>
 | `SIMPLE_SECRET_DJI_SEI_RTMP_PORT` | `7935` | `local` profile 的 RTMP 监听端口 |
 | `SIMPLE_SECRET_DJI_SEI_ROOT` | `./runtime/dji-sei` | `local` profile 的 ZLMediaKit 根目录，日志写入其 `logs` 子目录 |
 
-环境变量只改变有界诊断参数和本地媒体入口。EasyMedia 管理 API、WebRTC、匿名播放均保持关闭。
+环境变量只改变有界诊断参数和本地 RTMP 入口。HTTP、RTSP、RTC listener、EasyMedia 管理 API、WebRTC、
+匿名播放均保持关闭。
 
 ## 结果判读
 

@@ -69,11 +69,19 @@ simple-secret:
     rtsp-port: 7554
     http-port: 7080
     rtc-port: 8000
+    http-listener-enabled: true
+    rtsp-listener-enabled: true
+    rtmp-listener-enabled: true
+    rtc-listener-enabled: true
 ```
 
 ZLM 启动时以原生 `mk_ini_default()` 为基础，再应用 `ZlmMediaProperties` 暴露的配置字段。内置 `simple-secret__zlm4j-default__conf.ini` 仅用于内部默认配置加载，不是任意 INI 键的透传入口。第三方应用应只使用配置元数据中存在的 `simple-secret.zlm4j.*` 属性。
 
-启用前应确认端口未被占用。Spring 容器关闭时 starter 会停止 ZLM 服务并释放已管理的上下文资源。
+四个 `*-listener-enabled` 开关控制原生 HTTP、RTSP、RTMP 和 RTC socket listener，默认全部启用以保持兼容；
+至少必须启用一个。`enable-rtmp`、`enable-rtsp` 等 `enable-*` 属性控制媒体源的协议 mux/output，不控制端口监听。
+只需要单一入口时应显式关闭未使用的 listener，并仅检查已启用端口是否可用。任一已启用 listener 启动失败时，
+starter 会停止本次已经启动的全部 listener 并让应用初始化失败。Spring 容器关闭时 starter 会停止 ZLM 服务并
+释放已管理的上下文资源。
 
 ## 拉流代理和在线状态
 

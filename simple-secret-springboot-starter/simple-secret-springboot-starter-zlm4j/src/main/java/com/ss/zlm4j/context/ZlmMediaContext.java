@@ -176,28 +176,103 @@ public class ZlmMediaContext {
      * @return 返回的 {@code boolean} 结果
      */
     public boolean startMediaServer() {
-        //创建http服务器 0:失败,非0:端口号
-        short httpServerPort = zlmApi.mk_http_server_start(defaultProperties.getHttpPort().shortValue(), 0);
-        boolean httpStarted = httpServerPort != 0;
-        log.info("【SimpleSecretZLMediaKit】HTTP流媒体服务启动：{}", httpStarted ? "成功，端口：" + httpServerPort : "失败");
-        //创建rtsp服务器 0:失败,非0:端口号
-        short rtspServerPort = zlmApi.mk_rtsp_server_start(defaultProperties.getRtspPort().shortValue(), 0);
-        boolean rtspStarted = rtspServerPort != 0;
-        log.info("【SimpleSecretZLMediaKit】RTSP流媒体服务启动：{}", rtspStarted ? "成功，端口：" + rtspServerPort : "失败");
-        //创建rtmp服务器 0:失败,非0:端口号
-        short rtmpServerPort = zlmApi.mk_rtmp_server_start(defaultProperties.getRtmpPort().shortValue(), 0);
-        boolean rtmpStarted = rtmpServerPort != 0;
-        log.info("【SimpleSecretZLMediaKit】RTMP流媒体服务启动：{}", rtmpStarted ? "成功，端口：" + rtmpServerPort : "失败");
-        //创建rtc服务器 0:失败,非0:端口号
-        short rtcServerPort = zlmApi.mk_rtc_server_start(defaultProperties.getRtcPort().shortValue());
-        boolean rtcStarted = rtcServerPort != 0;
-        log.info("【SimpleSecretZLMediaKit】RTC流媒体服务启动：{}", rtcStarted ? "成功，端口：" + rtcServerPort : "失败");
-
+        if (!hasEnabledListener()) {
+            log.error("【SimpleSecretZLMediaKit】至少需要启用一个原生媒体监听器");
+            return false;
+        }
+        boolean httpStarted = startHttpListener();
+        boolean rtspStarted = startRtspListener();
+        boolean rtmpStarted = startRtmpListener();
+        boolean rtcStarted = startRtcListener();
         boolean allStarted = httpStarted && rtspStarted && rtmpStarted && rtcStarted;
         if (!allStarted) {
             zlmApi.mk_stop_all_server();
         }
         return allStarted;
+    }
+
+    /**
+     * 判断是否至少启用了一个原生监听器。
+     *
+     * @return 至少启用一个监听器时返回 true
+     */
+    private boolean hasEnabledListener() {
+        return Boolean.TRUE.equals(defaultProperties.getHttpListenerEnabled())
+                || Boolean.TRUE.equals(defaultProperties.getRtspListenerEnabled())
+                || Boolean.TRUE.equals(defaultProperties.getRtmpListenerEnabled())
+                || Boolean.TRUE.equals(defaultProperties.getRtcListenerEnabled());
+    }
+
+    /**
+     * 按配置启动原生 HTTP 监听器。
+     *
+     * @return 监听器已禁用或启动成功时返回 true
+     */
+    private boolean startHttpListener() {
+        if (!Boolean.TRUE.equals(defaultProperties.getHttpListenerEnabled())) {
+            log.info("【SimpleSecretZLMediaKit】HTTP流媒体监听器已禁用，跳过启动");
+            return true;
+        }
+        short port = zlmApi.mk_http_server_start(defaultProperties.getHttpPort().shortValue(), 0);
+        return logListenerResult("HTTP", port);
+    }
+
+    /**
+     * 按配置启动原生 RTSP 监听器。
+     *
+     * @return 监听器已禁用或启动成功时返回 true
+     */
+    private boolean startRtspListener() {
+        if (!Boolean.TRUE.equals(defaultProperties.getRtspListenerEnabled())) {
+            log.info("【SimpleSecretZLMediaKit】RTSP流媒体监听器已禁用，跳过启动");
+            return true;
+        }
+        short port = zlmApi.mk_rtsp_server_start(defaultProperties.getRtspPort().shortValue(), 0);
+        return logListenerResult("RTSP", port);
+    }
+
+    /**
+     * 按配置启动原生 RTMP 监听器。
+     *
+     * @return 监听器已禁用或启动成功时返回 true
+     */
+    private boolean startRtmpListener() {
+        if (!Boolean.TRUE.equals(defaultProperties.getRtmpListenerEnabled())) {
+            log.info("【SimpleSecretZLMediaKit】RTMP流媒体监听器已禁用，跳过启动");
+            return true;
+        }
+        short port = zlmApi.mk_rtmp_server_start(defaultProperties.getRtmpPort().shortValue(), 0);
+        return logListenerResult("RTMP", port);
+    }
+
+    /**
+     * 按配置启动原生 RTC 监听器。
+     *
+     * @return 监听器已禁用或启动成功时返回 true
+     */
+    private boolean startRtcListener() {
+        if (!Boolean.TRUE.equals(defaultProperties.getRtcListenerEnabled())) {
+            log.info("【SimpleSecretZLMediaKit】RTC流媒体监听器已禁用，跳过启动");
+            return true;
+        }
+        short port = zlmApi.mk_rtc_server_start(defaultProperties.getRtcPort().shortValue());
+        return logListenerResult("RTC", port);
+    }
+
+    /**
+     * 记录监听器启动结果。
+     *
+     * @param protocol 监听协议
+     * @param port 原生接口返回的实际端口，0 表示失败
+     * @return 端口非 0 时返回 true
+     */
+    private boolean logListenerResult(String protocol, short port) {
+        if (port == 0) {
+            log.error("【SimpleSecretZLMediaKit】{}流媒体监听器启动失败", protocol);
+            return false;
+        }
+        log.info("【SimpleSecretZLMediaKit】{}流媒体监听器启动成功，端口：{}", protocol, port);
+        return true;
     }
 
     /**

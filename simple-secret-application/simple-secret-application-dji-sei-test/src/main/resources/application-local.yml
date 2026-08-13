@@ -3,6 +3,10 @@ simple-secret:
     enabled: true
     listen-ip: 0.0.0.0
     rtmp-port: ${SIMPLE_SECRET_DJI_SEI_RTMP_PORT:7935}
+    http-listener-enabled: false
+    rtsp-listener-enabled: false
+    rtmp-listener-enabled: true
+    rtc-listener-enabled: false
     enable-rtmp: 1
     allow-anonymous-publish: true
     allow-anonymous-play: false
