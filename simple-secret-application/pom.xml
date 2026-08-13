@@ -13,6 +13,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>simple-secret-application-dji-sei-test</module>
         <module>simple-secret-application-easymedia-test</module>
         <module>simple-secret-application-pushstream</module>
     </modules>
