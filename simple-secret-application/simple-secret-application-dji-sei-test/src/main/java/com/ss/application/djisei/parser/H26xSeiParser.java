@@ -134,7 +134,14 @@ public final class H26xSeiParser {
      */
     private void parseRbsp(byte[] rbsp, int maxPayloadBytes, List<SeiMessage> messages, List<SeiParseIssue> issues) {
         RbspCursor cursor = new RbspCursor(rbsp);
-        while (!cursor.atTrailingBits()) {
+        while (true) {
+            if (cursor.atTrailingBits()) {
+                return;
+            }
+            if (cursor.atEnd()) {
+                issues.add(new SeiParseIssue("MISSING_TRAILING_BITS", "SEI RBSP is missing trailing bits"));
+                return;
+            }
             int payloadType = cursor.readExtendedValue();
             if (payloadType < 0) {
                 issues.add(cursor.headerIssue());
@@ -292,7 +299,7 @@ public final class H26xSeiParser {
          */
         private boolean atTrailingBits() {
             if (position >= rbsp.length || (rbsp[position] & 0xFF) != RBSP_STOP_ONE_BIT) {
-                return position >= rbsp.length;
+                return false;
             }
             for (int index = position + 1; index < rbsp.length; index++) {
                 if (rbsp[index] != 0) {
@@ -300,6 +307,15 @@ public final class H26xSeiParser {
                 }
             }
             return true;
+        }
+
+        /**
+         * 判断游标是否已经读到 RBSP 末尾。
+         *
+         * @return 游标是否已经读到末尾
+         */
+        private boolean atEnd() {
+            return position >= rbsp.length;
         }
 
         /**

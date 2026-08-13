@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * H.264/H.265 SEI 解析器测试。
@@ -81,6 +82,65 @@ class H26xSeiParserTest {
                 .containsExactly("FRAME_TOO_LARGE");
         assertThat(regularFrame.messages()).isEmpty();
         assertThat(regularFrame.seiNalUnitCount()).isZero();
+    }
+
+    @Test
+    void shouldReportMissingTrailingBitsWhenPayloadEndsAtEndOfFrame() {
+        SeiParseResult result = parser.parse(
+                annexB4(bytes(0x06, 5, 1, 1)), VideoCodec.H264, 1024, 512);
+
+        assertThat(result.messages()).hasSize(1);
+        assertThat(result.issues()).extracting(SeiParseIssue::code)
+                .containsExactly("MISSING_TRAILING_BITS");
+    }
+
+    @Test
+    void shouldReportMissingTrailingBitsWhenPayloadConsumesStopBit() {
+        SeiParseResult result = parser.parse(
+                annexB4(bytes(0x06, 5, 2, 1, 0x80)), VideoCodec.H264, 1024, 512);
+
+        assertThat(result.messages()).hasSize(1);
+        assertThat(result.messages().get(0).payload()).containsExactly(1, 0x80);
+        assertThat(result.issues()).extracting(SeiParseIssue::code)
+                .containsExactly("MISSING_TRAILING_BITS");
+    }
+
+    @Test
+    void shouldParseExtendedPayloadTypeAndSize() {
+        byte[] payload = new byte[256];
+        payload[0] = 7;
+        byte[] rbsp = concat(bytes(0xFF, 5, 0xFF, 1), payload, bytes(0x80));
+
+        SeiParseResult result = parser.parse(annexB4(concat(bytes(0x06), rbsp)), VideoCodec.H264, 1024, 512);
+
+        assertThat(result.messages()).singleElement().satisfies(message -> {
+            assertThat(message.payloadType()).isEqualTo(260);
+            assertThat(message.payload()).hasSize(256).startsWith((byte) 7);
+        });
+        assertThat(result.issues()).isEmpty();
+    }
+
+    @Test
+    void shouldReportTruncatedExtendedHeader() {
+        SeiParseResult result = parser.parse(annexB4(bytes(0x06, 0xFF)), VideoCodec.H264, 1024, 512);
+
+        assertThat(result.messages()).isEmpty();
+        assertThat(result.issues()).extracting(SeiParseIssue::code)
+                .containsExactly("TRUNCATED_HEADER");
+    }
+
+    @Test
+    void shouldDefensivelyCopyPayloadAndExposeImmutableCollections() {
+        SeiParseResult result = parser.parse(annexB4(h264Sei(4, bytes(1))), VideoCodec.H264, 1024, 512);
+        SeiMessage message = result.messages().get(0);
+        byte[] payload = message.payload();
+        payload[0] = 2;
+
+        assertThat(message.payload()).containsExactly(1);
+        assertThatThrownBy(() -> result.messages().add(message))
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> result.issues().add(new SeiParseIssue("CODE", "message")))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     private static byte[] h264Sei(int payloadType, byte[] payload) {
