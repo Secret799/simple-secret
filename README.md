@@ -875,7 +875,14 @@ public class CameraStreamService {
 }
 ```
 
-`addStreamPullerProxy` 返回的代理 key 应由业务侧保存，用于精确删除代理。不要把不可信客户端提交的 URL 直接传入服务，仍应在业务层校验租户、设备归属和允许的媒体源。
+`addStreamPullerProxy` 和 `addStreamPusherProxy` 只有在 native 首次连接成功后才返回代理 key，业务侧应保存
+该 key 以便精确删除代理。首次连接失败、等待超过 5 秒或等待线程被中断时会抛出
+`ZlmOperationException`，并移除回调、注册信息和释放 native 资源，不会把错误文本或 `null` 当作成功结果。
+同一 key 被重新注册后，旧代理的延迟关闭回调不会清理新代理的回调。
+服务开始关闭后会永久拒绝创建新的推流、拉流和 RTP 资源。关闭时会尝试释放全部已注册资源；某个 native
+资源释放失败不会阻止其他资源清理，失败资源会保留在注册表中，调用方可再次执行 `close()` 重试。
+
+不要把不可信客户端提交的 URL 直接传入服务，仍应在业务层校验租户、设备归属和允许的媒体源。
 
 ### 录像、RTP、截图和转码
 
@@ -1143,6 +1150,10 @@ h264PushManager.stopPush("live", "camera-01");
 ```
 
 默认处理队列容量为 150。使用三参数构造器时，`processQueueSize` 必须大于 0，不再支持无界队列。队列已满时，`push` 会阻塞形成背压；等待期间线程被中断会抛出 `InterruptedException`，对应流被停止时会快速抛出 `IllegalStateException`，不会永久阻塞在已无人消费的队列上。
+
+读取器按连续字节流识别三字节和四字节 Annex-B 起始码，支持跨输入片段的起始码和单片段内多个 NALU。
+同步 `pushWithBackpressure` 会把解析器异常、ZLM native frame 创建失败和输入失败传播给调用方；
+Camera-to-ZLM 收到这些失败后会停止对应设备预览和 ZLM 流，并在 `session.failure()` 中保留异常。
 
 单个尚未完成重组的 NALU 最多累积 16 MiB。超过上限时读取器会丢弃该不完整 NALU、记录异常并继续处理后续片段，避免异常输入持续占用堆内存。长时间没有数据的流会自动回收；应用关闭时 Spring 会调用 `close()` 释放全部原生资源。
 

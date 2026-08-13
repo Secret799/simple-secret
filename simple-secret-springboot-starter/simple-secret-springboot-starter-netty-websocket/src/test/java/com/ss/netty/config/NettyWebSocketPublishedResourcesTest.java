@@ -13,7 +13,7 @@ class NettyWebSocketPublishedResourcesTest {
     void shouldPublishAutoConfigurationAndConfigurationMetadata() throws Exception {
         ClassLoader loader = getClass().getClassLoader();
         String imports = read(loader, "META-INF/spring/"
-                + "org.springframework.boot.config.AutoConfiguration.imports");
+                + "org.springframework.boot.autoconfigure.AutoConfiguration.imports");
         String metadata = read(loader, "META-INF/spring-configuration-metadata.json");
 
         assertThat(imports.trim()).isEqualTo(

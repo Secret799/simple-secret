@@ -32,7 +32,7 @@ public interface IZlmMediaService {
      * 添加拉流代理
      *
      * @param param 代理信息
-     * @return 代理Key or 错误信息
+     * @return 首次连接成功后的代理 key
      */
     String addStreamPullerProxy(@Valid StreamProxyPullerBO param);
 
@@ -48,7 +48,7 @@ public interface IZlmMediaService {
      * 添加推流代理
      *
      * @param param 转推流代理信息
-     * @return 代理key or 错误信息
+     * @return 首次连接成功后的代理 key
      */
     String addStreamPusherProxy(StreamProxyPusherBO param);
 

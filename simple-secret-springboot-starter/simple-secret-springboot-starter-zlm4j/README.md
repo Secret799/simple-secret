@@ -117,7 +117,14 @@ public class CameraStreamService {
 }
 ```
 
-`addStreamPullerProxy` 返回的代理 key 应由业务侧保存，用于精确删除代理。不要把未验证的客户端 URL 直接传入服务；业务层仍需校验租户、设备归属和允许的媒体源。
+`addStreamPullerProxy` 和 `addStreamPusherProxy` 只有在 native 首次连接成功后才返回代理 key，业务侧应保存该
+key 以便精确删除代理。首次连接失败、等待超过 5 秒或等待线程被中断时会抛出
+`ZlmOperationException`，并从注册表移除代理、回调及释放 native 资源，不会把错误文本或 `null` 当作成功
+结果返回。相同 key 被重新使用时，旧代理的延迟关闭回调不会删除新代理的回调。
+服务开始关闭后会永久拒绝创建新的推流、拉流和 RTP 资源。关闭时会尝试释放全部已注册资源；某个 native
+资源释放失败不会阻止其他资源清理，失败资源会保留在注册表中，调用方可再次执行 `close()` 重试。
+
+不要把未验证的客户端 URL 直接传入服务；业务层仍需校验租户、设备归属和允许的媒体源。
 
 ## 录像、RTP、截图和转码
 

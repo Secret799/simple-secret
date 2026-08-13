@@ -30,7 +30,7 @@ class NettyWebSocketPublishedDependencyPolicyTest {
                 "io.netty:netty-codec",
                 "io.netty:netty-codec-http",
                 "org.springframework.boot:spring-boot",
-                "org.springframework.boot:spring-boot-config",
+                "org.springframework.boot:spring-boot-autoconfigure",
                 "org.springframework:spring-beans",
                 "org.springframework:spring-context");
         assertThat(coordinates.stream()

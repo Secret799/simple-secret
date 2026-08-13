@@ -23,7 +23,7 @@ class PublishedDependencyPolicyTest {
                 "io.nats:jnats",
                 "org.bouncycastle:bcprov-lts8on",
                 "org.slf4j:slf4j-api",
-                "org.springframework.boot:spring-boot-config");
+                "org.springframework.boot:spring-boot-autoconfigure");
     }
 
     private static List<String> productionDependencies(Path pom) throws Exception {

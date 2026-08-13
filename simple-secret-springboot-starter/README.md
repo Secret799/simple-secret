@@ -35,6 +35,11 @@ starter。Netty WebSocket 不依赖 Servlet WebSocket。各 starter 的配置前
 Camera-to-ZLM 只有显式启用且宿主提供大华 SDK Bean 时才初始化，不会把厂商 SDK 或 ZLM 反向加入
 纯 Camera SDK、Camera URL 或普通 EasyMedia 使用场景。
 
+ZLM 推拉流代理只在首次 native 连接成功后返回 key；失败、5 秒启动超时和等待中断会抛异常并释放代理。
+ZLM 服务开始关闭后拒绝新增 native 资源；释放失败的资源会保留，允许再次调用 `close()` 重试。
+EasyMedia 的 H.264 读取器按连续 Annex-B 字节流处理跨片段起始码和单片段多个 NALU；Camera-to-ZLM
+通过同步背压入口接收解析及 native 输入失败，并停止对应设备会话。
+
 ## 验证
 
 ```bash

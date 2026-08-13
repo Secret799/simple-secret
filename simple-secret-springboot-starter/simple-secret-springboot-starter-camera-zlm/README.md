@@ -62,6 +62,8 @@ simple-secret:
 
 队列按路分配，同时受帧数和字节数限制。Camera-ZLM 使用 EasyMedia 的同步背压入口，
 每个片段完成解析后才释放上游预算；解析器为未完成 NALU 保留的累积数据也计入该路字节预算。
+Annex-B 起始码可以跨 SDK 回调边界；同一回调内的多个 NALU 会分别推送。解析失败、ZLM native frame
+创建失败或输入失败都会停止对应会话，并通过 `session.failure()` 暴露原始异常，不会继续接收并丢弃后续帧。
 `queue-capacity` 范围是 1 到 10000，
 `max-frame-bytes` 范围是 1 到 16 MiB，`max-buffered-bytes` 必须不小于单帧上限且最多 1 GiB。
 达到任一边界都会停止该路会话，避免 ZLM 消费不足持续占用堆内存。
