@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "simple-secret.camera-zlm.enabled",
+      "type": "java.lang.Boolean",
+      "description": "是否启用大华 Camera SDK 到 ZLM 的 H.264 转推适配。",
+      "defaultValue": false
+    }
+  ]
+}

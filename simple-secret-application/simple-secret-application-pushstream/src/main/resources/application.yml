@@ -1,0 +1,39 @@
+server:
+  address: 127.0.0.1
+  port: 9879
+
+spring:
+  application:
+    name: simple-secret-pushstream
+  main:
+    banner-mode: "off"
+
+simple-secret:
+  zlm4j:
+    enabled: false
+  publish-stream:
+    enabled: false
+    status-api-enabled: false
+    scan-directory: ${SIMPLE_SECRET_PUBLISH_STREAM_DIRECTORY:${java.io.tmpdir}/simple-secret-publishstream}
+    allowed-suffixes:
+      - mp4
+      - mov
+      - mkv
+      - ts
+      - flv
+      - h264
+      - h265
+    app: publish
+    ffmpeg-executable: ${SIMPLE_SECRET_FFMPEG_EXECUTABLE:ffmpeg}
+    rtsp-host: 127.0.0.1
+    rtsp-port: 7554
+    scan-interval: 30s
+    shutdown-timeout: 5s
+    max-concurrent-streams: 8
+    max-scanned-files: 1000
+    recursive: false
+
+logging:
+  level:
+    com.ss.application.pushstream: INFO
+    org.springframework: WARN
