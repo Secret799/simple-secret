@@ -29,7 +29,9 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
     private static final Logger log = LoggerFactory.getLogger(EmsCommonStreamChangeHandler.class);
 
     private final List<TrackDelegateCallback> trackDelegateCallbacks;
-    private final Map<String, Set<String>> trackDelegateMemo = new ConcurrentHashMap<>();
+
+    /** 按原生媒体源指针关联的注册 token 与轨道去重状态。 */
+    private final Map<Long, RegisteredLifecycle> registeredLifecycles = new ConcurrentHashMap<>();
 
 
     /**
@@ -49,11 +51,8 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
         if (callbacks.isEmpty()) {
             return;
         }
-        String mediaSourceKey = key(mediaSource.getSchema(), mediaSource.getApp(), mediaSource.getStream());
-        trackDelegateMemo.remove(mediaSourceKey);
+        Set<String> codecSet = rememberRegisteredLifecycle(sender, mediaSource);
         notifyRegistered(mediaSource, callbacks);
-        Set<String> codecSet = trackDelegateMemo.computeIfAbsent(mediaSourceKey, k ->
-                ConcurrentHashMap.newKeySet());
         List<TrackDomain> tracks = mediaSource.getTracks();
         if (tracks == null || tracks.isEmpty()) {
             return;
@@ -91,9 +90,73 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
 
     @Override
     public void handleDeregister(MK_MEDIA_SOURCE sender) {
-        MediaSourceDomain mediaSource = ZlmMediaHelper.Assembler.getMediaSource(sender, false);
-        trackDelegateMemo.remove(key(mediaSource.getSchema(), mediaSource.getApp(), mediaSource.getStream()));
-        notifyDeregistered(mediaSource, resolveCallbacks(mediaSource.getSchema()));
+        MediaSourceDomain fallback = ZlmMediaHelper.Assembler.getMediaSource(sender, false);
+        MediaSourceDomain lifecycle = resolveDeregisteredLifecycle(sender, fallback);
+        notifyDeregistered(lifecycle, resolveCallbacks(lifecycle.getSchema()));
+    }
+
+    /**
+     * 关联原生媒体源身份和注册时创建的媒体源 token。
+     *
+     * @param sender ZLMediaKit 原生媒体源
+     * @param mediaSource 注册时创建的媒体源 token
+     */
+    Set<String> rememberRegisteredLifecycle(MK_MEDIA_SOURCE sender, MediaSourceDomain mediaSource) {
+        RegisteredLifecycle lifecycle = new RegisteredLifecycle(mediaSource);
+        registeredLifecycles.put(nativeSourceIdentity(sender), lifecycle);
+        return lifecycle.codecSet;
+    }
+
+    /**
+     * 获取并清理指定原生媒体源精确对应的注册 token。
+     *
+     * @param sender ZLMediaKit 原生媒体源
+     * @param fallback 无注册记录时使用的注销媒体源信息
+     * @return 注册时的精确媒体源 token，或回退信息
+     */
+    MediaSourceDomain resolveDeregisteredLifecycle(MK_MEDIA_SOURCE sender, MediaSourceDomain fallback) {
+        long sourceIdentity = nativeSourceIdentity(sender);
+        RegisteredLifecycle lifecycle = registeredLifecycles.remove(sourceIdentity);
+        return lifecycle == null ? fallback : lifecycle.mediaSource;
+    }
+
+    /** @return 当前保留的原生媒体源生命周期 token 数 */
+    int registeredLifecycleCount() {
+        return registeredLifecycles.size();
+    }
+
+    /**
+     * 获取一个原生媒体源在本进程生命周期中的指针身份。
+     *
+     * @param sender ZLMediaKit 原生媒体源
+     * @return 原生指针地址
+     */
+    private long nativeSourceIdentity(MK_MEDIA_SOURCE sender) {
+        return Pointer.nativeValue(sender.getPointer());
+    }
+
+    /**
+     * 单个原生媒体源的注册 token 和轨道去重状态。
+     *
+     * @author junpzx
+     * @since 2026-08-13
+     */
+    private static final class RegisteredLifecycle {
+
+        /** 注册时创建并由帧回调共享的媒体源 token。 */
+        private final MediaSourceDomain mediaSource;
+
+        /** 当前原生媒体源已经安装代理的轨道编码。 */
+        private final Set<String> codecSet = ConcurrentHashMap.newKeySet();
+
+        /**
+         * 创建原生媒体源注册状态。
+         *
+         * @param mediaSource 注册时创建的媒体源 token
+         */
+        private RegisteredLifecycle(MediaSourceDomain mediaSource) {
+            this.mediaSource = mediaSource;
+        }
     }
 
     /**

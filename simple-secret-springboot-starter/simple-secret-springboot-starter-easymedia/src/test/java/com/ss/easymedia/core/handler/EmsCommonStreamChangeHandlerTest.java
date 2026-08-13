@@ -1,10 +1,12 @@
 package com.ss.easymedia.core.handler;
 
+import com.aizuda.zlm4j.structure.MK_MEDIA_SOURCE;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.ss.easymedia.callback.TrackDelegateCallback;
 import com.ss.zlm4j.domain.MediaSourceDomain;
 import com.ss.zlm4j.domain.TrackDomain;
+import com.sun.jna.Memory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +19,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -108,6 +111,29 @@ class EmsCommonStreamChangeHandlerTest {
         assertEquals(1, healthy.registeredCount);
         assertEquals(1, healthy.frameCount);
         assertEquals(1, healthy.deregisteredCount);
+    }
+
+    @Test
+    @DisplayName("注销事件按原生媒体源身份取回精确注册生命周期")
+    void shouldResolveExactRegisteredLifecycleByNativeSourceIdentity() {
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(List.of());
+        Memory oldMemory = new Memory(8);
+        Memory newMemory = new Memory(8);
+        MK_MEDIA_SOURCE oldRegisterSender = new MK_MEDIA_SOURCE(oldMemory);
+        MK_MEDIA_SOURCE oldDeregisterSender = new MK_MEDIA_SOURCE(oldMemory);
+        MK_MEDIA_SOURCE newSender = new MK_MEDIA_SOURCE(newMemory);
+        MediaSourceDomain oldSource = createMediaSource("rtmp");
+        MediaSourceDomain newSource = createMediaSource("rtmp");
+        MediaSourceDomain fallback = createMediaSource("rtmp");
+
+        handler.rememberRegisteredLifecycle(oldRegisterSender, oldSource);
+        handler.rememberRegisteredLifecycle(newSender, newSource);
+
+        assertEquals(2, handler.registeredLifecycleCount());
+        assertSame(oldSource, handler.resolveDeregisteredLifecycle(oldDeregisterSender, fallback));
+        assertSame(fallback, handler.resolveDeregisteredLifecycle(oldDeregisterSender, fallback));
+        assertSame(newSource, handler.resolveDeregisteredLifecycle(newSender, fallback));
+        assertEquals(0, handler.registeredLifecycleCount());
     }
 
     /**

@@ -20,9 +20,17 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * DJI RTMP SEI 轨道诊断回调测试。
@@ -62,6 +70,7 @@ class DjiSeiTrackCallbackTest {
         callback = new DjiSeiTrackCallback(new H26xSeiParser(), properties, clock);
         source = source("rtmp", "live");
         videoTrack = videoTrack("H264");
+        callback.onMediaSourceRegistered(source);
     }
 
     @AfterEach
@@ -160,8 +169,131 @@ class DjiSeiTrackCallbackTest {
                 .allMatch(message -> message.contains("codec=H265"));
     }
 
+    @Test
+    void shouldIncludeAdmittedFrameInFinalSummaryWithoutResurrectingClosedLifecycle() throws Exception {
+        CountDownLatch parseStarted = new CountDownLatch(1);
+        CountDownLatch allowParseToFinish = new CountDownLatch(1);
+        AtomicInteger parseCount = new AtomicInteger();
+        DjiSeiTrackCallback.FrameParser parser = blockingParser(
+                parseStarted, allowParseToFinish, parseCount);
+        callback = new DjiSeiTrackCallback(parser, new DjiSeiProperties(), clock);
+        callback.onMediaSourceRegistered(source);
+        AtomicReference<Thread> deregisterThread = new AtomicReference<>();
+        ThreadPoolExecutor frameExecutor = singleThreadExecutor("dji-frame-test", new AtomicReference<>());
+        ThreadPoolExecutor deregisterExecutor = singleThreadExecutor("dji-deregister-test", deregisterThread);
+
+        Future<?> frameFuture = frameExecutor.submit(
+                () -> callback.callback(source, videoTrack, frame(regularH264Frame())));
+        Future<?> deregisterFuture = null;
+        try {
+            assertThat(parseStarted.await(5, TimeUnit.SECONDS)).isTrue();
+            deregisterFuture = deregisterExecutor.submit(() -> callback.onMediaSourceDeregistered(source));
+            awaitWaitingThread(deregisterThread, deregisterFuture);
+
+            callback.callback(source, videoTrack, frame(regularH264Frame()));
+            assertThat(parseCount).hasValue(1);
+        } finally {
+            allowParseToFinish.countDown();
+            frameFuture.get(5, TimeUnit.SECONDS);
+            if (deregisterFuture != null) {
+                deregisterFuture.get(5, TimeUnit.SECONDS);
+            }
+            shutdown(frameExecutor);
+            shutdown(deregisterExecutor);
+        }
+
+        callback.callback(source, videoTrack, frame(regularH264Frame()));
+        assertThat(parseCount).hasValue(1);
+        assertThat(streamSummaries()).singleElement().asString().contains("videoFrames=1");
+    }
+
+    @Test
+    void shouldIgnoreStaleDeregisterAfterNewLifecycleRegistration() {
+        MediaSourceDomain oldSource = source;
+        MediaSourceDomain newSource = source("rtmp", "live");
+        callback.onMediaSourceRegistered(newSource);
+        appender.list.clear();
+
+        callback.callback(newSource, videoTrack, frame(regularH264Frame()));
+        callback.onMediaSourceDeregistered(oldSource);
+        assertThat(streamSummaries()).isEmpty();
+
+        callback.callback(newSource, videoTrack, frame(regularH264Frame()));
+        callback.onMediaSourceDeregistered(newSource);
+        assertThat(streamSummaries()).singleElement().asString().contains("videoFrames=2");
+    }
+
+    @Test
+    void shouldReleaseLifecycleAdmissionWhenParserFails() {
+        DjiSeiTrackCallback.FrameParser failingParser = (data, codec, maxFrameBytes, maxPayloadBytes) -> {
+            throw new IllegalStateException("expected parser failure");
+        };
+        callback = new DjiSeiTrackCallback(failingParser, new DjiSeiProperties(), clock);
+        callback.onMediaSourceRegistered(source);
+
+        assertThatCode(() -> callback.callback(source, videoTrack, frame(regularH264Frame())))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("expected parser failure");
+        assertThatCode(() -> callback.onMediaSourceDeregistered(source)).doesNotThrowAnyException();
+        assertThat(streamSummaries()).singleElement().asString().contains("videoFrames=0");
+    }
+
     private List<String> messages() {
         return appender.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
+    }
+
+    private List<String> streamSummaries() {
+        return messages().stream().filter(message -> message.contains("stream summary")).toList();
+    }
+
+    private DjiSeiTrackCallback.FrameParser blockingParser(
+            CountDownLatch started, CountDownLatch finish, AtomicInteger parseCount) {
+        H26xSeiParser delegate = new H26xSeiParser();
+        return (data, codec, maxFrameBytes, maxPayloadBytes) -> {
+            if (parseCount.incrementAndGet() == 1) {
+                started.countDown();
+                awaitLatch(finish);
+            }
+            return delegate.parse(data, codec, maxFrameBytes, maxPayloadBytes);
+        };
+    }
+
+    private void awaitLatch(CountDownLatch latch) {
+        try {
+            assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while waiting for the parser test latch", exception);
+        }
+    }
+
+    private ThreadPoolExecutor singleThreadExecutor(String threadName, AtomicReference<Thread> threadReference) {
+        return new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1), runnable -> {
+            Thread thread = new Thread(runnable, threadName);
+            threadReference.set(thread);
+            return thread;
+        }, new ThreadPoolExecutor.AbortPolicy());
+    }
+
+    private void awaitWaitingThread(AtomicReference<Thread> threadReference, Future<?> future) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        List<Thread.State> waitingStates = List.of(Thread.State.WAITING, Thread.State.TIMED_WAITING);
+        while (System.nanoTime() < deadline) {
+            Thread thread = threadReference.get();
+            if (thread != null && waitingStates.contains(thread.getState())) {
+                return;
+            }
+            if (future.isDone()) {
+                fail("Deregistration completed before the admitted frame");
+            }
+            Thread.onSpinWait();
+        }
+        fail("Deregistration did not wait for the admitted frame");
+    }
+
+    private void shutdown(ThreadPoolExecutor executor) throws InterruptedException {
+        executor.shutdownNow();
+        assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
     }
 
     private MediaSourceDomain source(String schema, String app) {
