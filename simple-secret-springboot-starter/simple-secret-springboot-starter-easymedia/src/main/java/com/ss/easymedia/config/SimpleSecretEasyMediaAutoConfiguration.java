@@ -4,6 +4,7 @@ import com.ss.easymedia.callback.TrackDelegateCallback;
 import com.ss.easymedia.config.properties.EmsProperties;
 import com.ss.easymedia.core.handler.AppHandler;
 import com.ss.easymedia.core.handler.AppHandlerHolder;
+import com.ss.easymedia.core.handler.EmsCommonStreamChangeHandler;
 import com.ss.easymedia.core.handler.app.EmsStreamNoFoundAppDispatcher;
 import com.ss.easymedia.core.handler.app.EmsStreamNoReaderAppDispatcher;
 import com.ss.easymedia.support.udp.UdpMulticastManager;
@@ -127,7 +128,7 @@ public class SimpleSecretEasyMediaAutoConfiguration {
      */
     static class EmsCallbackHandlerRegister implements ZlmCallbackHandlerRegister, Ordered {
 
-        /** 轨道委托回调（当前未启用流变更分发）。 */
+        /** 轨道委托回调。 */
         private final List<TrackDelegateCallback> trackDelegateCallbacks;
 
         EmsCallbackHandlerRegister(List<TrackDelegateCallback> trackDelegateCallbacks) {
@@ -136,9 +137,9 @@ public class SimpleSecretEasyMediaAutoConfiguration {
 
         @Override
         public void register(ZlmCallbackHandlerContext context) {
-            context.setStreamNoReaderHandler(new EmsStreamNoReaderAppDispatcher())
+            context.setStreamChangeHandler(new EmsCommonStreamChangeHandler(trackDelegateCallbacks))
+                    .setStreamNoReaderHandler(new EmsStreamNoReaderAppDispatcher())
                     .setStreamNoFoundHandler(new EmsStreamNoFoundAppDispatcher());
-            // 流变更分发暂未启用：.setStreamChangeHandler(new EmsCommonStreamChangeHandler(trackDelegateCallbacks));
         }
 
         @Override
