@@ -30,6 +30,12 @@ public class DjiSeiProperties {
     /** 单条日志预览最大允许 4096 字节。 */
     private static final int MAX_PREVIEW_BYTES = 4096;
 
+    /** 单帧解析数量类配置的统一硬上限。 */
+    private static final int MAX_PARSE_ITEM_COUNT = 4096;
+
+    /** 单帧 SEI 日志条数硬上限。 */
+    private static final int MAX_MESSAGE_LOG_COUNT = 1024;
+
     /** 汇总间隔下限。 */
     private static final Duration MIN_SUMMARY_INTERVAL = Duration.ofSeconds(1);
 
@@ -59,6 +65,26 @@ public class DjiSeiProperties {
     @Max(MAX_PREVIEW_BYTES)
     private int previewBytes = 64;
 
+    /** 单帧允许识别的 SEI NAL 单元数。 */
+    @Min(1)
+    @Max(MAX_PARSE_ITEM_COUNT)
+    private int maxSeiNalUnits = 256;
+
+    /** 单帧允许创建的 SEI 消息数。 */
+    @Min(1)
+    @Max(MAX_PARSE_ITEM_COUNT)
+    private int maxSeiMessages = 256;
+
+    /** 单帧允许创建的结构化解析问题数。 */
+    @Min(1)
+    @Max(MAX_PARSE_ITEM_COUNT)
+    private int maxParseIssues = 32;
+
+    /** 单帧允许输出的 SEI 消息日志数。 */
+    @Min(1)
+    @Max(MAX_MESSAGE_LOG_COUNT)
+    private int maxMessageLogs = 64;
+
     /** 同一媒体流周期汇总的时间间隔。 */
     @NotNull
     private Duration summaryInterval = Duration.ofSeconds(30);
@@ -71,6 +97,16 @@ public class DjiSeiProperties {
     @AssertTrue(message = "max-payload-bytes must not exceed max-frame-bytes")
     public boolean isPayloadLimitWithinFrameLimit() {
         return maxPayloadBytes > 0 && maxPayloadBytes <= maxFrameBytes;
+    }
+
+    /**
+     * 校验消息日志上限不超过解析消息上限。
+     *
+     * @return 日志上限为正数且不超过消息上限时返回 true
+     */
+    @AssertTrue(message = "max-message-logs must not exceed max-sei-messages")
+    public boolean isMessageLogLimitWithinMessageLimit() {
+        return maxMessageLogs > 0 && maxMessageLogs <= maxSeiMessages;
     }
 
     /**
@@ -133,6 +169,46 @@ public class DjiSeiProperties {
     /** @param previewBytes 单条日志预览最大字节数 */
     public void setPreviewBytes(int previewBytes) {
         this.previewBytes = previewBytes;
+    }
+
+    /** @return 单帧 SEI NAL 单元上限 */
+    public int getMaxSeiNalUnits() {
+        return maxSeiNalUnits;
+    }
+
+    /** @param maxSeiNalUnits 单帧 SEI NAL 单元上限 */
+    public void setMaxSeiNalUnits(int maxSeiNalUnits) {
+        this.maxSeiNalUnits = maxSeiNalUnits;
+    }
+
+    /** @return 单帧 SEI 消息上限 */
+    public int getMaxSeiMessages() {
+        return maxSeiMessages;
+    }
+
+    /** @param maxSeiMessages 单帧 SEI 消息上限 */
+    public void setMaxSeiMessages(int maxSeiMessages) {
+        this.maxSeiMessages = maxSeiMessages;
+    }
+
+    /** @return 单帧解析问题上限 */
+    public int getMaxParseIssues() {
+        return maxParseIssues;
+    }
+
+    /** @param maxParseIssues 单帧解析问题上限 */
+    public void setMaxParseIssues(int maxParseIssues) {
+        this.maxParseIssues = maxParseIssues;
+    }
+
+    /** @return 单帧 SEI 消息日志上限 */
+    public int getMaxMessageLogs() {
+        return maxMessageLogs;
+    }
+
+    /** @param maxMessageLogs 单帧 SEI 消息日志上限 */
+    public void setMaxMessageLogs(int maxMessageLogs) {
+        this.maxMessageLogs = maxMessageLogs;
     }
 
     /** @return 周期汇总间隔 */

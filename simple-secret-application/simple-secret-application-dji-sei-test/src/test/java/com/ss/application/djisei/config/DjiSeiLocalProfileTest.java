@@ -11,6 +11,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -26,6 +28,7 @@ class DjiSeiLocalProfileTest {
         SpringApplication application = new SpringApplication(LocalProfileConfiguration.class);
         application.setWebApplicationType(WebApplicationType.NONE);
         application.setAdditionalProfiles("local");
+        application.setDefaultProperties(Map.of("SIMPLE_SECRET_DJI_SEI_MAX_FRAME_BYTES", "2097152"));
         try (ConfigurableApplicationContext context = application.run()) {
             ZlmMediaProperties zlm = context.getBean(ZlmMediaProperties.class);
             EmsProperties easyMedia = context.getBean(EmsProperties.class);
@@ -45,6 +48,8 @@ class DjiSeiLocalProfileTest {
             assertThat(zlm.getLogPath()).isEqualTo("./runtime/dji-sei/logs");
             assertThat(easyMedia.isEnabled()).isTrue();
             assertThat(easyMedia.isManagementApiEnabled()).isFalse();
+            assertThat(easyMedia.getMaxTrackFrameBytes()).isEqualTo(2097152);
+            assertThat(djiSei.getMaxFrameBytes()).isEqualTo(2097152);
             assertThat(easyMedia.getWebrtc().isEnabled()).isFalse();
             assertThat(djiSei.isEnabled()).isTrue();
             assertThat(context.getBeansOfType(DjiSeiTrackCallback.class)).hasSize(1);

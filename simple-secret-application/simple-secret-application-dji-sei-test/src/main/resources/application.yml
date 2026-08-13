@@ -20,6 +20,10 @@ simple-secret:
     max-frame-bytes: ${SIMPLE_SECRET_DJI_SEI_MAX_FRAME_BYTES:8388608}
     max-payload-bytes: ${SIMPLE_SECRET_DJI_SEI_MAX_PAYLOAD_BYTES:1048576}
     preview-bytes: ${SIMPLE_SECRET_DJI_SEI_PREVIEW_BYTES:64}
+    max-sei-nal-units: ${SIMPLE_SECRET_DJI_SEI_MAX_NAL_UNITS:256}
+    max-sei-messages: ${SIMPLE_SECRET_DJI_SEI_MAX_MESSAGES:256}
+    max-parse-issues: ${SIMPLE_SECRET_DJI_SEI_MAX_ISSUES:32}
+    max-message-logs: ${SIMPLE_SECRET_DJI_SEI_MAX_MESSAGE_LOGS:64}
     summary-interval: ${SIMPLE_SECRET_DJI_SEI_SUMMARY_INTERVAL:30s}
 
 logging:

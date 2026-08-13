@@ -11,6 +11,13 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  */
 @ConfigurationProperties(prefix = "simple-secret.easymedia")
 public class EmsProperties {
+
+    /** 原生轨道帧默认上限：8 MiB。 */
+    public static final int DEFAULT_MAX_TRACK_FRAME_BYTES = 8 * 1024 * 1024;
+
+    /** 原生轨道帧硬上限：64 MiB。 */
+    public static final int MAX_TRACK_FRAME_BYTES = 64 * 1024 * 1024;
+
     /**
      * 是否启用 EasyMedia。
      */
@@ -20,6 +27,11 @@ public class EmsProperties {
      * 是否暴露通用媒体管理 API。
      */
     private boolean managementApiEnabled;
+
+    /**
+     * 从原生轨道复制到 Java 堆的单帧最大字节数。
+     */
+    private int maxTrackFrameBytes = DEFAULT_MAX_TRACK_FRAME_BYTES;
 
     /**
      * 播放地址模板
@@ -77,6 +89,30 @@ public class EmsProperties {
      */
     public void setManagementApiEnabled(boolean managementApiEnabled) {
         this.managementApiEnabled = managementApiEnabled;
+    }
+
+    /**
+     * 返回原生轨道帧复制上限。
+     *
+     * @return 单帧最大字节数
+     */
+    public int getMaxTrackFrameBytes() {
+        return maxTrackFrameBytes;
+    }
+
+    /**
+     * 设置原生轨道帧复制上限。
+     *
+     * @param maxTrackFrameBytes 单帧最大字节数
+     */
+    public void setMaxTrackFrameBytes(int maxTrackFrameBytes) {
+        if (maxTrackFrameBytes <= 0) {
+            throw new IllegalArgumentException("max-track-frame-bytes must be positive");
+        }
+        if (maxTrackFrameBytes > MAX_TRACK_FRAME_BYTES) {
+            throw new IllegalArgumentException("max-track-frame-bytes must not exceed 67108864");
+        }
+        this.maxTrackFrameBytes = maxTrackFrameBytes;
     }
 
     /**

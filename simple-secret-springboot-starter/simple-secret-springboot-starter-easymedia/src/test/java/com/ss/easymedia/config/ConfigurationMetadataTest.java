@@ -18,6 +18,7 @@ class ConfigurationMetadataTest {
             assertNotNull(input, "EasyMedia starter should generate Spring Boot configuration metadata");
             String metadata = new String(input.readAllBytes(), StandardCharsets.UTF_8);
             assertTrue(metadata.contains("simple-secret.easymedia.enabled"));
+            assertTrue(metadata.contains("simple-secret.easymedia.max-track-frame-bytes"));
             assertTrue(metadata.contains("simple-secret.easymedia.webrtc.rate-limit.local-max-keys"));
         }
     }

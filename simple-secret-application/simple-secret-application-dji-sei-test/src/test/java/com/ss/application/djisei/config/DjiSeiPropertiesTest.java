@@ -38,6 +38,10 @@ class DjiSeiPropertiesTest {
         assertThat(properties.getMaxFrameBytes()).isEqualTo(8388608);
         assertThat(properties.getMaxPayloadBytes()).isEqualTo(1048576);
         assertThat(properties.getPreviewBytes()).isEqualTo(64);
+        assertThat(properties.getMaxSeiNalUnits()).isEqualTo(256);
+        assertThat(properties.getMaxSeiMessages()).isEqualTo(256);
+        assertThat(properties.getMaxParseIssues()).isEqualTo(32);
+        assertThat(properties.getMaxMessageLogs()).isEqualTo(64);
         assertThat(properties.getSummaryInterval()).isEqualTo(Duration.ofSeconds(30));
         assertThat(VALIDATOR.validate(properties)).isEmpty();
     }
@@ -64,6 +68,24 @@ class DjiSeiPropertiesTest {
         assertThat(VALIDATOR.validate(properties))
                 .extracting(violation -> violation.getMessage())
                 .contains("max-payload-bytes must not exceed max-frame-bytes");
+    }
+
+    @Test
+    void shouldValidateParserAndMessageLogCaps() {
+        DjiSeiProperties properties = new DjiSeiProperties();
+        properties.setMaxSeiNalUnits(0);
+        properties.setMaxSeiMessages(0);
+        properties.setMaxParseIssues(0);
+        properties.setMaxMessageLogs(1);
+
+        assertThat(VALIDATOR.validate(properties)).hasSize(4);
+
+        properties.setMaxSeiNalUnits(1);
+        properties.setMaxSeiMessages(1);
+        properties.setMaxParseIssues(1);
+        properties.setMaxMessageLogs(2);
+        assertThat(VALIDATOR.validate(properties)).extracting(violation -> violation.getMessage())
+                .contains("max-message-logs must not exceed max-sei-messages");
     }
 
     @Test

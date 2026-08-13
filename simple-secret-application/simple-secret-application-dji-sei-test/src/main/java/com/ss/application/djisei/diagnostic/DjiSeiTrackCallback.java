@@ -4,6 +4,7 @@ import com.ss.application.djisei.config.DjiSeiProperties;
 import com.ss.application.djisei.parser.H26xSeiParser;
 import com.ss.application.djisei.parser.SeiMessage;
 import com.ss.application.djisei.parser.SeiParseIssue;
+import com.ss.application.djisei.parser.SeiParseLimits;
 import com.ss.application.djisei.parser.SeiParseResult;
 import com.ss.application.djisei.parser.VideoCodec;
 import com.ss.easymedia.callback.TrackDelegateCallback;
@@ -59,7 +60,7 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
      * @param clock 统计汇总时钟
      */
     public DjiSeiTrackCallback(H26xSeiParser parser, DjiSeiProperties properties, Clock clock) {
-        this(Objects.requireNonNull(parser, "parser")::parse, properties, clock);
+        this(parserWithLimits(parser, properties), properties, clock);
     }
 
     /**
@@ -160,8 +161,9 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
             Optional<DiagnosticsSnapshot> summary = lifecycle.record(
                     result, clock.instant(), properties.getSummaryInterval());
             logMalformedFrame(source, codec, result.issues());
-            for (SeiMessage message : result.messages()) {
-                logMessage(source, frame, codec, message);
+            int logCount = Math.min(result.messages().size(), properties.getMaxMessageLogs());
+            for (int index = 0; index < logCount; index++) {
+                logMessage(source, frame, codec, result.messages().get(index));
             }
             summary.ifPresent(snapshot -> logSummary("periodic summary", source, snapshot));
         } finally {
@@ -184,6 +186,21 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
                         + "payloadType={}, payloadBytes={}, uuid={}, hex={}, text={}",
                 source.getApp(), source.getStream(), codec, frame.getPts(), frame.getDts(), message.payloadType(),
                 payload.length, message.uuid().orElse(null), preview.hex(), preview.text());
+    }
+
+    /**
+     * 将应用配置转换为解析器的单帧资源上限。
+     *
+     * @param parser H.264/H.265 SEI 解析器
+     * @param properties 已校验的诊断配置
+     * @return 兼容测试注入接口的有界解析函数
+     */
+    private static FrameParser parserWithLimits(H26xSeiParser parser, DjiSeiProperties properties) {
+        Objects.requireNonNull(parser, "parser");
+        Objects.requireNonNull(properties, "properties");
+        return (frame, codec, maxFrameBytes, maxPayloadBytes) -> parser.parse(frame, codec, maxFrameBytes,
+                new SeiParseLimits(maxPayloadBytes, properties.getMaxSeiNalUnits(),
+                        properties.getMaxSeiMessages(), properties.getMaxParseIssues()));
     }
 
     /**

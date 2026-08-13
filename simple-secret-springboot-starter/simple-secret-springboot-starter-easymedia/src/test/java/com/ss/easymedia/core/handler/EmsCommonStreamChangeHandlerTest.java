@@ -1,12 +1,16 @@
 package com.ss.easymedia.core.handler;
 
 import com.aizuda.zlm4j.structure.MK_MEDIA_SOURCE;
+import com.aizuda.zlm4j.structure.MK_TRACK;
+import com.aizuda.zlm4j.callback.IMKFrameOutCallBack;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.ss.easymedia.callback.TrackDelegateCallback;
+import com.ss.easymedia.config.properties.EmsProperties;
 import com.ss.zlm4j.domain.MediaSourceDomain;
 import com.ss.zlm4j.domain.TrackDomain;
 import com.sun.jna.Memory;
+import com.sun.jna.Pointer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -15,11 +19,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -136,6 +142,102 @@ class EmsCommonStreamChangeHandlerTest {
         assertEquals(0, handler.registeredLifecycleCount());
     }
 
+    @Test
+    @DisplayName("轨道与原生代理强引用随精确注册生命周期释放")
+    void shouldRetainNativeTrackDelegateUntilExactLifecycleRemoval() {
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(List.of());
+        Memory sourceMemory = new Memory(8);
+        MK_MEDIA_SOURCE firstSender = new MK_MEDIA_SOURCE(sourceMemory);
+        MK_MEDIA_SOURCE replacementSender = new MK_MEDIA_SOURCE(sourceMemory);
+        MK_TRACK firstTrack = new MK_TRACK(new Memory(8));
+        MK_TRACK replacementTrack = new MK_TRACK(new Memory(8));
+        IMKFrameOutCallBack firstDelegate = (userData, frame) -> {
+        };
+        IMKFrameOutCallBack replacementDelegate = (userData, frame) -> {
+        };
+        MediaSourceDomain fallback = createMediaSource("rtmp");
+
+        handler.rememberRegisteredLifecycle(firstSender, createMediaSource("rtmp"));
+        handler.retainTrackDelegate(firstSender, firstTrack, firstDelegate);
+        assertEquals(1, handler.retainedTrackDelegateCount(firstSender));
+        assertSame(firstTrack, handler.retainedTrack(firstSender, 0));
+        assertSame(firstDelegate, handler.retainedTrackDelegate(firstSender, 0));
+
+        handler.rememberRegisteredLifecycle(replacementSender, createMediaSource("rtmp"));
+        assertEquals(0, handler.retainedTrackDelegateCount(replacementSender));
+        handler.retainTrackDelegate(replacementSender, replacementTrack, replacementDelegate);
+        assertSame(replacementDelegate, handler.retainedTrackDelegate(replacementSender, 0));
+
+        handler.resolveDeregisteredLifecycle(replacementSender, fallback);
+        assertEquals(0, handler.retainedTrackDelegateCount(replacementSender));
+        assertEquals(0, handler.registeredLifecycleCount());
+    }
+
+    @Test
+    @DisplayName("原生代理安装抛出 Error 时撤销强引用")
+    void shouldReleaseNativeTrackDelegateWhenInstallationThrowsError() {
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(List.of());
+        MK_MEDIA_SOURCE sender = new MK_MEDIA_SOURCE(new Memory(8));
+        MK_TRACK track = new MK_TRACK(new Memory(8));
+        IMKFrameOutCallBack delegate = (userData, frame) -> {
+        };
+        EmsCommonStreamChangeHandler.RegisteredLifecycle lifecycle =
+                handler.rememberRegisteredLifecycle(sender, createMediaSource("rtmp"));
+
+        assertThrows(AssertionError.class, () -> handler.installTrackDelegate(
+                lifecycle, track, delegate, () -> {
+                    throw new AssertionError("native install failed");
+                }));
+
+        assertEquals(0, handler.retainedTrackDelegateCount(sender));
+    }
+
+    @Test
+    @DisplayName("超限和非法原生帧不会读取指针或分发")
+    void shouldRejectUnsafeNativeFramesBeforeAllocationReadAndDispatch() {
+        RecordingCallback callback = new RecordingCallback(Set.of("rtmp"));
+        EmsProperties properties = new EmsProperties();
+        properties.setMaxTrackFrameBytes(8);
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(List.of(callback), properties);
+        MediaSourceDomain source = createMediaSource("rtmp");
+        TrackDomain track = new TrackDomain();
+        track.setCodecIdName("H264");
+        CountingPointer pointer = new CountingPointer();
+
+        assertTrue(!handler.acceptNativeFrame(source, track, 0L, 1L, 2L, 0L, 0L,
+                pointer, List.of(callback)));
+        assertTrue(!handler.acceptNativeFrame(source, track, -1L, 1L, 2L, 0L, 0L,
+                pointer, List.of(callback)));
+        assertTrue(!handler.acceptNativeFrame(source, track, 9L, 1L, 2L, 0L, 0L,
+                pointer, List.of(callback)));
+        assertTrue(!handler.acceptNativeFrame(source, track, (long) Integer.MAX_VALUE + 1L,
+                1L, 2L, 0L, 0L, pointer, List.of(callback)));
+        assertTrue(!handler.acceptNativeFrame(source, track, 1L, 1L, 2L, 0L, 0L,
+                null, List.of(callback)));
+        assertTrue(!handler.acceptNativeFrame(source, track, 1L, 1L, 2L, 0L, 0L,
+                Pointer.NULL, List.of(callback)));
+
+        assertEquals(0, pointer.readCount.get());
+        assertEquals(0, callback.frameCount);
+    }
+
+    @Test
+    @DisplayName("合法原生帧只读取一次并同步分发")
+    void shouldReadAndDispatchValidatedNativeFrame() {
+        RecordingCallback callback = new RecordingCallback(Set.of("rtmp"));
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(List.of(callback));
+        MediaSourceDomain source = createMediaSource("rtmp");
+        TrackDomain track = new TrackDomain();
+        track.setCodecIdName("H264");
+        CountingPointer pointer = new CountingPointer();
+
+        assertTrue(handler.acceptNativeFrame(source, track, 4L, 1L, 2L, 0L, 0L,
+                pointer, List.of(callback)));
+
+        assertEquals(1, pointer.readCount.get());
+        assertEquals(1, callback.frameCount);
+    }
+
     /**
      * 创建指定协议的媒体源。
      *
@@ -217,6 +319,28 @@ class EmsCommonStreamChangeHandlerTest {
             if (failing) {
                 throw new IllegalStateException("expected callback failure");
             }
+        }
+    }
+
+    /**
+     * 记录原生内存读取次数的测试指针。
+     *
+     * @author junpzx
+     * @since 2026-08-13
+     */
+    private static final class CountingPointer extends Pointer {
+
+        /** 指针读取次数。 */
+        private final AtomicInteger readCount = new AtomicInteger();
+
+        /** 创建非空测试指针。 */
+        private CountingPointer() {
+            super(1L);
+        }
+
+        @Override
+        public void read(long offset, byte[] buffer, int index, int length) {
+            readCount.incrementAndGet();
         }
     }
 }

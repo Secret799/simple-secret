@@ -99,6 +99,21 @@ Redis 保存公开 sessionId 到内部 ZLM Location 的短期映射，不保存�
 
 ## 配置
 
+EasyMedia 根配置还提供原生轨道桥接边界：
+
+| 配置项 | 默认值 | 说明 |
+|---|---:|---|
+| `simple-secret.easymedia.max-track-frame-bytes` | `8388608` | 原生帧复制上限，范围 1 字节至 64 MiB |
+
+原生帧大小必须为正数，不超过 `Integer.MAX_VALUE` 和配置上限，数据指针也必须非空。
+非法帧只记录一条不含 payload 的参数化 WARN，不分配数组、不读取指针且不调用业务回调。
+
+JNA 帧回调与对应 `MK_TRACK` 由精确媒体源注册生命周期保持强引用，
+直到媒体源被替换或注销。
+zlm4j 1.11.0 的 `mk_track_add_delegate` Java 绑定返回 `void`，无法取得删除所需 tag。
+实现不会伪造 tag 做不安全的显式删除。Java 所有权随注册生命周期释放，原生 delegate 则由
+媒体源注销流程结束。
+
 配置前缀为 `simple-secret.easymedia.webrtc`：
 
 | 配置项 | 默认值 | 说明 |

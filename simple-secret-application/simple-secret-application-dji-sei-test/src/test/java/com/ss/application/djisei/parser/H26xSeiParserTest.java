@@ -59,6 +59,36 @@ class H26xSeiParserTest {
     }
 
     @Test
+    void shouldAcceptAllLegalEmulationPreventionFollowers() {
+        for (int follower = 0; follower <= 3; follower++) {
+            int expectedFollower = follower;
+            byte[] escapedRbsp = bytes(5, 4, 0, 0, 3, follower, 2, 0x80);
+
+            SeiParseResult result = parser.parse(
+                    annexB4(concat(bytes(0x06), escapedRbsp)), VideoCodec.H264, 1024, 512);
+
+            assertThat(result.issues()).isEmpty();
+            assertThat(result.messages()).singleElement().satisfies(message ->
+                    assertThat(message.payload()).containsExactly(0, 0, (byte) expectedFollower, 2));
+        }
+    }
+
+    @Test
+    void shouldRejectIllegalAndTrailingEmulationPreventionBytes() {
+        SeiParseResult illegalFollower = parser.parse(
+                annexB4(bytes(0x06, 5, 1, 0, 0, 3, 4)), VideoCodec.H264, 1024, 512);
+        SeiParseResult missingFollower = parser.parse(
+                annexB4(bytes(0x06, 5, 1, 0, 0, 3)), VideoCodec.H264, 1024, 512);
+
+        assertThat(illegalFollower.issues()).extracting(SeiParseIssue::code)
+                .containsExactly("INVALID_EMULATION_PREVENTION_BYTE");
+        assertThat(missingFollower.issues()).extracting(SeiParseIssue::code)
+                .containsExactly("INVALID_EMULATION_PREVENTION_BYTE");
+        assertThat(illegalFollower.messages()).isEmpty();
+        assertThat(missingFollower.messages()).isEmpty();
+    }
+
+    @Test
     void shouldReportTruncatedAndOversizedPayloadWithoutThrowing() {
         SeiParseResult truncated = parser.parse(
                 annexB4(bytes(0x06, 5, 10, 1, 2, 0x80)), VideoCodec.H264, 1024, 512);
@@ -141,6 +171,43 @@ class H26xSeiParserTest {
                 .isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> result.issues().add(new SeiParseIssue("CODE", "message")))
                 .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void shouldStopAtSeiNalUnitLimitWithStableIssue() {
+        byte[] frame = concat(annexB4(h264Sei(1, bytes())), annexB4(h264Sei(2, bytes())),
+                annexB4(h264Sei(3, bytes())));
+
+        SeiParseResult result = parser.parse(frame, VideoCodec.H264, 1024,
+                new SeiParseLimits(512, 2, 10, 10));
+
+        assertThat(result.seiNalUnitCount()).isEqualTo(2);
+        assertThat(result.messages()).hasSize(2);
+        assertThat(result.issues()).extracting(SeiParseIssue::code)
+                .containsExactly("SEI_NAL_UNIT_LIMIT_REACHED");
+    }
+
+    @Test
+    void shouldStopAtMessageLimitWithStableIssue() {
+        byte[] messages = concat(bytes(1, 0), bytes(2, 0), bytes(3, 0), bytes(0x80));
+
+        SeiParseResult result = parser.parse(annexB4(concat(bytes(0x06), messages)), VideoCodec.H264, 1024,
+                new SeiParseLimits(512, 10, 2, 10));
+
+        assertThat(result.messages()).hasSize(2);
+        assertThat(result.issues()).extracting(SeiParseIssue::code)
+                .containsExactly("SEI_MESSAGE_LIMIT_REACHED");
+    }
+
+    @Test
+    void shouldBoundIssueListAndReturnStableLimitIssue() {
+        byte[] malformed = annexB4(bytes(0x06, 5, 10, 1));
+
+        SeiParseResult result = parser.parse(concat(malformed, malformed, malformed), VideoCodec.H264, 1024,
+                new SeiParseLimits(512, 10, 10, 2));
+
+        assertThat(result.issues()).hasSize(2).extracting(SeiParseIssue::code)
+                .containsExactly("TRUNCATED_PAYLOAD", "SEI_ISSUE_LIMIT_REACHED");
     }
 
     private static byte[] h264Sei(int payloadType, byte[] payload) {

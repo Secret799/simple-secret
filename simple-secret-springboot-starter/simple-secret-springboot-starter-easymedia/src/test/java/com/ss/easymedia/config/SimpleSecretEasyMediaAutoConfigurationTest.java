@@ -1,6 +1,7 @@
 package com.ss.easymedia.config;
 
 import com.ss.easymedia.callback.TrackDelegateCallback;
+import com.ss.easymedia.config.properties.EmsProperties;
 import com.ss.easymedia.core.handler.EmsCommonStreamChangeHandler;
 import com.ss.easymedia.core.handler.AppHandlerHolder;
 import com.ss.easymedia.controller.ApiController;
@@ -47,9 +48,24 @@ class SimpleSecretEasyMediaAutoConfigurationTest {
         SimpleSecretEasyMediaAutoConfiguration configuration =
                 new SimpleSecretEasyMediaAutoConfiguration();
         ZlmCallbackHandlerRegister register = configuration
-                .emsCallbackHandlerRegister(List.of(callback));
+                .emsCallbackHandlerRegister(List.of(callback), new EmsProperties());
         ZlmCallbackHandlerContext handlerContext = new ZlmCallbackHandlerContext();
 
+        register.register(handlerContext);
+
+        assertThat(handlerContext.getStreamChangeHandler())
+                .isInstanceOf(EmsCommonStreamChangeHandler.class);
+    }
+
+    @Test
+    void shouldKeepCompatibleOneArgumentCallbackRegisterFactory() {
+        TrackDelegateCallback callback = (source, track, frame) -> {
+        };
+        SimpleSecretEasyMediaAutoConfiguration configuration =
+                new SimpleSecretEasyMediaAutoConfiguration();
+
+        ZlmCallbackHandlerRegister register = configuration.emsCallbackHandlerRegister(List.of(callback));
+        ZlmCallbackHandlerContext handlerContext = new ZlmCallbackHandlerContext();
         register.register(handlerContext);
 
         assertThat(handlerContext.getStreamChangeHandler())

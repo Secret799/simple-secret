@@ -170,6 +170,22 @@ class DjiSeiTrackCallbackTest {
     }
 
     @Test
+    void shouldCapPerFrameMessageLogsWhileKeepingParsedSummaryCount() {
+        DjiSeiProperties properties = new DjiSeiProperties();
+        properties.setMaxSeiMessages(4);
+        properties.setMaxMessageLogs(2);
+        callback = new DjiSeiTrackCallback(new H26xSeiParser(), properties, clock);
+        callback.onMediaSourceRegistered(source);
+        byte[] messages = concat(bytes(1, 0), bytes(2, 0), bytes(3, 0), bytes(4, 0), bytes(0x80));
+
+        callback.callback(source, videoTrack, frame(annexB(concat(bytes(0x06), messages))));
+        callback.onMediaSourceDeregistered(source);
+
+        assertThat(messages()).filteredOn(message -> message.contains("SEI detected")).hasSize(2);
+        assertThat(streamSummaries()).singleElement().asString().contains("seiMessages=4");
+    }
+
+    @Test
     void shouldIncludeAdmittedFrameInFinalSummaryWithoutResurrectingClosedLifecycle() throws Exception {
         CountDownLatch parseStarted = new CountDownLatch(1);
         CountDownLatch allowParseToFinish = new CountDownLatch(1);

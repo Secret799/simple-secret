@@ -51,19 +51,30 @@ import java.util.List;
 public class SimpleSecretEasyMediaAutoConfiguration {
 
     /**
+     * 使用默认资源边界创建 EMS 回调处理注册器。
+     *
+     * @param trackDelegateCallbacks 媒体轨道回调列表
+     * @return ZlmCallbackHandlerRegister 注册器
+     */
+    public ZlmCallbackHandlerRegister emsCallbackHandlerRegister(
+            List<TrackDelegateCallback> trackDelegateCallbacks) {
+        return emsCallbackHandlerRegister(trackDelegateCallbacks, new EmsProperties());
+    }
+
+    /**
      * 注册EMS自定义回调处理注册器。
      * <p>
      * 通过实现 {@link Ordered} 保证优先级高于 zlm4j 默认注册器，
      * 使流未找到、无人观看分发器在 {@link ZlmCallbackHandlerContext} 中最后生效。
      *
-     * @return ZlmCallbackHandlerRegister 注册器
-
-     *
      * @param trackDelegateCallbacks 媒体轨道回调列表
+     * @param properties EasyMedia 配置
+     * @return ZlmCallbackHandlerRegister 注册器
      */
     @Bean
-    public ZlmCallbackHandlerRegister emsCallbackHandlerRegister(List<TrackDelegateCallback> trackDelegateCallbacks) {
-        return new EmsCallbackHandlerRegister(trackDelegateCallbacks);
+    public ZlmCallbackHandlerRegister emsCallbackHandlerRegister(List<TrackDelegateCallback> trackDelegateCallbacks,
+                                                                 EmsProperties properties) {
+        return new EmsCallbackHandlerRegister(trackDelegateCallbacks, properties);
     }
 
     /**
@@ -131,13 +142,17 @@ public class SimpleSecretEasyMediaAutoConfiguration {
         /** 轨道委托回调。 */
         private final List<TrackDelegateCallback> trackDelegateCallbacks;
 
-        EmsCallbackHandlerRegister(List<TrackDelegateCallback> trackDelegateCallbacks) {
+        /** EasyMedia 配置。 */
+        private final EmsProperties properties;
+
+        EmsCallbackHandlerRegister(List<TrackDelegateCallback> trackDelegateCallbacks, EmsProperties properties) {
             this.trackDelegateCallbacks = trackDelegateCallbacks;
+            this.properties = properties;
         }
 
         @Override
         public void register(ZlmCallbackHandlerContext context) {
-            context.setStreamChangeHandler(new EmsCommonStreamChangeHandler(trackDelegateCallbacks))
+            context.setStreamChangeHandler(new EmsCommonStreamChangeHandler(trackDelegateCallbacks, properties))
                     .setStreamNoReaderHandler(new EmsStreamNoReaderAppDispatcher())
                     .setStreamNoFoundHandler(new EmsStreamNoFoundAppDispatcher());
         }

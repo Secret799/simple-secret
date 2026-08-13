@@ -38,14 +38,27 @@ public final class H26xSeiParser {
      * @return 解析结果和媒体格式问题
      */
     public SeiParseResult parse(byte[] frame, VideoCodec codec, int maxFrameBytes, int maxPayloadBytes) {
+        return parse(frame, codec, maxFrameBytes, SeiParseLimits.defaults(maxPayloadBytes));
+    }
+
+    /**
+     * 使用显式资源上限解析 Annex-B 帧中的标准 H.264/H.265 SEI 消息。
+     *
+     * @param frame Annex-B 格式帧数据
+     * @param codec 视频编码格式
+     * @param maxFrameBytes 允许的最大帧字节数
+     * @param limits 单帧解析资源上限
+     * @return 解析结果和媒体格式问题
+     */
+    public SeiParseResult parse(byte[] frame, VideoCodec codec, int maxFrameBytes, SeiParseLimits limits) {
         Objects.requireNonNull(frame, "frame");
         Objects.requireNonNull(codec, "codec");
+        Objects.requireNonNull(limits, "limits");
         validateLimit(maxFrameBytes, "maxFrameBytes");
-        validateLimit(maxPayloadBytes, "maxPayloadBytes");
         if (frame.length > maxFrameBytes) {
             return SeiParseResult.issue("FRAME_TOO_LARGE", "frame bytes exceed configured maximum");
         }
-        return parseAnnexB(frame, codec, maxPayloadBytes);
+        return parseAnnexB(frame, codec, limits);
     }
 
     /**
@@ -65,25 +78,28 @@ public final class H26xSeiParser {
      *
      * @param frame 已验证大小的 Annex-B 帧数据
      * @param codec 视频编码格式
-     * @param maxPayloadBytes 允许的最大 SEI 负载字节数
+     * @param limits 单帧解析资源上限
      * @return 解析结果
      */
-    private SeiParseResult parseAnnexB(byte[] frame, VideoCodec codec, int maxPayloadBytes) {
-        List<SeiMessage> messages = new ArrayList<>();
-        List<SeiParseIssue> issues = new ArrayList<>();
+    private SeiParseResult parseAnnexB(byte[] frame, VideoCodec codec, SeiParseLimits limits) {
+        ParseContext context = new ParseContext(limits);
         int seiNalUnitCount = 0;
         int startCodeIndex = findStartCode(frame, 0);
-        while (startCodeIndex >= 0) {
+        while (startCodeIndex >= 0 && !context.stopped) {
             int nalStart = startCodeIndex + startCodeLength(frame, startCodeIndex);
             int nextStartCodeIndex = findStartCode(frame, nalStart);
             int nalEnd = nextStartCodeIndex < 0 ? frame.length : nextStartCodeIndex;
             if (isSeiNalUnit(frame, nalStart, nalEnd, codec)) {
+                if (seiNalUnitCount >= limits.maxSeiNalUnits()) {
+                    context.stopWithLimit("SEI_NAL_UNIT_LIMIT_REACHED", "SEI NAL unit count reached configured limit");
+                    break;
+                }
                 seiNalUnitCount++;
-                parseSeiNalUnit(frame, nalStart, nalEnd, codec, maxPayloadBytes, messages, issues);
+                parseSeiNalUnit(frame, nalStart, nalEnd, codec, context);
             }
             startCodeIndex = nextStartCodeIndex;
         }
-        return new SeiParseResult(messages, seiNalUnitCount, issues);
+        return new SeiParseResult(context.messages, seiNalUnitCount, context.issues);
     }
 
     /**
@@ -113,54 +129,139 @@ public final class H26xSeiParser {
      * @param nalStart NAL 单元起始位置
      * @param nalEnd NAL 单元结束位置（排他）
      * @param codec 视频编码格式
-     * @param maxPayloadBytes 允许的最大 SEI 负载字节数
-     * @param messages 已解析消息的收集器
-     * @param issues 解析问题的收集器
+     * @param context 单帧解析上下文
      */
-    private void parseSeiNalUnit(byte[] frame, int nalStart, int nalEnd, VideoCodec codec, int maxPayloadBytes,
-                                 List<SeiMessage> messages, List<SeiParseIssue> issues) {
+    private void parseSeiNalUnit(byte[] frame, int nalStart, int nalEnd, VideoCodec codec, ParseContext context) {
         int rbspStart = nalStart + (codec == VideoCodec.H264 ? 1 : 2);
+        if (!hasValidEmulationPreventionBytes(frame, rbspStart, nalEnd)) {
+            context.addIssue(new SeiParseIssue("INVALID_EMULATION_PREVENTION_BYTE",
+                    "emulation prevention byte requires a following value no greater than 0x03"));
+            return;
+        }
         byte[] rbsp = unescapeRbsp(frame, rbspStart, nalEnd);
-        parseRbsp(rbsp, maxPayloadBytes, messages, issues);
+        parseRbsp(rbsp, context);
+    }
+
+    /**
+     * 在分配 RBSP 前校验所有仿真防止字节。
+     *
+     * @param frame 原始 Annex-B 帧数据
+     * @param start RBSP 起始位置
+     * @param end RBSP 结束位置（排他）
+     * @return 每个 {@code 00 00 03} 后均存在不大于 {@code 03} 的字节时返回 true
+     */
+    private boolean hasValidEmulationPreventionBytes(byte[] frame, int start, int end) {
+        int zeroCount = 0;
+        for (int index = start; index < end; index++) {
+            int value = frame[index] & 0xFF;
+            if (zeroCount >= 2 && value == 3) {
+                if (index + 1 >= end || (frame[index + 1] & 0xFF) > 3) {
+                    return false;
+                }
+                zeroCount = 0;
+                continue;
+            }
+            zeroCount = value == 0 ? zeroCount + 1 : 0;
+        }
+        return true;
     }
 
     /**
      * 解析一个 NAL 单元的 RBSP SEI 消息。
      *
      * @param rbsp 已移除防竞争字节的 RBSP 数据
-     * @param maxPayloadBytes 允许的最大 SEI 负载字节数
-     * @param messages 已解析消息的收集器
-     * @param issues 解析问题的收集器
+     * @param context 单帧解析上下文
      */
-    private void parseRbsp(byte[] rbsp, int maxPayloadBytes, List<SeiMessage> messages, List<SeiParseIssue> issues) {
+    private void parseRbsp(byte[] rbsp, ParseContext context) {
         RbspCursor cursor = new RbspCursor(rbsp);
-        while (true) {
+        while (!context.stopped) {
             if (cursor.atTrailingBits()) {
                 return;
             }
             if (cursor.atEnd()) {
-                issues.add(new SeiParseIssue("MISSING_TRAILING_BITS", "SEI RBSP is missing trailing bits"));
+                context.addIssue(new SeiParseIssue("MISSING_TRAILING_BITS", "SEI RBSP is missing trailing bits"));
                 return;
             }
             int payloadType = cursor.readExtendedValue();
             if (payloadType < 0) {
-                issues.add(cursor.headerIssue());
+                context.addIssue(cursor.headerIssue());
                 return;
             }
             int payloadSize = cursor.readExtendedValue();
             if (payloadSize < 0) {
-                issues.add(cursor.headerIssue());
+                context.addIssue(cursor.headerIssue());
                 return;
             }
-            if (payloadSize > maxPayloadBytes) {
-                issues.add(new SeiParseIssue("PAYLOAD_TOO_LARGE", "payload bytes exceed configured maximum"));
+            if (payloadSize > context.limits.maxPayloadBytes()) {
+                context.addIssue(new SeiParseIssue("PAYLOAD_TOO_LARGE",
+                        "payload bytes exceed configured maximum"));
                 return;
             }
             if (payloadSize > cursor.remaining()) {
-                issues.add(new SeiParseIssue("TRUNCATED_PAYLOAD", "declared payload exceeds remaining RBSP bytes"));
+                context.addIssue(new SeiParseIssue("TRUNCATED_PAYLOAD",
+                        "declared payload exceeds remaining RBSP bytes"));
                 return;
             }
-            messages.add(new SeiMessage(payloadType, cursor.readPayload(payloadSize)));
+            if (context.messages.size() >= context.limits.maxSeiMessages()) {
+                context.stopWithLimit("SEI_MESSAGE_LIMIT_REACHED", "SEI message count reached configured limit");
+                return;
+            }
+            context.messages.add(new SeiMessage(payloadType, cursor.readPayload(payloadSize)));
+        }
+    }
+
+    /**
+     * 单帧解析的有界可变状态。
+     *
+     * @author junpzx
+     * @since 2026-08-13
+     */
+    private static final class ParseContext {
+
+        /** 单帧解析资源上限。 */
+        private final SeiParseLimits limits;
+
+        /** 已解析的有界消息列表。 */
+        private final List<SeiMessage> messages = new ArrayList<>();
+
+        /** 已发现的有界问题列表。 */
+        private final List<SeiParseIssue> issues = new ArrayList<>();
+
+        /** 是否已经触发必须终止当前帧的资源上限。 */
+        private boolean stopped;
+
+        /** @param limits 单帧解析资源上限 */
+        private ParseContext(SeiParseLimits limits) {
+            this.limits = limits;
+        }
+
+        /**
+         * 追加一个结构化问题；问题超限时改为稳定上限问题并停止解析。
+         *
+         * @param issue 待追加问题
+         */
+        private void addIssue(SeiParseIssue issue) {
+            if (issues.size() < limits.maxIssues() - 1) {
+                issues.add(issue);
+                return;
+            }
+            stopWithLimit("SEI_ISSUE_LIMIT_REACHED", "SEI issue count reached configured limit");
+        }
+
+        /**
+         * 以稳定问题终止当前帧解析，且不突破问题列表上限。
+         *
+         * @param code 稳定问题代码
+         * @param message 稳定问题说明
+         */
+        private void stopWithLimit(String code, String message) {
+            SeiParseIssue limitIssue = new SeiParseIssue(code, message);
+            if (issues.size() < limits.maxIssues()) {
+                issues.add(limitIssue);
+            } else {
+                issues.set(issues.size() - 1, limitIssue);
+            }
+            stopped = true;
         }
     }
 

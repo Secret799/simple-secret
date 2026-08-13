@@ -8,6 +8,12 @@ import org.springframework.core.env.Environment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * DJI SEI 测试应用默认启动测试。
+ *
+ * @author junpzx
+ * @since 2026-08-13
+ */
 @SpringBootTest(classes = DjiSeiTestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class DjiSeiTestApplicationTest {

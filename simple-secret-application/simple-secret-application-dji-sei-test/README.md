@@ -17,8 +17,10 @@ flowchart LR
 ```
 
 `local` profile 启用 zlm4j、EasyMedia 和诊断回调。媒体源注册后，EasyMedia 将 RTMP 视频轨道帧交给
-`DjiSeiTrackCallback`；回调仅处理允许的 app 和 H.264/H.265 视频帧，解析三字节或四字节 Annex-B 起始码、
-emulation-prevention 字节、变长 `payloadType` 与 `payloadSize`。日志预览、帧和 payload 都有显式上限。
+`DjiSeiTrackCallback`。EasyMedia 先校验原生帧大小和指针，再分配 Java 数组。
+回调只处理允许的 app 和 H.264/H.265 视频帧。解析支持 Annex-B 起始码和合法
+emulation-prevention 字节，并读取变长 `payloadType` 和 `payloadSize`。
+帧、payload、NAL、消息、问题、日志及预览都有显式上限。
 畸形输入只写入当前流统计，不中断原生媒体回调线程。
 
 默认 profile 关闭 zlm4j、EasyMedia、EasyMedia 管理 API 和 DJI SEI 回调，因此普通启动和自动化测试不会加载
@@ -71,12 +73,17 @@ rtmp://<application-host>:7935/live/<streamId>
 | `SIMPLE_SECRET_DJI_SEI_MAX_FRAME_BYTES` | `8388608` | 单帧上限，范围 1 字节至 64 MiB |
 | `SIMPLE_SECRET_DJI_SEI_MAX_PAYLOAD_BYTES` | `1048576` | 单条 payload 上限，不得超过单帧上限，最大 64 MiB |
 | `SIMPLE_SECRET_DJI_SEI_PREVIEW_BYTES` | `64` | 单条 payload 日志预览上限，范围 1 至 4096 字节 |
+| `SIMPLE_SECRET_DJI_SEI_MAX_NAL_UNITS` | `256` | 单帧 SEI NAL 单元上限，范围 1 至 4096 |
+| `SIMPLE_SECRET_DJI_SEI_MAX_MESSAGES` | `256` | 单帧解析消息上限，范围 1 至 4096 |
+| `SIMPLE_SECRET_DJI_SEI_MAX_ISSUES` | `32` | 1 至 4096；超限保留 limit issue |
+| `SIMPLE_SECRET_DJI_SEI_MAX_MESSAGE_LOGS` | `64` | 1 至 1024，且不超过消息上限 |
 | `SIMPLE_SECRET_DJI_SEI_SUMMARY_INTERVAL` | `30s` | 周期汇总间隔，范围 1 秒至 1 小时 |
 | `SIMPLE_SECRET_DJI_SEI_RTMP_PORT` | `7935` | `local` profile 的 RTMP 监听端口 |
 | `SIMPLE_SECRET_DJI_SEI_ROOT` | `./runtime/dji-sei` | `local` profile 的 ZLMediaKit 根目录，日志写入其 `logs` 子目录 |
 
 环境变量只改变有界诊断参数和本地 RTMP 入口。HTTP、RTSP、RTC listener、EasyMedia 管理 API、WebRTC、
-匿名播放均保持关闭。
+匿名播放均保持关闭。`SIMPLE_SECRET_DJI_SEI_MAX_FRAME_BYTES` 同时绑定 EasyMedia 原生帧复制上限和
+DJI parser 帧上限，确保原生数据在 Java 堆分配前就受到相同约束。
 
 ## 结果判读
 

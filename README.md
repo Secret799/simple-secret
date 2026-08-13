@@ -1228,7 +1228,8 @@ MQTT、不保存业务数据，也不推测未公开的 DJI 姿态载荷格式�
 ```mermaid
 flowchart LR
     DJI["DJI Dock / Cloud API"] -->|"RTMP 推流"| ZLM["内嵌 ZLMediaKit"]
-    ZLM --> TRACK["RTMP 视频轨道回调"]
+    ZLM --> BRIDGE["EasyMedia 原生帧边界"]
+    BRIDGE --> TRACK["RTMP 视频轨道回调"]
     TRACK --> CODEC{"视频编码"}
     CODEC -->|"H.264"| H264["解析 NALU 6"]
     CODEC -->|"H.265 / HEVC"| H265["解析 NALU 39 / 40"]
@@ -1239,8 +1240,11 @@ flowchart LR
 
 解析器同时支持三字节和四字节 Annex-B 起始码，移除 emulation-prevention 字节，并按 H.26x 规范读取变长
 `payloadType` 与 `payloadSize`。对于 `user_data_unregistered`，日志额外显示 UUID；其他 payload 保留原始
-字节，只输出受限的十六进制和可打印 UTF-8 预览。单帧大小、单条 payload 大小和日志预览长度均由配置
-限制，畸形或超限输入只计入当前流的失败统计，不得中断媒体回调线程。
+字节，只输出受限的十六进制和可打印 UTF-8 预览。
+EasyMedia 在读取原生指针前校验帧大小与指针，再分配 Java 数组。
+解析器限制单帧、payload、SEI NAL、消息和问题数量。诊断回调还限制日志和预览长度。
+畸形或超限输入只计入
+当前流的失败统计，不得中断媒体回调线程。
 
 应用在媒体源注册时记录 `app`、`streamId`、编码和轨道信息；检测到 SEI 时记录 PTS、DTS、payload type、
 长度、UUID 和受限预览。没有 SEI 的视频帧不逐帧打印，而是按配置周期输出累计帧数和 `seiCount=0`。
@@ -1266,7 +1270,9 @@ simple-secret-application-dji-sei-test.jar --spring.profiles.active=local
 `DYLD_LIBRARY_PATH`、Linux `LD_LIBRARY_PATH`、Windows `PATH`、rpath 或系统安装目录解析。推流地址为
 `rtmp://<host>:7935/live/<streamId>`。配置可通过 `SIMPLE_SECRET_DJI_SEI_APP`、
 `SIMPLE_SECRET_DJI_SEI_MAX_FRAME_BYTES`、`SIMPLE_SECRET_DJI_SEI_MAX_PAYLOAD_BYTES`、
-`SIMPLE_SECRET_DJI_SEI_PREVIEW_BYTES`、`SIMPLE_SECRET_DJI_SEI_SUMMARY_INTERVAL`、
+`SIMPLE_SECRET_DJI_SEI_PREVIEW_BYTES`、`SIMPLE_SECRET_DJI_SEI_MAX_NAL_UNITS`、
+`SIMPLE_SECRET_DJI_SEI_MAX_MESSAGES`、`SIMPLE_SECRET_DJI_SEI_MAX_ISSUES`、
+`SIMPLE_SECRET_DJI_SEI_MAX_MESSAGE_LOGS`、`SIMPLE_SECRET_DJI_SEI_SUMMARY_INTERVAL`、
 `SIMPLE_SECRET_DJI_SEI_RTMP_PORT` 和 `SIMPLE_SECRET_DJI_SEI_ROOT` 调整。
 
 该应用的 `local` profile 只启用原生 RTMP listener，不启动 ZLMediaKit HTTP、RTSP 或 RTC listener，因此除

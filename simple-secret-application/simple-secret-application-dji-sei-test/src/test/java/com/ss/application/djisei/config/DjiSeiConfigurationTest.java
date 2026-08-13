@@ -11,6 +11,12 @@ import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * DJI SEI Spring 配置测试。
+ *
+ * @author junpzx
+ * @since 2026-08-13
+ */
 class DjiSeiConfigurationTest {
 
     /** 仅加载被测诊断配置的上下文运行器。 */
