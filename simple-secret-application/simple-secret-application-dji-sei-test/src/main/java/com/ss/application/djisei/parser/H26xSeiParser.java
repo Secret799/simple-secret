@@ -135,11 +135,33 @@ public final class H26xSeiParser {
         int rbspStart = nalStart + (codec == VideoCodec.H264 ? 1 : 2);
         if (!hasValidEmulationPreventionBytes(frame, rbspStart, nalEnd)) {
             context.addIssue(new SeiParseIssue("INVALID_EMULATION_PREVENTION_BYTE",
-                    "emulation prevention byte requires a following value no greater than 0x03"));
+                    "invalid or missing emulation prevention byte after two zero bytes"));
             return;
         }
         byte[] rbsp = unescapeRbsp(frame, rbspStart, nalEnd);
+        int issueCount = context.issues.size();
         parseRbsp(rbsp, context);
+        replaceAmbiguousTruncationIssue(frame, nalEnd, issueCount, context);
+    }
+
+    /**
+     * 将 SEI payload 内被 Annex-B 扫描器识别成起始码的未转义序列归类为 EPB 错误。
+     *
+     * @param frame 原始 Annex-B 帧数据
+     * @param nalEnd 当前 NAL 单元结束位置
+     * @param issueCount 解析当前 NAL 前的问题数量
+     * @param context 单帧解析上下文
+     */
+    private void replaceAmbiguousTruncationIssue(byte[] frame, int nalEnd, int issueCount, ParseContext context) {
+        if (context.issues.size() <= issueCount || nalEnd + 2 >= frame.length) {
+            return;
+        }
+        SeiParseIssue issue = context.issues.get(context.issues.size() - 1);
+        boolean threeByteStartCode = frame[nalEnd] == 0 && frame[nalEnd + 1] == 0 && frame[nalEnd + 2] == 1;
+        if ("TRUNCATED_PAYLOAD".equals(issue.code()) && threeByteStartCode) {
+            context.issues.set(context.issues.size() - 1, new SeiParseIssue(
+                    "INVALID_EMULATION_PREVENTION_BYTE", "missing emulation prevention byte before 0x01"));
+        }
     }
 
     /**
@@ -148,22 +170,47 @@ public final class H26xSeiParser {
      * @param frame 原始 Annex-B 帧数据
      * @param start RBSP 起始位置
      * @param end RBSP 结束位置（排他）
-     * @return 每个 {@code 00 00 03} 后均存在不大于 {@code 03} 的字节时返回 true
+     * @return 防竞争字节完整且两个零字节后不存在未转义的 {@code 00..02} 时返回 true
      */
     private boolean hasValidEmulationPreventionBytes(byte[] frame, int start, int end) {
+        int validationEnd = trailingPaddingStart(frame, start, end);
         int zeroCount = 0;
-        for (int index = start; index < end; index++) {
+        for (int index = start; index < validationEnd; index++) {
             int value = frame[index] & 0xFF;
-            if (zeroCount >= 2 && value == 3) {
-                if (index + 1 >= end || (frame[index + 1] & 0xFF) > 3) {
+            if (zeroCount >= 2) {
+                if (value <= 2) {
                     return false;
                 }
+                if (value == 3 && (index + 1 >= validationEnd || (frame[index + 1] & 0xFF) > 3)) {
+                    return false;
+                }
+            }
+            if (zeroCount >= 2 && value == 3) {
                 zeroCount = 0;
                 continue;
             }
             zeroCount = value == 0 ? zeroCount + 1 : 0;
         }
         return true;
+    }
+
+    /**
+     * 定位 RBSP stop bit 后合法零填充的起始位置。
+     *
+     * @param frame 原始 Annex-B 帧数据
+     * @param start RBSP 起始位置
+     * @param end RBSP 结束位置（排他）
+     * @return 需要执行防竞争校验的结束位置（排他）
+     */
+    private int trailingPaddingStart(byte[] frame, int start, int end) {
+        int paddingStart = end;
+        while (paddingStart > start && frame[paddingStart - 1] == 0) {
+            paddingStart--;
+        }
+        if (paddingStart > start && (frame[paddingStart - 1] & 0xFF) == 0x80) {
+            return paddingStart;
+        }
+        return end;
     }
 
     /**

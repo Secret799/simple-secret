@@ -1242,9 +1242,16 @@ flowchart LR
 `payloadType` 与 `payloadSize`。对于 `user_data_unregistered`，日志额外显示 UUID；其他 payload 保留原始
 字节，只输出受限的十六进制和可打印 UTF-8 预览。
 EasyMedia 在读取原生指针前校验帧大小与指针，再分配 Java 数组。
+大小、空指针或空轨道被桥接层拒绝时，只记录不含 payload 的有界 WARN；该帧不会进入
+`DjiSeiTrackCallback`，也不计入 `videoFrames` 或 `malformedMessages`。
+桥接层按原生媒体源指针维护精确注册生命周期：同指针重复注册不重复通知或安装 delegate；每个有效的
+复制 `MK_TRACK` 引用在读取元数据前被生命周期接管，并在精确注销时逐一执行一次 `mk_track_unref`。
+`mk_track_add_delegate` 的 void 调用即使抛出异常也可能已经在原生侧生效，因此异常会继续抛出，轨道和回调
+所有权仍保留到精确注销；重复注销不会再次释放。
+注册与注销控制事件按处理器串行化，注销不会错过尚未完成的生命周期插入和轨道接管。
 解析器限制单帧、payload、SEI NAL、消息和问题数量。诊断回调还限制日志和预览长度。
-畸形或超限输入只计入
-当前流的失败统计，不得中断媒体回调线程。
+进入解析器后的语法错误、消息/NAL 数量超限和 payload 超限只计入当前流 `malformedMessages`，
+不得中断媒体回调线程。
 
 应用在媒体源注册时记录 `app`、`streamId`、编码和轨道信息；检测到 SEI 时记录 PTS、DTS、payload type、
 长度、UUID 和受限预览。没有 SEI 的视频帧不逐帧打印，而是按配置周期输出累计帧数和 `seiCount=0`。
@@ -1279,7 +1286,8 @@ simple-secret-application-dji-sei-test.jar --spring.profiles.active=local
 RTMP 端口外不需要预留 7080、7554 或 8000 端口。
 
 `DJI RTMP SEI detected` 表示解析到标准 SEI；`videoFrames` 为正且 `seiMessages=0` 表示收到视频但未发现
-支持的 SEI；`malformedMessages` 为正表示 SEI-like 数据违反大小或语法约束。先停止推流可触发媒体注销和
+支持的 SEI；`malformedMessages` 为正表示已进入解析器的 SEI-like 数据违反语法、数量或 payload 约束。
+EasyMedia 桥接层拒绝的帧不进入上述两项统计。先停止推流可触发媒体注销和
 最终 `DJI RTMP stream summary`，随后可用 `Ctrl+C` 关闭应用和内嵌 ZLMediaKit。
 
 自动化验证只证明解析器和 Spring 装配；当前没有提供真实 DJI 流或原生 `mk_api`，未宣称完成真实 DJI 验证。

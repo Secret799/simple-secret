@@ -18,10 +18,13 @@ flowchart LR
 
 `local` profile 启用 zlm4j、EasyMedia 和诊断回调。媒体源注册后，EasyMedia 将 RTMP 视频轨道帧交给
 `DjiSeiTrackCallback`。EasyMedia 先校验原生帧大小和指针，再分配 Java 数组。
+EasyMedia 因大小、空指针或空轨道拒绝的桥接帧只产生不含 payload 的有界 WARN，不会进入
+`DjiSeiTrackCallback`，因此不计入 `videoFrames` 或 `malformedMessages`。
 回调只处理允许的 app 和 H.264/H.265 视频帧。解析支持 Annex-B 起始码和合法
 emulation-prevention 字节，并读取变长 `payloadType` 和 `payloadSize`。
 帧、payload、NAL、消息、问题、日志及预览都有显式上限。
-畸形输入只写入当前流统计，不中断原生媒体回调线程。
+进入解析器后的语法错误、消息/NAL 数量超限和 payload 超限会计入当前流 `malformedMessages`，
+但不中断原生媒体回调线程。
 
 默认 profile 关闭 zlm4j、EasyMedia、EasyMedia 管理 API 和 DJI SEI 回调，因此普通启动和自动化测试不会加载
 `mk_api`。`local` profile 只启动 `0.0.0.0:7935` 原生 RTMP listener，允许匿名发布、拒绝匿名播放；原生
@@ -101,7 +104,8 @@ DJI RTMP periodic summary: app=live, stream=dock-01, videoFrames=900, seiNalUnit
 seiMessages=0, malformedMessages=0, elapsedMs=30000
 ```
 
-发现 SEI-like 数据但边界或语法无效时会先记录 WARN，汇总中的 `malformedMessages` 为正：
+已进入解析器的 SEI-like 数据违反语法、数量或 payload 边界时会先记录 WARN，汇总中的
+`malformedMessages` 为正。EasyMedia 桥接层拒绝的帧不进入此统计：
 
 ```text
 DJI RTMP malformed SEI frame: app=live, stream=dock-01, codec=H264, issueCount=1,

@@ -89,6 +89,28 @@ class H26xSeiParserTest {
     }
 
     @Test
+    void shouldRejectMissingEmulationPreventionByteForForbiddenFollowers() {
+        for (int forbiddenFollower = 0; forbiddenFollower <= 2; forbiddenFollower++) {
+            SeiParseResult result = parser.parse(
+                    annexB4(bytes(0x06, 5, 4, 0, 0, forbiddenFollower, 4, 0x80)),
+                    VideoCodec.H264, 1024, 512);
+
+            assertThat(result.issues()).extracting(SeiParseIssue::code)
+                    .containsExactly("INVALID_EMULATION_PREVENTION_BYTE");
+            assertThat(result.messages()).isEmpty();
+        }
+    }
+
+    @Test
+    void shouldAllowZeroPaddingAfterRbspStopBit() {
+        SeiParseResult result = parser.parse(
+                annexB4(bytes(0x06, 5, 1, 4, 0x80, 0, 0, 0)), VideoCodec.H264, 1024, 512);
+
+        assertThat(result.issues()).isEmpty();
+        assertThat(result.messages()).hasSize(1);
+    }
+
+    @Test
     void shouldReportTruncatedAndOversizedPayloadWithoutThrowing() {
         SeiParseResult truncated = parser.parse(
                 annexB4(bytes(0x06, 5, 10, 1, 2, 0x80)), VideoCodec.H264, 1024, 512);
@@ -139,7 +161,7 @@ class H26xSeiParserTest {
     void shouldParseExtendedPayloadTypeAndSize() {
         byte[] payload = new byte[256];
         payload[0] = 7;
-        byte[] rbsp = concat(bytes(0xFF, 5, 0xFF, 1), payload, bytes(0x80));
+        byte[] rbsp = escapeRbsp(concat(bytes(0xFF, 5, 0xFF, 1), payload, bytes(0x80)));
 
         SeiParseResult result = parser.parse(annexB4(concat(bytes(0x06), rbsp)), VideoCodec.H264, 1024, 512);
 
@@ -219,7 +241,29 @@ class H26xSeiParserTest {
     }
 
     private static byte[] seiRbsp(int payloadType, byte[] payload) {
-        return concat(bytes(payloadType, payload.length), payload, bytes(0x80));
+        return escapeRbsp(concat(bytes(payloadType, payload.length), payload, bytes(0x80)));
+    }
+
+    /**
+     * 将测试 RBSP 中需要转义的序列编码为合法 EBSP。
+     *
+     * @param rbsp 原始 RBSP
+     * @return 完成仿真防止转义的 EBSP
+     */
+    private static byte[] escapeRbsp(byte[] rbsp) {
+        byte[] escaped = new byte[rbsp.length * 2];
+        int target = 0;
+        int zeroCount = 0;
+        for (byte current : rbsp) {
+            int value = current & 0xFF;
+            if (zeroCount >= 2 && value <= 3) {
+                escaped[target++] = 3;
+                zeroCount = 0;
+            }
+            escaped[target++] = current;
+            zeroCount = value == 0 ? zeroCount + 1 : 0;
+        }
+        return java.util.Arrays.copyOf(escaped, target);
     }
 
     private static byte[] annexB4(byte[] nalUnit) {

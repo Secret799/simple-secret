@@ -19,11 +19,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -143,53 +149,198 @@ class EmsCommonStreamChangeHandlerTest {
     }
 
     @Test
-    @DisplayName("轨道与原生代理强引用随精确注册生命周期释放")
-    void shouldRetainNativeTrackDelegateUntilExactLifecycleRemoval() {
-        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(List.of());
+    @DisplayName("同指针重复注册复用生命周期且只通知一次")
+    void shouldReuseSamePointerRegistrationUntilExactDeregistration() {
+        RecordingCallback callback = new RecordingCallback(Set.of("rtmp"));
+        List<MK_TRACK> unreferencedTracks = new CopyOnWriteArrayList<>();
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(
+                List.of(callback), new EmsProperties(), unreferencedTracks::add);
         Memory sourceMemory = new Memory(8);
         MK_MEDIA_SOURCE firstSender = new MK_MEDIA_SOURCE(sourceMemory);
-        MK_MEDIA_SOURCE replacementSender = new MK_MEDIA_SOURCE(sourceMemory);
+        MK_MEDIA_SOURCE duplicateSender = new MK_MEDIA_SOURCE(sourceMemory);
         MK_TRACK firstTrack = new MK_TRACK(new Memory(8));
-        MK_TRACK replacementTrack = new MK_TRACK(new Memory(8));
         IMKFrameOutCallBack firstDelegate = (userData, frame) -> {
         };
-        IMKFrameOutCallBack replacementDelegate = (userData, frame) -> {
-        };
+        MediaSourceDomain firstSource = createMediaSource("rtmp");
+        MediaSourceDomain duplicateSource = createMediaSource("rtmp");
         MediaSourceDomain fallback = createMediaSource("rtmp");
 
-        handler.rememberRegisteredLifecycle(firstSender, createMediaSource("rtmp"));
-        handler.retainTrackDelegate(firstSender, firstTrack, firstDelegate);
+        EmsCommonStreamChangeHandler.LifecycleRegistration firstRegistration =
+                handler.prepareRegisteredLifecycle(firstSender, firstSource, List.of(callback));
+        handler.installTrackDelegate(firstRegistration.lifecycle(), firstTrack,
+                () -> firstDelegate, installedDelegate -> {
+                });
+        EmsCommonStreamChangeHandler.LifecycleRegistration duplicateRegistration =
+                handler.prepareRegisteredLifecycle(duplicateSender, duplicateSource, List.of(callback));
+
+        assertTrue(firstRegistration.created());
+        assertTrue(!duplicateRegistration.created());
+        assertSame(firstRegistration.lifecycle(), duplicateRegistration.lifecycle());
+        assertEquals(1, callback.registeredCount);
         assertEquals(1, handler.retainedTrackDelegateCount(firstSender));
         assertSame(firstTrack, handler.retainedTrack(firstSender, 0));
         assertSame(firstDelegate, handler.retainedTrackDelegate(firstSender, 0));
 
-        handler.rememberRegisteredLifecycle(replacementSender, createMediaSource("rtmp"));
-        assertEquals(0, handler.retainedTrackDelegateCount(replacementSender));
-        handler.retainTrackDelegate(replacementSender, replacementTrack, replacementDelegate);
-        assertSame(replacementDelegate, handler.retainedTrackDelegate(replacementSender, 0));
+        handler.resolveDeregisteredLifecycle(duplicateSender, fallback);
+        handler.resolveDeregisteredLifecycle(duplicateSender, fallback);
 
-        handler.resolveDeregisteredLifecycle(replacementSender, fallback);
-        assertEquals(0, handler.retainedTrackDelegateCount(replacementSender));
+        assertEquals(List.of(firstTrack), unreferencedTracks);
+        assertEquals(0, handler.retainedTrackDelegateCount(firstRegistration.lifecycle()));
+        assertEquals(0, handler.registeredLifecycleCount());
+
+        EmsCommonStreamChangeHandler.LifecycleRegistration reusedPointerRegistration =
+                handler.prepareRegisteredLifecycle(firstSender, createMediaSource("rtmp"), List.of(callback));
+        assertTrue(reusedPointerRegistration.created());
+        assertNotSame(firstRegistration.lifecycle(), reusedPointerRegistration.lifecycle());
+        assertEquals(2, callback.registeredCount);
+    }
+
+    @Test
+    @DisplayName("注销等待正在进行的注册完成")
+    void shouldSerializeRegistrationAndDeregistration() throws InterruptedException {
+        CountDownLatch registrationStarted = new CountDownLatch(1);
+        CountDownLatch continueRegistration = new CountDownLatch(1);
+        TrackDelegateCallback callback = new RecordingCallback(Set.of("rtmp")) {
+            @Override
+            public void onMediaSourceRegistered(MediaSourceDomain mediaSource) {
+                registrationStarted.countDown();
+                awaitLatch(continueRegistration);
+                super.onMediaSourceRegistered(mediaSource);
+            }
+        };
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(List.of(callback));
+        Memory sourceMemory = new Memory(8);
+        MK_MEDIA_SOURCE registerSender = new MK_MEDIA_SOURCE(sourceMemory);
+        MK_MEDIA_SOURCE deregisterSender = new MK_MEDIA_SOURCE(sourceMemory);
+        MediaSourceDomain registeredSource = createMediaSource("rtmp");
+        AtomicReference<MediaSourceDomain> deregisteredSource = new AtomicReference<>();
+        Thread registerThread = new Thread(() -> handler.prepareRegisteredLifecycle(
+                registerSender, registeredSource, List.of(callback)), "registration-test");
+        Thread deregisterThread = new Thread(() -> deregisteredSource.set(handler.resolveDeregisteredLifecycle(
+                deregisterSender, createMediaSource("rtmp"))), "deregistration-test");
+
+        registerThread.start();
+        assertTrue(registrationStarted.await(1, TimeUnit.SECONDS));
+        deregisterThread.start();
+        deregisterThread.join(100L);
+        assertTrue(deregisterThread.isAlive());
+        continueRegistration.countDown();
+        registerThread.join(1_000L);
+        deregisterThread.join(1_000L);
+
+        assertFalse(registerThread.isAlive());
+        assertFalse(deregisterThread.isAlive());
+        assertSame(registeredSource, deregisteredSource.get());
         assertEquals(0, handler.registeredLifecycleCount());
     }
 
     @Test
-    @DisplayName("原生代理安装抛出 Error 时撤销强引用")
-    void shouldReleaseNativeTrackDelegateWhenInstallationThrowsError() {
-        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(List.of());
+    @DisplayName("多个轨道注销时逐一 unref 且单个失败不阻断后续释放")
+    void shouldUnrefEveryOwnedTrackWhenOneUnrefFails() {
+        List<MK_TRACK> unreferencedTracks = new CopyOnWriteArrayList<>();
+        AtomicInteger unrefAttempt = new AtomicInteger();
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(
+                List.of(), new EmsProperties(), track -> {
+                    unreferencedTracks.add(track);
+                    if (unrefAttempt.incrementAndGet() == 1) {
+                        throw new IllegalStateException("first unref failed");
+                    }
+                });
+        MK_MEDIA_SOURCE sender = new MK_MEDIA_SOURCE(new Memory(8));
+        MK_TRACK firstTrack = new MK_TRACK(new Memory(8));
+        MK_TRACK secondTrack = new MK_TRACK(new Memory(8));
+        IMKFrameOutCallBack delegate = (userData, frame) -> {
+        };
+        EmsCommonStreamChangeHandler.RegisteredLifecycle lifecycle =
+                handler.rememberRegisteredLifecycle(sender, createMediaSource("rtmp")).lifecycle();
+
+        handler.installTrackDelegate(lifecycle, firstTrack, () -> delegate, installedDelegate -> {
+        });
+        handler.installTrackDelegate(lifecycle, secondTrack, () -> delegate, installedDelegate -> {
+        });
+        handler.resolveDeregisteredLifecycle(sender, createMediaSource("rtmp"));
+
+        assertEquals(List.of(firstTrack, secondTrack), unreferencedTracks);
+        assertEquals(0, handler.retainedTrackDelegateCount(lifecycle));
+    }
+
+    @Test
+    @DisplayName("精确注销只释放一次轨道引用")
+    void shouldUnrefOwnedTrackExactlyOnceOnExactDeregistration() {
+        AtomicInteger unrefCount = new AtomicInteger();
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(
+                List.of(), new EmsProperties(), track -> unrefCount.incrementAndGet());
+        Memory sourceMemory = new Memory(8);
+        MK_MEDIA_SOURCE registerSender = new MK_MEDIA_SOURCE(sourceMemory);
+        MK_MEDIA_SOURCE deregisterSender = new MK_MEDIA_SOURCE(sourceMemory);
+        MK_TRACK track = new MK_TRACK(new Memory(8));
+        IMKFrameOutCallBack delegate = (userData, frame) -> {
+        };
+        MediaSourceDomain fallback = createMediaSource("rtmp");
+        EmsCommonStreamChangeHandler.RegisteredLifecycle lifecycle =
+                handler.rememberRegisteredLifecycle(registerSender, createMediaSource("rtmp")).lifecycle();
+
+        handler.installTrackDelegate(lifecycle, track, () -> delegate, installedDelegate -> {
+        });
+        handler.resolveDeregisteredLifecycle(deregisterSender, fallback);
+        handler.resolveDeregisteredLifecycle(deregisterSender, fallback);
+
+        assertEquals(1, unrefCount.get());
+        assertEquals(0, handler.retainedTrackDelegateCount(lifecycle));
+    }
+
+    @Test
+    @DisplayName("原生代理安装抛出 Error 时保留所有权到精确注销")
+    void shouldRetainAmbiguousNativeInstallationUntilDeregistration() {
+        List<MK_TRACK> unreferencedTracks = new CopyOnWriteArrayList<>();
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(
+                List.of(), new EmsProperties(), unreferencedTracks::add);
         MK_MEDIA_SOURCE sender = new MK_MEDIA_SOURCE(new Memory(8));
         MK_TRACK track = new MK_TRACK(new Memory(8));
         IMKFrameOutCallBack delegate = (userData, frame) -> {
         };
         EmsCommonStreamChangeHandler.RegisteredLifecycle lifecycle =
-                handler.rememberRegisteredLifecycle(sender, createMediaSource("rtmp"));
+                handler.rememberRegisteredLifecycle(sender, createMediaSource("rtmp")).lifecycle();
 
         assertThrows(AssertionError.class, () -> handler.installTrackDelegate(
-                lifecycle, track, delegate, () -> {
+                lifecycle, track, () -> delegate, installedDelegate -> {
                     throw new AssertionError("native install failed");
                 }));
 
-        assertEquals(0, handler.retainedTrackDelegateCount(sender));
+        assertEquals(1, handler.retainedTrackDelegateCount(sender));
+        handler.resolveDeregisteredLifecycle(sender, createMediaSource("rtmp"));
+        assertEquals(List.of(track), unreferencedTracks);
+        assertEquals(0, handler.retainedTrackDelegateCount(lifecycle));
+    }
+
+    @Test
+    @DisplayName("空原生轨道不安装也不 unref")
+    void shouldRejectNullNativeTrackBeforeDelegateInstallation() {
+        AtomicInteger installCount = new AtomicInteger();
+        AtomicInteger unrefCount = new AtomicInteger();
+        EmsCommonStreamChangeHandler handler = new EmsCommonStreamChangeHandler(
+                List.of(), new EmsProperties(), track -> unrefCount.incrementAndGet());
+        MK_MEDIA_SOURCE sender = new MK_MEDIA_SOURCE(new Memory(8));
+        EmsCommonStreamChangeHandler.RegisteredLifecycle lifecycle =
+                handler.rememberRegisteredLifecycle(sender, createMediaSource("rtmp")).lifecycle();
+        IMKFrameOutCallBack delegate = (userData, frame) -> {
+        };
+        MK_TRACK nullPointerTrack = new MK_TRACK() {
+            @Override
+            public Pointer getPointer() {
+                return Pointer.NULL;
+            }
+        };
+
+        assertTrue(!handler.installTrackDelegate(
+                lifecycle, null, () -> delegate, installedDelegate -> installCount.incrementAndGet()));
+        assertTrue(!handler.installTrackDelegate(
+                lifecycle, nullPointerTrack, () -> delegate,
+                installedDelegate -> installCount.incrementAndGet()));
+        handler.resolveDeregisteredLifecycle(sender, createMediaSource("rtmp"));
+
+        assertEquals(0, installCount.get());
+        assertEquals(0, unrefCount.get());
     }
 
     @Test
@@ -250,6 +401,22 @@ class EmsCommonStreamChangeHandlerTest {
         source.setApp("live");
         source.setStream("drone-001");
         return source;
+    }
+
+    /**
+     * 等待并发测试闩锁，超时或中断时使测试线程失败。
+     *
+     * @param latch 待等待闩锁
+     */
+    private static void awaitLatch(CountDownLatch latch) {
+        try {
+            if (!latch.await(1, TimeUnit.SECONDS)) {
+                throw new AssertionError("latch timeout");
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("latch interrupted", exception);
+        }
     }
 
     /** 可记录媒体源生命周期和帧事件的测试回调。 */

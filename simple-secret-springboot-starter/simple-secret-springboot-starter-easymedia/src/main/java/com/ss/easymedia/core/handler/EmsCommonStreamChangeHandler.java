@@ -20,6 +20,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * ems通用流改变处理器
@@ -35,6 +37,9 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
 
     /** EasyMedia 资源边界配置。 */
     private final EmsProperties properties;
+
+    /** 复制轨道引用的原生释放动作。 */
+    private final TrackUnref trackUnref;
 
     /** 按原生媒体源指针关联的注册 token 与轨道去重状态。 */
     private final Map<Long, RegisteredLifecycle> registeredLifecycles = new ConcurrentHashMap<>();
@@ -57,50 +62,117 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
      */
     public EmsCommonStreamChangeHandler(List<TrackDelegateCallback> trackDelegateCallbacks,
                                         EmsProperties properties) {
+        this(trackDelegateCallbacks, properties, track -> ZlmMediaHelper.getZlmApi().mk_track_unref(track));
+    }
+
+    /**
+     * 创建带可控轨道释放动作的实例。
+     *
+     * @param trackDelegateCallbacks 媒体轨道回调列表
+     * @param properties EasyMedia 资源边界配置
+     * @param trackUnref 复制轨道引用的释放动作
+     */
+    EmsCommonStreamChangeHandler(List<TrackDelegateCallback> trackDelegateCallbacks,
+                                 EmsProperties properties, TrackUnref trackUnref) {
         this.trackDelegateCallbacks = trackDelegateCallbacks == null ? List.of() : List.copyOf(trackDelegateCallbacks);
         this.properties = Objects.requireNonNull(properties, "properties");
+        this.trackUnref = Objects.requireNonNull(trackUnref, "trackUnref");
     }
 
 
     @Override
-    public void handleRegister(MK_MEDIA_SOURCE sender) {
-        MediaSourceDomain mediaSource = ZlmMediaHelper.Assembler.getMediaSource(sender, true);
+    public synchronized void handleRegister(MK_MEDIA_SOURCE sender) {
+        if (registeredLifecycles.containsKey(nativeSourceIdentity(sender))) {
+            return;
+        }
+        MediaSourceDomain mediaSource = ZlmMediaHelper.Assembler.getMediaSource(sender, false);
         List<TrackDelegateCallback> callbacks = resolveCallbacks(mediaSource.getSchema());
         if (callbacks.isEmpty()) {
             return;
         }
-        RegisteredLifecycle lifecycle = rememberRegisteredLifecycle(sender, mediaSource);
-        Set<String> codecSet = lifecycle.codecSet;
-        notifyRegistered(mediaSource, callbacks);
-        List<TrackDomain> tracks = mediaSource.getTracks();
-        if (tracks == null || tracks.isEmpty()) {
+        LifecycleRegistration registration = prepareRegisteredLifecycle(sender, mediaSource, callbacks);
+        if (!registration.created()) {
             return;
         }
-        for (int i = 0, tracksSize = tracks.size(); i < tracksSize; i++) {
-            TrackDomain track = tracks.get(i);
-            if (codecSet.contains(track.getCodecIdName())) {
+        registerTracks(sender, mediaSource, callbacks, registration.lifecycle());
+    }
+
+    /**
+     * 获取并安装媒体源的全部轨道回调。
+     *
+     * @param sender ZLMediaKit 原生媒体源
+     * @param mediaSource 注册时创建的媒体源 token
+     * @param callbacks 匹配的业务回调
+     * @param lifecycle 精确注册生命周期
+     */
+    public void registerTracks(MK_MEDIA_SOURCE sender, MediaSourceDomain mediaSource,
+                               List<TrackDelegateCallback> callbacks, RegisteredLifecycle lifecycle) {
+        int trackCount = ZlmMediaHelper.getZlmApi().mk_media_source_get_track_count(sender);
+        for (int index = 0; index < trackCount; index++) {
+            MK_TRACK track = ZlmMediaHelper.getZlmApi().mk_media_source_get_track(sender, index);
+            if (isNullTrack(track)) {
+                log.warn("Reject null native track: app={}, stream={}, trackIndex={}",
+                        mediaSource.getApp(), mediaSource.getStream(), index);
                 continue;
             }
-            MK_TRACK mkTrack = ZlmMediaHelper.getZlmApi().mk_media_source_get_track(sender, i);
-            // 轨道添加监听
-            IMKFrameOutCallBack delegate = (userData, frame) -> {
-                // 获取帧数据
-                long dataSize = ZlmMediaHelper.getZlmApi().mk_frame_get_data_size(frame);
-                long dts = ZlmMediaHelper.getZlmApi().mk_frame_get_dts(frame);
-                long pts = ZlmMediaHelper.getZlmApi().mk_frame_get_pts(frame);
-                long flag = ZlmMediaHelper.getZlmApi().mk_frame_get_flags(frame);
-                long dataPrefixSize = ZlmMediaHelper.getZlmApi().mk_frame_get_data_prefix_size(frame);
-                Pointer pointer = ZlmMediaHelper.getZlmApi().mk_frame_get_data(frame);
-                acceptNativeFrame(mediaSource, track, dataSize, dts, pts, flag, dataPrefixSize, pointer, callbacks);
-            };
-            installTrackDelegate(lifecycle, mkTrack, delegate,
-                    () -> ZlmMediaHelper.getZlmApi().mk_track_add_delegate(mkTrack, delegate, Pointer.NULL));
-            codecSet.add(track.getCodecIdName());
+            installTrackDelegate(lifecycle, track, () -> {
+                TrackDomain trackDomain = assembleTrack(track);
+                if (!lifecycle.codecSet.add(trackDomain.getCodecIdName())) {
+                    return null;
+                }
+                return createFrameDelegate(mediaSource, trackDomain, callbacks);
+            }, delegate -> ZlmMediaHelper.getZlmApi().mk_track_add_delegate(track, delegate, Pointer.NULL));
         }
     }
 
+    /**
+     * 从生命周期拥有的原生轨道组装业务轨道信息。
+     *
+     * @param track 生命周期拥有的原生轨道
+     * @return 轨道业务信息
+     */
+    public TrackDomain assembleTrack(MK_TRACK track) {
+        TrackDomain result = new TrackDomain();
+        result.setCodecId(ZlmMediaHelper.getZlmApi().mk_track_codec_id(track));
+        result.setCodecIdName(ZlmMediaHelper.getZlmApi().mk_track_codec_name(track));
+        result.setBitRate(ZlmMediaHelper.getZlmApi().mk_track_bit_rate(track));
+        int isVideo = ZlmMediaHelper.getZlmApi().mk_track_is_video(track);
+        result.setIsVideo(isVideo);
+        if (isVideo == 1) {
+            result.setWidth(ZlmMediaHelper.getZlmApi().mk_track_video_width(track));
+            result.setHeight(ZlmMediaHelper.getZlmApi().mk_track_video_height(track));
+            result.setFps(ZlmMediaHelper.getZlmApi().mk_track_video_fps(track));
+        } else {
+            result.setSampleRate(ZlmMediaHelper.getZlmApi().mk_track_audio_sample_rate(track));
+            result.setAudioChannel(ZlmMediaHelper.getZlmApi().mk_track_audio_channel(track));
+            result.setAudioSampleBit(ZlmMediaHelper.getZlmApi().mk_track_audio_sample_bit(track));
+        }
+        return result;
+    }
+
+    /**
+     * 创建读取并分发原生帧的 JNA 回调。
+     *
+     * @param mediaSource 注册时创建的媒体源 token
+     * @param track 轨道业务信息
+     * @param callbacks 匹配的业务回调
+     * @return 必须由注册生命周期强引用的 JNA 回调
+     */
+    public IMKFrameOutCallBack createFrameDelegate(MediaSourceDomain mediaSource, TrackDomain track,
+                                                    List<TrackDelegateCallback> callbacks) {
+        return (userData, frame) -> {
+            long dataSize = ZlmMediaHelper.getZlmApi().mk_frame_get_data_size(frame);
+            long dts = ZlmMediaHelper.getZlmApi().mk_frame_get_dts(frame);
+            long pts = ZlmMediaHelper.getZlmApi().mk_frame_get_pts(frame);
+            long flag = ZlmMediaHelper.getZlmApi().mk_frame_get_flags(frame);
+            long prefixSize = ZlmMediaHelper.getZlmApi().mk_frame_get_data_prefix_size(frame);
+            Pointer pointer = ZlmMediaHelper.getZlmApi().mk_frame_get_data(frame);
+            acceptNativeFrame(mediaSource, track, dataSize, dts, pts, flag, prefixSize, pointer, callbacks);
+        };
+    }
+
     @Override
-    public void handleDeregister(MK_MEDIA_SOURCE sender) {
+    public synchronized void handleDeregister(MK_MEDIA_SOURCE sender) {
         MediaSourceDomain fallback = ZlmMediaHelper.Assembler.getMediaSource(sender, false);
         MediaSourceDomain lifecycle = resolveDeregisteredLifecycle(sender, fallback);
         notifyDeregistered(lifecycle, resolveCallbacks(lifecycle.getSchema()));
@@ -111,12 +183,32 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
      *
      * @param sender ZLMediaKit 原生媒体源
      * @param mediaSource 注册时创建的媒体源 token
-     * @return 当前原生媒体源的精确注册生命周期
+     * @return 生命周期及本次是否首次创建
      */
-    RegisteredLifecycle rememberRegisteredLifecycle(MK_MEDIA_SOURCE sender, MediaSourceDomain mediaSource) {
-        RegisteredLifecycle lifecycle = new RegisteredLifecycle(mediaSource);
-        registeredLifecycles.put(nativeSourceIdentity(sender), lifecycle);
-        return lifecycle;
+    LifecycleRegistration rememberRegisteredLifecycle(MK_MEDIA_SOURCE sender, MediaSourceDomain mediaSource) {
+        long sourceIdentity = nativeSourceIdentity(sender);
+        RegisteredLifecycle candidate = new RegisteredLifecycle(mediaSource, trackUnref);
+        RegisteredLifecycle lifecycle = registeredLifecycles.putIfAbsent(sourceIdentity, candidate);
+        return lifecycle == null
+                ? new LifecycleRegistration(candidate, true)
+                : new LifecycleRegistration(lifecycle, false);
+    }
+
+    /**
+     * 准备幂等注册生命周期，并只通知首次注册。
+     *
+     * @param sender ZLMediaKit 原生媒体源
+     * @param mediaSource 注册时创建的媒体源 token
+     * @param callbacks 匹配的业务回调
+     * @return 生命周期及本次是否首次创建
+     */
+    synchronized LifecycleRegistration prepareRegisteredLifecycle(MK_MEDIA_SOURCE sender, MediaSourceDomain mediaSource,
+                                                                   List<TrackDelegateCallback> callbacks) {
+        LifecycleRegistration registration = rememberRegisteredLifecycle(sender, mediaSource);
+        if (registration.created()) {
+            notifyRegistered(mediaSource, callbacks);
+        }
+        return registration;
     }
 
     /**
@@ -126,10 +218,14 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
      * @param fallback 无注册记录时使用的注销媒体源信息
      * @return 注册时的精确媒体源 token，或回退信息
      */
-    MediaSourceDomain resolveDeregisteredLifecycle(MK_MEDIA_SOURCE sender, MediaSourceDomain fallback) {
+    synchronized MediaSourceDomain resolveDeregisteredLifecycle(MK_MEDIA_SOURCE sender, MediaSourceDomain fallback) {
         long sourceIdentity = nativeSourceIdentity(sender);
         RegisteredLifecycle lifecycle = registeredLifecycles.remove(sourceIdentity);
-        return lifecycle == null ? fallback : lifecycle.mediaSource;
+        if (lifecycle == null) {
+            return fallback;
+        }
+        lifecycle.close();
+        return lifecycle.mediaSource;
     }
 
     /** @return 当前保留的原生媒体源生命周期 token 数 */
@@ -138,36 +234,47 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
     }
 
     /**
-     * 在指定注册生命周期中保留原生轨道和 JNA 回调强引用。
+     * 保留轨道代理并执行原生安装。
+     * <p>
+     * 原生安装返回 void，异常无法证明安装未生效，
+     * 因此任何异常都保留所有权到精确注销。
      *
-     * @param sender ZLMediaKit 原生媒体源
-     * @param track 已安装代理的原生轨道
-     * @param delegate JNA 帧回调
+     * @param lifecycle 原生媒体源注册生命周期
+     * @param track 待安装代理的原生轨道
+     * @param delegateFactory 轨道信息读取及 JNA 帧回调工厂
+     * @param nativeInstall 原生安装动作
+     * @return 成功接管非空轨道并完成安装时返回 true
      */
-    void retainTrackDelegate(MK_MEDIA_SOURCE sender, MK_TRACK track, IMKFrameOutCallBack delegate) {
-        RegisteredLifecycle lifecycle = registeredLifecycles.get(nativeSourceIdentity(sender));
-        if (lifecycle != null) {
-            lifecycle.retain(track, delegate);
+    boolean installTrackDelegate(RegisteredLifecycle lifecycle, MK_TRACK track,
+                                 Supplier<IMKFrameOutCallBack> delegateFactory,
+                                 Consumer<IMKFrameOutCallBack> nativeInstall) {
+        if (isNullTrack(track)) {
+            log.warn("Reject null native track before delegate installation");
+            return false;
+        }
+        synchronized (lifecycle) {
+            RetainedTrackDelegate owner = lifecycle.retain(track, null);
+            if (owner == null) {
+                return false;
+            }
+            IMKFrameOutCallBack delegate = delegateFactory.get();
+            if (delegate == null) {
+                return false;
+            }
+            owner.attach(delegate);
+            nativeInstall.accept(delegate);
+            return true;
         }
     }
 
     /**
-     * 保留轨道代理并执行原生安装，安装失败时撤销强引用。
+     * 判断原生轨道引用是否为空。
      *
-     * @param lifecycle 原生媒体源注册生命周期
-     * @param track 待安装代理的原生轨道
-     * @param delegate JNA 帧回调
-     * @param nativeInstall 原生安装动作
+     * @param track 原生轨道引用
+     * @return Java 引用或原生指针为空时返回 true
      */
-    void installTrackDelegate(RegisteredLifecycle lifecycle, MK_TRACK track, IMKFrameOutCallBack delegate,
-                              Runnable nativeInstall) {
-        lifecycle.retain(track, delegate);
-        try {
-            nativeInstall.run();
-        } catch (RuntimeException | Error exception) {
-            lifecycle.release(track, delegate);
-            throw exception;
-        }
+    private boolean isNullTrack(MK_TRACK track) {
+        return track == null || track.getPointer() == null || Pointer.nativeValue(track.getPointer()) == 0L;
     }
 
     /**
@@ -179,6 +286,44 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
     int retainedTrackDelegateCount(MK_MEDIA_SOURCE sender) {
         RegisteredLifecycle lifecycle = registeredLifecycles.get(nativeSourceIdentity(sender));
         return lifecycle == null ? 0 : lifecycle.retainedTrackDelegates.size();
+    }
+
+    /**
+     * 返回指定生命周期当前保留的轨道代理数量。
+     *
+     * @param lifecycle 注册生命周期
+     * @return 当前保留的轨道代理数量
+     */
+    int retainedTrackDelegateCount(RegisteredLifecycle lifecycle) {
+        return lifecycle.retainedTrackDelegateCount();
+    }
+
+    /**
+     * 生命周期创建结果。
+     *
+     * @param lifecycle 注册生命周期
+     * @param created 本次是否首次创建
+     * @author junpzx
+     * @since 2026-08-13
+     */
+    record LifecycleRegistration(RegisteredLifecycle lifecycle, boolean created) {
+    }
+
+    /**
+     * 复制轨道引用释放动作。
+     *
+     * @author junpzx
+     * @since 2026-08-13
+     */
+    @FunctionalInterface
+    interface TrackUnref {
+
+        /**
+         * 释放一个复制轨道引用。
+         *
+         * @param track 复制轨道引用
+         */
+        void unref(MK_TRACK track);
     }
 
     /**
@@ -230,13 +375,21 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
         /** 已安装轨道及其 JNA 回调的强引用。 */
         private final List<RetainedTrackDelegate> retainedTrackDelegates = new CopyOnWriteArrayList<>();
 
+        /** 复制轨道引用的释放动作。 */
+        private final TrackUnref trackUnref;
+
+        /** 生命周期是否已经关闭。 */
+        private boolean closed;
+
         /**
          * 创建原生媒体源注册状态。
          *
          * @param mediaSource 注册时创建的媒体源 token
+         * @param trackUnref 复制轨道引用释放动作
          */
-        private RegisteredLifecycle(MediaSourceDomain mediaSource) {
+        private RegisteredLifecycle(MediaSourceDomain mediaSource, TrackUnref trackUnref) {
             this.mediaSource = mediaSource;
+            this.trackUnref = trackUnref;
         }
 
         /**
@@ -248,18 +401,51 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
          * @param track 原生轨道
          * @param delegate JNA 帧回调
          */
-        private void retain(MK_TRACK track, IMKFrameOutCallBack delegate) {
-            retainedTrackDelegates.add(new RetainedTrackDelegate(track, delegate));
+        private synchronized RetainedTrackDelegate retain(MK_TRACK track, IMKFrameOutCallBack delegate) {
+            if (closed) {
+                unrefSafely(track, -1);
+                return null;
+            }
+            RetainedTrackDelegate owner = new RetainedTrackDelegate(track, delegate);
+            retainedTrackDelegates.add(owner);
+            return owner;
         }
 
         /**
-         * 原生代理安装失败时撤销对应的 Java 强引用。
+         * 幂等关闭生命周期并逐一释放复制轨道引用。
+         */
+        private synchronized void close() {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            for (int index = 0; index < retainedTrackDelegates.size(); index++) {
+                RetainedTrackDelegate owner = retainedTrackDelegates.get(index);
+                unrefSafely(owner.track, index);
+                owner.clear();
+            }
+            retainedTrackDelegates.clear();
+            codecSet.clear();
+        }
+
+        /**
+         * 释放单个轨道引用并隔离原生错误。
          *
          * @param track 原生轨道
-         * @param delegate JNA 帧回调
+         * @param index 生命周期内轨道索引
          */
-        private void release(MK_TRACK track, IMKFrameOutCallBack delegate) {
-            retainedTrackDelegates.removeIf(retained -> retained.matches(track, delegate));
+        private void unrefSafely(MK_TRACK track, int index) {
+            try {
+                trackUnref.unref(track);
+            } catch (RuntimeException | Error exception) {
+                log.warn("Release native track reference failed: app={}, stream={}, trackIndex={}, errorType={}",
+                        mediaSource.getApp(), mediaSource.getStream(), index, exception.getClass().getName());
+            }
+        }
+
+        /** @return 当前保留的轨道代理数量 */
+        private int retainedTrackDelegateCount() {
+            return retainedTrackDelegates.size();
         }
     }
 
@@ -272,10 +458,10 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
     private static final class RetainedTrackDelegate {
 
         /** 已安装代理的原生轨道。 */
-        private final MK_TRACK track;
+        private MK_TRACK track;
 
         /** 必须与原生代理保持相同生命周期的 JNA 回调。 */
-        private final IMKFrameOutCallBack delegate;
+        private IMKFrameOutCallBack delegate;
 
         /**
          * 创建轨道代理强引用。
@@ -289,14 +475,18 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
         }
 
         /**
-         * 判断是否为同一原生轨道代理。
+         * 在读取轨道元数据后关联 JNA 回调。
          *
-         * @param candidateTrack 待比较轨道
-         * @param candidateDelegate 待比较回调
-         * @return 轨道和回调均相同时返回 true
+         * @param delegate JNA 帧回调
          */
-        private boolean matches(MK_TRACK candidateTrack, IMKFrameOutCallBack candidateDelegate) {
-            return track == candidateTrack && delegate == candidateDelegate;
+        private void attach(IMKFrameOutCallBack delegate) {
+            this.delegate = delegate;
+        }
+
+        /** 清空生命周期持有的原生轨道与 JNA 回调引用。 */
+        private void clear() {
+            track = null;
+            delegate = null;
         }
     }
 
