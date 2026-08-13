@@ -4,7 +4,7 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 
 ## 模块说明
 
-- `simple-secret-application`：应用聚合模块，包含可运行的 EasyMedia 测试应用和本地媒体推流工具。
+- `simple-secret-application`：应用聚合模块，包含 EasyMedia、DJI RTMP SEI 诊断和本地媒体推流工具。
 - `simple-secret-common`：内部基础公共构件和对外 BOM。
 - `simple-secret-common-toolbox`：零第三方运行时依赖的 Lambda 属性、URI、缓存、动态列和时间工具。
 - `simple-secret-common-core`：零第三方依赖的 Result、异常、HTTP 状态码和校验分组。
@@ -27,6 +27,7 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 - `simple-secret-springboot-starter-easymedia`：基于 zlm4j 的 WebRTC 网关、媒体管理 API、H.264 裸流，并复用 UDP 插件提供组播能力。
 - `simple-secret-springboot-starter-camera-zlm`：默认关闭的大华 H.264 Annex-B 到 EasyMedia/ZLM 独立适配层。
 - `simple-secret-application-pushstream`：扫描受控本地目录，通过受管 FFmpeg 进程循环推送到内嵌 ZLMediaKit。
+- `simple-secret-application-dji-sei-test`：接收 RTMP H.264/H.265 视频并输出标准 SEI 诊断与流汇总。
 
 本项目不迁移 `auth`、`core` starter、`doc`、`encrypt`、`idempotent`、`json`、`magic-api`、
 `mybatis-plus`、`redis`、`security`、`sensitive`、`tenant`、`web` 和 Servlet `websocket` starter。
@@ -53,6 +54,8 @@ flowchart TD
     CAMERA["大华 Camera SDK"] --> ADAPTER["Camera-to-ZLM adapter"]
     ADAPTER --> STARTER
     SAMPLE["EasyMedia 测试应用"] --> STARTER
+    DJI["DJI SEI 诊断应用"] --> STARTER
+    DJI --> SEI["有界 H.264 / H.265 SEI 解析"]
     PUSH["Pushstream 工具应用"] --> STARTER
     TEST["consumer integration tests"] --> BOM
     TEST --> COMMON
@@ -1202,9 +1205,10 @@ java -Djna.library.path=/path/to/zlmediakit/lib \
 
 运行环境必须提供与当前平台匹配的 ZLMediaKit `mk_api` 动态库。`jna.library.path` 负责定位直接加载的 `mk_api`，其传递动态库依赖仍由系统链接器通过 macOS `DYLD_LIBRARY_PATH`、Linux `LD_LIBRARY_PATH`、Windows `PATH`、rpath 或系统安装目录解析。完整的管理令牌、WHIP/WHEP 请求和真实合约测试示例见该模块 README。
 
-### DJI RTMP SEI 测试应用设计（待实现）
+### DJI RTMP SEI 测试应用
 
-`simple-secret-application-dji-sei-test` 规划为独立可运行的 Spring Boot 诊断应用，用于验证 DJI Dock 或
+[`simple-secret-application-dji-sei-test`](simple-secret-application/simple-secret-application-dji-sei-test/README.md)
+是独立可运行的 Spring Boot 诊断应用，用于验证 DJI Dock 或
 DJI Cloud API 提供的 RTMP 视频流中是否实际包含 SEI 数据。该应用只验证视频码流中的标准 SEI，不接入
 MQTT、不保存业务数据，也不推测未公开的 DJI 姿态载荷格式。
 
@@ -1236,8 +1240,33 @@ SEI”和“存在 SEI 但解析失败”。
 
 默认配置关闭 zlm4j 和 EasyMedia，普通单元测试及 Spring 上下文测试不依赖原生库；`local` profile 才启用
 内嵌媒体服务。自动化测试覆盖 H.264/H.265、三/四字节起始码、多消息、转义字节、UUID、截断和超限输入。
-真实 DJI 流验证属于手工集成测试：启动 `local` profile、配置 DJI RTMP 推流地址，再根据周期统计和注销汇总
-判断流中是否携带 SEI。即使没有解析到 SEI，也不能据此判断 DJI Cloud API 的 MQTT 遥测是否存在。
+构建并启动：
+
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -pl \
+  simple-secret-application/simple-secret-application-dji-sei-test -am package
+
+JAVA_HOME=/opt/homebrew/opt/openjdk@17 \
+DYLD_LIBRARY_PATH=/path/to/zlmediakit/lib \
+java -Djna.library.path=/path/to/zlmediakit/lib \
+  -jar simple-secret-application/simple-secret-application-dji-sei-test/target/\
+simple-secret-application-dji-sei-test.jar --spring.profiles.active=local
+```
+
+运行环境必须提供兼容的 ZLMediaKit `mk_api`。`jna.library.path` 定位 `mk_api`，其传递依赖由 macOS
+`DYLD_LIBRARY_PATH`、Linux `LD_LIBRARY_PATH`、Windows `PATH`、rpath 或系统安装目录解析。推流地址为
+`rtmp://<host>:7935/live/<streamId>`。配置可通过 `SIMPLE_SECRET_DJI_SEI_APP`、
+`SIMPLE_SECRET_DJI_SEI_MAX_FRAME_BYTES`、`SIMPLE_SECRET_DJI_SEI_MAX_PAYLOAD_BYTES`、
+`SIMPLE_SECRET_DJI_SEI_PREVIEW_BYTES`、`SIMPLE_SECRET_DJI_SEI_SUMMARY_INTERVAL`、
+`SIMPLE_SECRET_DJI_SEI_RTMP_PORT` 和 `SIMPLE_SECRET_DJI_SEI_ROOT` 调整。
+
+`DJI RTMP SEI detected` 表示解析到标准 SEI；`videoFrames` 为正且 `seiMessages=0` 表示收到视频但未发现
+支持的 SEI；`malformedMessages` 为正表示 SEI-like 数据违反大小或语法约束。先停止推流可触发媒体注销和
+最终 `DJI RTMP stream summary`，随后可用 `Ctrl+C` 关闭应用和内嵌 ZLMediaKit。
+
+自动化验证只证明解析器和 Spring 装配；当前没有提供真实 DJI 流或原生 `mk_api`，未宣称完成真实 DJI 验证。
+Cloud API 的遥测、姿态、云台或定位字段不会从 RTMP 推断，除非其 SEI payload schema 已被独立公开并确认。
+完整配置、示例日志、安全边界和关闭说明见该应用 README。
 
 ## Pushstream Application
 

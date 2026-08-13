@@ -1,0 +1,17 @@
+simple-secret:
+  zlm4j:
+    enabled: true
+    listen-ip: 0.0.0.0
+    rtmp-port: ${SIMPLE_SECRET_DJI_SEI_RTMP_PORT:7935}
+    enable-rtmp: 1
+    allow-anonymous-publish: true
+    allow-anonymous-play: false
+    root-path: ${SIMPLE_SECRET_DJI_SEI_ROOT:./runtime/dji-sei}
+    log-path: ${SIMPLE_SECRET_DJI_SEI_ROOT:./runtime/dji-sei}/logs
+  easymedia:
+    enabled: true
+    management-api-enabled: false
+    webrtc:
+      enabled: false
+  dji-sei:
+    enabled: true

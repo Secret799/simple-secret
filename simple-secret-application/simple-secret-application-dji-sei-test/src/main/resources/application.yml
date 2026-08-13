@@ -1,0 +1,28 @@
+server:
+  address: 127.0.0.1
+  port: 9880
+
+spring:
+  application:
+    name: simple-secret-dji-sei-test
+  main:
+    banner-mode: "off"
+
+simple-secret:
+  zlm4j:
+    enabled: false
+  easymedia:
+    enabled: false
+    management-api-enabled: false
+  dji-sei:
+    enabled: false
+    allowed-app: ${SIMPLE_SECRET_DJI_SEI_APP:live}
+    max-frame-bytes: ${SIMPLE_SECRET_DJI_SEI_MAX_FRAME_BYTES:8388608}
+    max-payload-bytes: ${SIMPLE_SECRET_DJI_SEI_MAX_PAYLOAD_BYTES:1048576}
+    preview-bytes: ${SIMPLE_SECRET_DJI_SEI_PREVIEW_BYTES:64}
+    summary-interval: ${SIMPLE_SECRET_DJI_SEI_SUMMARY_INTERVAL:30s}
+
+logging:
+  level:
+    com.ss.application.djisei: INFO
+    org.springframework: WARN
