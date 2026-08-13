@@ -10,6 +10,8 @@ import com.ss.zlm4j.enums.SchemeEnum;
 import com.ss.zlm4j.service.IZlmMediaService;
 import com.ss.zlm4j.support.SpringUtils;
 import com.sun.jna.Pointer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -68,6 +70,9 @@ public interface ZlmMediaHelper {
      */
     interface Assembler {
 
+        /** 组装器日志。 */
+        Logger LOG = LoggerFactory.getLogger(Assembler.class);
+
         /**
          * 根据流信息获取流媒体信息
          *
@@ -104,59 +109,138 @@ public interface ZlmMediaHelper {
          * @return 媒体信息
          */
         static MediaSourceDomain getMediaSource(MK_MEDIA_SOURCE ctx, boolean additionalInformation) {
+            return getMediaSource(getZlmApi(), ctx, additionalInformation);
+        }
+
+        /**
+         * 使用指定原生 API 组装媒体信息。
+         *
+         * @param api                   ZLMediaKit 原生 API
+         * @param ctx                   媒体信息资源
+         * @param additionalInformation 是否需要额外信息
+         * @return 媒体信息
+         */
+        public static MediaSourceDomain getMediaSource(ZLMApi api, MK_MEDIA_SOURCE ctx,
+                                                       boolean additionalInformation) {
             MediaSourceDomain mediaInfoResult = new MediaSourceDomain();
-            String app = getZlmApi().mk_media_source_get_app(ctx);
-            String stream = getZlmApi().mk_media_source_get_stream(ctx);
-            String schema = getZlmApi().mk_media_source_get_schema(ctx);
+            String app = api.mk_media_source_get_app(ctx);
+            String stream = api.mk_media_source_get_stream(ctx);
+            String schema = api.mk_media_source_get_schema(ctx);
             mediaInfoResult.setApp(app);
             mediaInfoResult.setStream(stream);
             mediaInfoResult.setSchema(schema);
-            // 如果不需要额外信息则,直接返回
             if (!additionalInformation) {
                 return mediaInfoResult;
             }
-            int readerCount = getZlmApi().mk_media_source_get_reader_count(ctx);
-            int totalReaderCount = getZlmApi().mk_media_source_get_total_reader_count(ctx);
-            int trackSize = getZlmApi().mk_media_source_get_track_count(ctx);
-            int originType = getZlmApi().mk_media_source_get_origin_type(ctx);
-            Pointer originUrl = getZlmApi().mk_media_source_get_origin_url(ctx);
-            long createStamp = getZlmApi().mk_media_source_get_create_stamp(ctx);
-            mediaInfoResult.setReaderCount(readerCount);
-            mediaInfoResult.setTotalReaderCount(totalReaderCount);
-            mediaInfoResult.setOriginType(originType);
-            mediaInfoResult.setOriginUrl(originUrl.getString(0));
-            mediaInfoResult.setCreateStamp(createStamp);
-            List<TrackDomain> tracks = new ArrayList<>();
-            for (int i = 0; i < trackSize; i++) {
-                MK_TRACK mkTrack = getZlmApi().mk_media_source_get_track(ctx, i);
-                TrackDomain track = new TrackDomain();
-                int codecId = getZlmApi().mk_track_codec_id(mkTrack);
-                String codecName = getZlmApi().mk_track_codec_name(mkTrack);
-                int bitRate = getZlmApi().mk_track_bit_rate(mkTrack);
-                int isVideo = getZlmApi().mk_track_is_video(mkTrack);
-                track.setCodecId(codecId);
-                track.setCodecIdName(codecName);
-                track.setBitRate(bitRate);
-                track.setIsVideo(isVideo);
-                if (isVideo == 1) {
-                    int width = getZlmApi().mk_track_video_width(mkTrack);
-                    track.setWidth(width);
-                    int height = getZlmApi().mk_track_video_height(mkTrack);
-                    track.setHeight(height);
-                    int fps = getZlmApi().mk_track_video_fps(mkTrack);
-                    track.setFps(fps);
-                } else {
-                    int sampleRate = getZlmApi().mk_track_audio_sample_rate(mkTrack);
-                    int audioChannel = getZlmApi().mk_track_audio_channel(mkTrack);
-                    int audioSampleBit = getZlmApi().mk_track_audio_sample_bit(mkTrack);
-                    track.setSampleRate(sampleRate);
-                    track.setAudioChannel(audioChannel);
-                    track.setAudioSampleBit(audioSampleBit);
-                }
-                tracks.add(track);
-            }
-            mediaInfoResult.setTracks(tracks);
+            assembleAdditionalInformation(api, ctx, mediaInfoResult, app, stream);
             return mediaInfoResult;
+        }
+
+        /**
+         * 组装媒体源额外信息和轨道快照。
+         *
+         * @param api             ZLMediaKit 原生 API
+         * @param ctx             媒体信息资源
+         * @param mediaSource     待填充的媒体信息
+         * @param app             应用名
+         * @param stream          流标识
+         */
+        public static void assembleAdditionalInformation(ZLMApi api, MK_MEDIA_SOURCE ctx,
+                                                         MediaSourceDomain mediaSource, String app, String stream) {
+            mediaSource.setReaderCount(api.mk_media_source_get_reader_count(ctx));
+            mediaSource.setTotalReaderCount(api.mk_media_source_get_total_reader_count(ctx));
+            mediaSource.setOriginType(api.mk_media_source_get_origin_type(ctx));
+            Pointer originUrl = api.mk_media_source_get_origin_url(ctx);
+            mediaSource.setOriginUrl(originUrl.getString(0));
+            mediaSource.setCreateStamp(api.mk_media_source_get_create_stamp(ctx));
+            int trackCount = api.mk_media_source_get_track_count(ctx);
+            mediaSource.setTracks(assembleTracks(api, ctx, trackCount, app, stream));
+        }
+
+        /**
+         * 复制轨道元数据，并释放每个由媒体源返回的有效复制引用。
+         *
+         * @param api        ZLMediaKit 原生 API
+         * @param ctx        媒体信息资源
+         * @param trackCount 轨道数量
+         * @param app        应用名
+         * @param stream     流标识
+         * @return 可用轨道元数据
+         */
+        public static List<TrackDomain> assembleTracks(ZLMApi api, MK_MEDIA_SOURCE ctx, int trackCount,
+                                                       String app, String stream) {
+            List<TrackDomain> tracks = new ArrayList<>();
+            for (int index = 0; index < trackCount; index++) {
+                MK_TRACK track = api.mk_media_source_get_track(ctx, index);
+                if (isNullTrack(track)) {
+                    LOG.warn("Native media source returned null track: app={}, stream={}, trackIndex={}",
+                            app, stream, index);
+                    continue;
+                }
+                try {
+                    tracks.add(assembleTrack(api, track));
+                } catch (RuntimeException | Error exception) {
+                    LOG.warn("Read native track metadata failed: app={}, stream={}, trackIndex={}, errorType={}",
+                            app, stream, index, exception.getClass().getName());
+                } finally {
+                    unrefTrackSafely(api, track, app, stream, index);
+                }
+            }
+            return tracks;
+        }
+
+        /**
+         * 复制单条原生轨道的元数据。
+         *
+         * @param api   ZLMediaKit 原生 API
+         * @param track 原生轨道引用
+         * @return Java 轨道元数据
+         */
+        public static TrackDomain assembleTrack(ZLMApi api, MK_TRACK track) {
+            int isVideo = api.mk_track_is_video(track);
+            TrackDomain result = new TrackDomain();
+            result.setCodecId(api.mk_track_codec_id(track));
+            result.setCodecIdName(api.mk_track_codec_name(track));
+            result.setBitRate(api.mk_track_bit_rate(track));
+            result.setIsVideo(isVideo);
+            if (isVideo == 1) {
+                result.setWidth(api.mk_track_video_width(track));
+                result.setHeight(api.mk_track_video_height(track));
+                result.setFps(api.mk_track_video_fps(track));
+                return result;
+            }
+            result.setSampleRate(api.mk_track_audio_sample_rate(track));
+            result.setAudioChannel(api.mk_track_audio_channel(track));
+            result.setAudioSampleBit(api.mk_track_audio_sample_bit(track));
+            return result;
+        }
+
+        /**
+         * 判断轨道是否缺少有效原生指针。
+         *
+         * @param track 原生轨道引用
+         * @return {@code true} 表示轨道为空或原生指针为零
+         */
+        public static boolean isNullTrack(MK_TRACK track) {
+            return track == null || track.getPointer() == null || Pointer.nativeValue(track.getPointer()) == 0L;
+        }
+
+        /**
+         * 释放轨道复制引用，隔离单个原生释放失败。
+         *
+         * @param api    ZLMediaKit 原生 API
+         * @param track  原生轨道引用
+         * @param app    应用名
+         * @param stream 流标识
+         * @param index  轨道索引
+         */
+        public static void unrefTrackSafely(ZLMApi api, MK_TRACK track, String app, String stream, int index) {
+            try {
+                api.mk_track_unref(track);
+            } catch (RuntimeException | Error exception) {
+                LOG.warn("Release native track failed: app={}, stream={}, trackIndex={}, errorType={}",
+                        app, stream, index, exception.getClass().getName());
+            }
         }
 
         /**

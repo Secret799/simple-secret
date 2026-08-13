@@ -192,6 +192,15 @@ public class StreamEventListener {
 
 需要替换特定 hook 行为时，可注册 `ZlmCallbackHandlerRegister`，不要直接修改 starter 内部上下文。
 
+事件、无读者回调和流查询通过共享 `ZlmMediaHelper.Assembler` 生成 Java 媒体源快照。ZLMediaKit 的
+`mk_media_source_get_track` 会为每个有效轨道返回复制引用；组装器只在读取元数据期间持有该引用，并在
+`finally` 中逐一调用一次 `mk_track_unref`。Java `null` 或零地址轨道不会释放；单条轨道的元数据读取或
+释放失败只产生包含 `app`、`stream`、轨道索引和错误类型的有界 WARN，不阻断其余轨道。
+
+该快照所有权不同于 EasyMedia 的轨道代理生命周期：需要安装原生 delegate 时，由 EasyMedia 从媒体源
+直接取得并持有自己的复制引用，直到匹配的媒体源注销后再释放。业务监听器接收的是已脱离原生引用的
+`MediaSourceDomain`，不得缓存或释放 `MK_TRACK`。
+
 ## 资源访问和部署安全
 
 所有外部媒体 URL 都会经过 `simple-secret.zlm4j.resource-policy` 校验。默认允许常用媒体协议，但拒绝 URL user-info、回环、私网、链路本地、多播、CGNAT 和 IPv6 ULA 地址。确需访问内网媒体源时，只开放明确主机或最小 CIDR：

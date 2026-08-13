@@ -822,6 +822,11 @@ RTMP 和 RTC socket listener，默认全部启用且至少必须启用一个；`
 协议 mux/output，不控制端口监听。启用前应确认实际启用的端口未被占用，并由部署环境提供与操作系统、CPU
 架构匹配的 ZLMediaKit 原生库 `mk_api`。
 
+流注册、无读者和查询路径通过共享 Assembler 将媒体源转为 Java 快照。其流程为“读取媒体源标识和统计 ->
+逐轨读取复制引用 -> 复制轨道元数据 -> 在 `finally` 中释放有效引用 -> 发布或返回 Java 对象”。空轨道被
+跳过，单轨元数据读取或释放异常只记录有界 WARN 并继续处理后续轨道。共享 Assembler 不把 `MK_TRACK`
+所有权传给业务代码；需要原生帧 delegate 的 EasyMedia 使用独立的注册生命周期持有引用，直至精确注销。
+
 截图、转码和视频拼接还依赖 JavaCPP FFmpeg native。starter 项目中的 Maven OS profile 只在构建 starter 源码时生效，不会传递给消费项目，因此宿主必须按部署平台显式增加 runtime classifier。Linux x86-64 示例：
 
 ```xml
