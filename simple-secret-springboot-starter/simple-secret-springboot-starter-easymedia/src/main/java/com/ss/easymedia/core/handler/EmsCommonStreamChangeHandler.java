@@ -100,6 +100,7 @@ public class EmsCommonStreamChangeHandler implements StreamChangeHandler {
      *
      * @param sender ZLMediaKit 原生媒体源
      * @param mediaSource 注册时创建的媒体源 token
+     * @return 当前原生媒体源用于轨道代理去重的编码集合
      */
     Set<String> rememberRegisteredLifecycle(MK_MEDIA_SOURCE sender, MediaSourceDomain mediaSource) {
         RegisteredLifecycle lifecycle = new RegisteredLifecycle(mediaSource);

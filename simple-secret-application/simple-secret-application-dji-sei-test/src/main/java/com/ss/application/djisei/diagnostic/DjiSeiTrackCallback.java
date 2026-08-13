@@ -231,6 +231,7 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
     /**
      * 使用当前时间创建流统计。
      *
+     * @param source 注册时的媒体源 token
      * @return 新的线程安全流统计
      */
     private StreamLifecycle newLifecycle(MediaSourceDomain source) {
