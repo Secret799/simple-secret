@@ -123,6 +123,7 @@ class ZlmMediaContextTest {
 
     private static final class FakeZlmApi {
         private final Map<String, Short> ports;
+        /** Records the invocation count for each native API method. */
         private final Map<String, AtomicInteger> calls = new HashMap<>();
         private final AtomicInteger stopCalls = new AtomicInteger();
         private final ZLMApi api;
