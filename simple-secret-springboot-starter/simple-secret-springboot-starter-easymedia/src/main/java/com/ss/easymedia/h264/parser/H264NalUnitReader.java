@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -268,15 +269,11 @@ public class H264NalUnitReader implements AutoCloseable {
      * @param naluLength        NALU 的长度
      * @param currNaluTimestamp 当前 NALU 的时间戳
      */
-    private void outputNalUnit(int naluLength, long currNaluTimestamp) {
-        if (naluLength <= 0) {
+    private void outputNalUnit(byte[] source, int offset, int length, long timestamp) {
+        if (length <= 0) {
             return;
         }
-        // 创建nalu 数据
-        byte[] nalData = new byte[naluLength];
-        // 拷贝数据
-        accumulatorBuffer.get(0, nalData);
-        accumulatorBuffer.position(naluLength);
+        byte[] nalData = Arrays.copyOfRange(source, offset, offset + length);
         boolean hasFourByteStartCode = nalData.length > 4
                 && nalData[0] == 0x00
                 && nalData[1] == 0x00
@@ -291,16 +288,10 @@ public class H264NalUnitReader implements AutoCloseable {
             return;
         }
 
-        // 创建一个 NALU
-        H264NalUnit nalUnit = new H264NalUnit(nalData, currNaluTimestamp);
-        // 处理 NALU
+        H264NalUnit nalUnit = new H264NalUnit(nalData, timestamp);
         H264NalUnitProcessor currentProcessor = this.nalUnitProcessor;
         if (currentProcessor != null) {
-            try {
-                currentProcessor.process(nalUnit);
-            } catch (Exception e) {
-                log.error("Error during NALU processing: {}", e.getMessage(), e);
-            }
+            currentProcessor.process(nalUnit);
         } else {
             log.warn("No NALU processor is set.");
         }
@@ -317,43 +308,55 @@ public class H264NalUnitReader implements AutoCloseable {
         if (data.length == 0) {
             return;
         }
-        int lastEndIndex = 0;
-        // 获取当前缓冲区的第一个Nalu包的时间戳
-        for (int i = 0; i < data.length - 3; ) {
-            // 如果当前下标是 00 00 00 01 或者 00 00 01开头
-            // 那么代表这是一个可用的Nalu包
-            int naluHeadLength = -1;
-            if (data[i] == 0x00
-                    && data[i + 1] == 0x00
-                    && data[i + 2] == 0x00
-                    && data[i + 3] == 0x01) {
-                naluHeadLength = 4;
+        appendToAccumulator(data, 0, data.length);
+        int accumulatedLength = accumulatorBuffer.position();
+        byte[] accumulated = Arrays.copyOf(accumulatorBuffer.array(), accumulatedLength);
+        int currentStart = findStartCode(accumulated, 0);
+        if (currentStart < 0) {
+            return;
+        }
+        int nextStart = findStartCode(accumulated, currentStart + 3);
+        while (nextStart >= 0) {
+            outputNalUnit(accumulated, currentStart, nextStart - currentStart,
+                    fragment.getTimestamp());
+            currentStart = nextStart;
+            nextStart = findStartCode(accumulated, currentStart + 3);
+        }
+        retainIncompleteNalUnit(accumulated, currentStart, accumulatedLength);
+    }
+
+    /**
+     * 查找下一个 Annex-B 三字节或四字节起始码。
+     *
+     * @param data 待扫描数据
+     * @param fromIndex 扫描起点
+     * @return 起始码下标，未找到时返回 -1
+     */
+    private int findStartCode(byte[] data, int fromIndex) {
+        for (int index = Math.max(0, fromIndex); index <= data.length - 3; index++) {
+            if (data[index] != 0 || data[index + 1] != 0) {
+                continue;
             }
-            if (data[i] == 0x00 && data[i + 1] == 0x00 && data[i + 2] == 0x01) {
-                naluHeadLength = 3;
+            if (data[index + 2] == 1) {
+                return index;
             }
-            if (naluHeadLength != -1) {
-                // 输出上一个Nalu包
-                // Math.max(position, lastNaluEndIndex + 1) 上上个Nalu包的开始下标
-                // dataInBufferIndex 上一个Nalu包的结束下标
-                // 第一次扫描到 NALU 时可能还没有上一个结束位置。
-                // 如果出现lastNaluEndIndex为空的情况，那么直接
-                if (lastEndIndex != i) {
-                    appendToAccumulator(data, lastEndIndex, i);
-                    lastEndIndex = i;
-                }
-                accumulatorBuffer.flip();
-                int limit = accumulatorBuffer.limit();
-                outputNalUnit(limit, fragment.getTimestamp());
-                accumulatorBuffer.compact();
-                // 跳过Nalu包的头部
-                i += naluHeadLength;
-            } else {
-                i++;
+            if (index <= data.length - 4 && data[index + 2] == 0 && data[index + 3] == 1) {
+                return index;
             }
         }
-        appendToAccumulator(data, lastEndIndex, data.length - lastEndIndex);
+        return -1;
+    }
 
+    /**
+     * 仅保留最后一个尚未结束的 NALU，供下一个片段继续扫描。
+     *
+     * @param data 累积数据
+     * @param start 未完成 NALU 起点
+     * @param end 累积数据终点
+     */
+    private void retainIncompleteNalUnit(byte[] data, int start, int end) {
+        accumulatorBuffer.clear();
+        accumulatorBuffer.put(data, start, end - start);
     }
 
 }

@@ -32,7 +32,7 @@ public class H264NakedFlowPushZlmManager implements AutoCloseable {
     /**
      * 流读取器缓存(用于自动回收资源)
      */
-    private final MemoryTimeCacheManager<String, StreamResource> streamReaderCache;
+    private final MemoryTimeCacheManager<StreamKey, StreamResource> streamReaderCache;
     /**
      * ZLM 配置属性
      */
@@ -97,7 +97,7 @@ public class H264NakedFlowPushZlmManager implements AutoCloseable {
      * @throws InterruptedException 处理队列满了导致数据无法处理异常
      */
     public void push(String app, String stream, byte[] data) throws InterruptedException {
-        String cacheKey = generateKey(app, stream);
+        StreamKey cacheKey = generateKey(app, stream);
         StreamResource streamResource = streamReaderCache.get(cacheKey, true, () -> createStreamResource(app, stream));
         streamResource.writeFragment(data);
     }
@@ -113,7 +113,7 @@ public class H264NakedFlowPushZlmManager implements AutoCloseable {
      */
     public int pushWithBackpressure(
             String app, String stream, byte[] data) throws InterruptedException {
-        String cacheKey = generateKey(app, stream);
+        StreamKey cacheKey = generateKey(app, stream);
         StreamResource streamResource = streamReaderCache.get(
                 cacheKey, true, () -> createStreamResource(app, stream));
         return streamResource.writeFragmentWithBackpressure(data);
@@ -186,8 +186,14 @@ public class H264NakedFlowPushZlmManager implements AutoCloseable {
      * @param stream 流名
      * @return 缓存的key
      */
-    private String generateKey(String app, String stream) {
-        return app + ":" + stream;
+    private StreamKey generateKey(String app, String stream) {
+        return new StreamKey(
+                Objects.requireNonNull(app, "app"),
+                Objects.requireNonNull(stream, "stream"));
+    }
+
+    /** 由应用名和流名组成的无歧义缓存键。 */
+    private record StreamKey(String app, String stream) {
     }
 
     private static final class StreamResource implements AutoCloseable {
@@ -230,11 +236,13 @@ public class H264NakedFlowPushZlmManager implements AutoCloseable {
                             nalUnit.getFirstFragmentTimestamp(), memory.share(0), nalData.length,
                             null, Pointer.NULL);
                     if (frame == null) {
-                        log.error("创建 ZLM H264 frame 失败");
-                        return;
+                        throw new IllegalStateException("创建 ZLM H264 frame 失败");
                     }
                     try {
-                        zlmApi.mk_media_input_frame(media, frame);
+                        int result = zlmApi.mk_media_input_frame(media, frame);
+                        if (result != 1) {
+                            throw new IllegalStateException("输入 ZLM H264 frame 失败");
+                        }
                     } finally {
                         zlmApi.mk_frame_unref(frame);
                     }

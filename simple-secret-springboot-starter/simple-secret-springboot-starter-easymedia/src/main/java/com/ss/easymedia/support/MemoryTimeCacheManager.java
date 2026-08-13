@@ -89,7 +89,7 @@ public class MemoryTimeCacheManager<K, V> {
         CacheEntry<V> entry = cache.get(key);
         if (entry != null && !entry.expired(now)) {
             if (updateLastAccess) {
-                entry.expiresAt = now + timeoutMillis;
+                entry.expiresAt = expirationTime(now);
             }
             return entry.value;
         }
@@ -98,7 +98,7 @@ public class MemoryTimeCacheManager<K, V> {
             notifyRemove(key, entry.value);
         }
         V value = Objects.requireNonNull(loader, "loader").get();
-        cache.put(key, new CacheEntry<>(value, now + timeoutMillis));
+        cache.put(key, new CacheEntry<>(value, expirationTime(now)));
         return value;
     }
 
@@ -172,5 +172,18 @@ public class MemoryTimeCacheManager<K, V> {
                 // 移除监听器异常不影响缓存操作
             }
         }
+    }
+
+    /**
+     * 计算条目过期时刻，零超时表示永不过期。
+     *
+     * @param now 当前毫秒时间戳
+     * @return 过期毫秒时间戳
+     */
+    private long expirationTime(long now) {
+        if (timeoutMillis == 0 || Long.MAX_VALUE - now < timeoutMillis) {
+            return Long.MAX_VALUE;
+        }
+        return now + timeoutMillis;
     }
 }

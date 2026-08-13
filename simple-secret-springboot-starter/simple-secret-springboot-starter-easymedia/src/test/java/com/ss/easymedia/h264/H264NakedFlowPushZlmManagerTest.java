@@ -81,6 +81,7 @@ class H264NakedFlowPushZlmManagerTest {
         when(zlmApi.mk_ini_create()).thenReturn(mkIni);
         when(zlmApi.mk_media_create2("__defaultVhost__", "live", "camera-3", 0, mkIni))
                 .thenReturn(mkMedia);
+        when(zlmApi.mk_media_input_frame(mkMedia, frame)).thenReturn(1);
         when(zlmApi.mk_frame_create(
                 org.mockito.ArgumentMatchers.anyInt(),
                 org.mockito.ArgumentMatchers.anyLong(),
@@ -227,6 +228,47 @@ class H264NakedFlowPushZlmManagerTest {
                 org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.any());
         verify(zlmApi, never()).mk_media_input_frame(org.mockito.ArgumentMatchers.eq(mkMedia), any());
+        manager.close();
+    }
+
+    @Test
+    void backpressurePushShouldFailWhenNativeFrameCreationFails() {
+        ZLMApi zlmApi = mock(ZLMApi.class);
+        MK_INI mkIni = mock(MK_INI.class);
+        MK_MEDIA mkMedia = mock(MK_MEDIA.class);
+        when(zlmApi.mk_ini_create()).thenReturn(mkIni);
+        when(zlmApi.mk_media_create2("__defaultVhost__", "live", "camera-fail", 0, mkIni))
+                .thenReturn(mkMedia);
+        H264NakedFlowPushZlmManager manager = new H264NakedFlowPushZlmManager(
+                new ZlmMediaProperties(), 30, 10, zlmApi);
+
+        assertThatThrownBy(() -> manager.pushWithBackpressure(
+                "live", "camera-fail", completeNalUnitFragment()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ZLM H264 frame");
+        manager.close();
+    }
+
+    @Test
+    void streamCacheKeyShouldKeepAppAndStreamBoundariesDistinct() throws Exception {
+        ZLMApi zlmApi = mock(ZLMApi.class);
+        MK_INI firstIni = mock(MK_INI.class);
+        MK_INI secondIni = mock(MK_INI.class);
+        MK_MEDIA firstMedia = mock(MK_MEDIA.class);
+        MK_MEDIA secondMedia = mock(MK_MEDIA.class);
+        when(zlmApi.mk_ini_create()).thenReturn(firstIni, secondIni);
+        when(zlmApi.mk_media_create2("__defaultVhost__", "live:west", "camera", 0, firstIni))
+                .thenReturn(firstMedia);
+        when(zlmApi.mk_media_create2("__defaultVhost__", "live", "west:camera", 0, secondIni))
+                .thenReturn(secondMedia);
+        H264NakedFlowPushZlmManager manager = new H264NakedFlowPushZlmManager(
+                new ZlmMediaProperties(), 30, 10, zlmApi);
+
+        manager.push("live:west", "camera", new byte[0]);
+        manager.push("live", "west:camera", new byte[0]);
+
+        verify(zlmApi).mk_media_create2("__defaultVhost__", "live:west", "camera", 0, firstIni);
+        verify(zlmApi).mk_media_create2("__defaultVhost__", "live", "west:camera", 0, secondIni);
         manager.close();
     }
 

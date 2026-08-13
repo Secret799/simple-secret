@@ -1,5 +1,6 @@
 package com.ss.zlm4j.service.impl;
 
+import com.aizuda.zlm4j.callback.IMKProxyPlayerCallBack;
 import com.aizuda.zlm4j.core.ZLMApi;
 import com.aizuda.zlm4j.structure.MK_PROXY_PLAYER;
 import com.aizuda.zlm4j.structure.MK_PUSHER;
@@ -18,9 +19,11 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -95,6 +98,38 @@ class ZlmMediaServiceImplLifecycleTest {
         assertThat(iniReleases).hasValue(1);
     }
 
+    @Test
+    void pullerFailureShouldThrowAndReleaseRegisteredNativeProxy() throws Exception {
+        AtomicInteger proxyReleases = new AtomicInteger();
+        AtomicReference<IMKProxyPlayerCallBack> resultCallback = new AtomicReference<>();
+        ZlmMediaServiceImpl service = pullerService(pullerApi(
+                proxyReleases, resultCallback, true));
+
+        assertThatThrownBy(() -> service.addStreamPullerProxy(pullerRequest()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("拉流代理失败")
+                .hasMessageContaining("connection refused");
+        assertThat(proxyReleases).hasValue(1);
+        assertThat(registry(service, "proxyPlayers")).isEmpty();
+        assertThat(registry(service, "proxyPlayerCallbacks")).isEmpty();
+        assertThat(registry(service, "proxyResultCallbacks")).isEmpty();
+    }
+
+    @Test
+    void pullerTimeoutShouldThrowAndReleaseRegisteredNativeProxy() throws Exception {
+        AtomicInteger proxyReleases = new AtomicInteger();
+        ZlmMediaServiceImpl service = pullerService(pullerApi(
+                proxyReleases, new AtomicReference<>(), false));
+
+        assertThatThrownBy(() -> service.addStreamPullerProxy(pullerRequest()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("超时");
+        assertThat(proxyReleases).hasValue(1);
+        assertThat(registry(service, "proxyPlayers")).isEmpty();
+        assertThat(registry(service, "proxyPlayerCallbacks")).isEmpty();
+        assertThat(registry(service, "proxyResultCallbacks")).isEmpty();
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> ConcurrentMap<String, T> registry(Object target, String name) throws Exception {
         Field field = ZlmMediaServiceImpl.class.getDeclaredField(name);
@@ -115,6 +150,64 @@ class ZlmMediaServiceImplLifecycleTest {
                     }
                     return defaultValue(method.getReturnType());
                 });
+    }
+
+    private static ZlmMediaServiceImpl pullerService(ZLMApi api) {
+        return new ZlmMediaServiceImpl(
+                policy(), api, new com.ss.zlm4j.config.properties.ZlmMediaProperties(),
+                Duration.ofMillis(20)) {
+            @Override
+            public List<MediaSourceDomain> getMediaList(GetMediaListBO param) {
+                return List.of();
+            }
+        };
+    }
+
+    private static ZLMApi pullerApi(AtomicInteger releases,
+                                    AtomicReference<IMKProxyPlayerCallBack> resultCallback,
+                                    boolean reportFailure) {
+        MK_INI ini = new MK_INI(new Memory(8));
+        MK_PROXY_PLAYER proxyPlayer = new MK_PROXY_PLAYER(new Memory(8));
+        return (ZLMApi) Proxy.newProxyInstance(ZLMApi.class.getClassLoader(),
+                new Class<?>[]{ZLMApi.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("mk_ini_create")) {
+                        return ini;
+                    }
+                    if (method.getName().equals("mk_proxy_player_create4")) {
+                        return proxyPlayer;
+                    }
+                    if (method.getName().equals("mk_proxy_player_release")) {
+                        releases.incrementAndGet();
+                    }
+                    if (method.getName().equals("mk_proxy_player_set_on_play_result")) {
+                        resultCallback.set((IMKProxyPlayerCallBack) args[1]);
+                    }
+                    if (method.getName().equals("mk_proxy_player_play")
+                            && reportFailure && resultCallback.get() != null) {
+                        resultCallback.get().invoke(proxyPlayer.getPointer(),
+                                1, "connection refused", 111);
+                    }
+                    return defaultValue(method.getReturnType());
+                });
+    }
+
+    private static StreamProxyPullerBO pullerRequest() {
+        return new StreamProxyPullerBO()
+                .setUrl("rtmp://example.com/live/input")
+                .setApp("live")
+                .setStream("output")
+                .setSchema("rtmp")
+                .setRetryCount(1)
+                .setEnableMp4(0)
+                .setEnableAudio(1)
+                .setEnableFmp4(0)
+                .setEnableTs(0)
+                .setEnableHls(0)
+                .setEnableRtsp(1)
+                .setEnableRtmp(1)
+                .setMp4MaxSecond(0)
+                .setAutoClose(1)
+                .setRecordFileRepeat(0);
     }
 
     private static Object defaultValue(Class<?> type) {

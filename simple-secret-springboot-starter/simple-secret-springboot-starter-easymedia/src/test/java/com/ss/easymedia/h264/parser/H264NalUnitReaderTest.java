@@ -7,8 +7,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -103,6 +105,58 @@ class H264NalUnitReaderTest {
         reader.writeFragment(new byte[]{0, 0, 0, 1, 0x65, 0, 0, 0, 1, 0x41});
 
         assertThat(processed.await(2, TimeUnit.SECONDS)).isTrue();
+        reader.close();
+    }
+
+    @Test
+    void shouldEmitEachNalUnitOnceWhenFragmentContainsMultipleStartCodes() throws Exception {
+        H264NalUnitReader reader = new H264NalUnitReader(1);
+        List<byte[]> nalUnits = new CopyOnWriteArrayList<>();
+        reader.setNalUnitProcessor(nalUnit -> nalUnits.add(nalUnit.getNalData()));
+        reader.startReading();
+
+        reader.writeFragmentWithBackpressure(new byte[]{
+                0, 0, 0, 1, 0x67,
+                0, 0, 1, 0x68,
+                0, 0, 0, 1, 0x65,
+                0, 0, 1, 0x41
+        });
+
+        assertThat(nalUnits).containsExactly(
+                new byte[]{0, 0, 0, 1, 0x67},
+                new byte[]{0, 0, 1, 0x68},
+                new byte[]{0, 0, 0, 1, 0x65});
+        reader.close();
+    }
+
+    @Test
+    void shouldRecognizeStartCodeSplitAcrossFragments() throws Exception {
+        H264NalUnitReader reader = new H264NalUnitReader(2);
+        List<byte[]> nalUnits = new CopyOnWriteArrayList<>();
+        reader.setNalUnitProcessor(nalUnit -> nalUnits.add(nalUnit.getNalData()));
+        reader.startReading();
+
+        reader.writeFragmentWithBackpressure(new byte[]{0, 0, 0, 1, 0x67, 0, 0});
+        reader.writeFragmentWithBackpressure(new byte[]{1, 0x68, 0, 0, 0, 1, 0x65});
+
+        assertThat(nalUnits).containsExactly(
+                new byte[]{0, 0, 0, 1, 0x67},
+                new byte[]{0, 0, 1, 0x68});
+        reader.close();
+    }
+
+    @Test
+    void backpressureWriterShouldObserveProcessorFailure() {
+        H264NalUnitReader reader = new H264NalUnitReader(1);
+        reader.setNalUnitProcessor(nalUnit -> {
+            throw new IllegalStateException("processor failed");
+        });
+        reader.startReading();
+
+        assertThatThrownBy(() -> reader.writeFragmentWithBackpressure(
+                new byte[]{0, 0, 0, 1, 0x65, 0, 0, 0, 1, 0x41}))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("processor failed");
         reader.close();
     }
 
