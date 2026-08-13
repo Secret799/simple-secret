@@ -1191,6 +1191,43 @@ java -Djna.library.path=/path/to/zlmediakit/lib \
 
 运行环境必须提供与当前平台匹配的 ZLMediaKit `mk_api` 动态库。`jna.library.path` 负责定位直接加载的 `mk_api`，其传递动态库依赖仍由系统链接器通过 macOS `DYLD_LIBRARY_PATH`、Linux `LD_LIBRARY_PATH`、Windows `PATH`、rpath 或系统安装目录解析。完整的管理令牌、WHIP/WHEP 请求和真实合约测试示例见该模块 README。
 
+### DJI RTMP SEI 测试应用设计（待实现）
+
+`simple-secret-application-dji-sei-test` 规划为独立可运行的 Spring Boot 诊断应用，用于验证 DJI Dock 或
+DJI Cloud API 提供的 RTMP 视频流中是否实际包含 SEI 数据。该应用只验证视频码流中的标准 SEI，不接入
+MQTT、不保存业务数据，也不推测未公开的 DJI 姿态载荷格式。
+
+应用复用 EasyMedia starter 和内嵌 ZLMediaKit。DJI 设备向
+`rtmp://<host>:7935/live/<streamId>` 推流后，ZLMediaKit 注册媒体源，应用通过
+`TrackDelegateCallback` 获取 RTMP 视频轨道编码帧，并按轨道编码类型交给纯 Java SEI 解析器：
+
+```mermaid
+flowchart LR
+    DJI["DJI Dock / Cloud API"] -->|"RTMP 推流"| ZLM["内嵌 ZLMediaKit"]
+    ZLM --> TRACK["RTMP 视频轨道回调"]
+    TRACK --> CODEC{"视频编码"}
+    CODEC -->|"H.264"| H264["解析 NALU 6"]
+    CODEC -->|"H.265 / HEVC"| H265["解析 NALU 39 / 40"]
+    H264 --> SEI["标准 SEI 消息"]
+    H265 --> SEI
+    SEI --> LOG["有界诊断日志与流汇总"]
+```
+
+解析器同时支持三字节和四字节 Annex-B 起始码，移除 emulation-prevention 字节，并按 H.26x 规范读取变长
+`payloadType` 与 `payloadSize`。对于 `user_data_unregistered`，日志额外显示 UUID；其他 payload 保留原始
+字节，只输出受限的十六进制和可打印 UTF-8 预览。单帧大小、单条 payload 大小和日志预览长度均由配置
+限制，畸形或超限输入只计入当前流的失败统计，不得中断媒体回调线程。
+
+应用在媒体源注册时记录 `app`、`streamId`、编码和轨道信息；检测到 SEI 时记录 PTS、DTS、payload type、
+长度、UUID 和受限预览。没有 SEI 的视频帧不逐帧打印，而是按配置周期输出累计帧数和 `seiCount=0`。
+媒体源注销时输出视频帧数、SEI NALU 数、SEI 消息数、畸形消息数和运行时长，确保能够区分“流中没有
+SEI”和“存在 SEI 但解析失败”。
+
+默认配置关闭 zlm4j 和 EasyMedia，普通单元测试及 Spring 上下文测试不依赖原生库；`local` profile 才启用
+内嵌媒体服务。自动化测试覆盖 H.264/H.265、三/四字节起始码、多消息、转义字节、UUID、截断和超限输入。
+真实 DJI 流验证属于手工集成测试：启动 `local` profile、配置 DJI RTMP 推流地址，再根据周期统计和注销汇总
+判断流中是否携带 SEI。即使没有解析到 SEI，也不能据此判断 DJI Cloud API 的 MQTT 遥测是否存在。
+
 ## Pushstream Application
 
 [`simple-secret-application-pushstream`](simple-secret-application/simple-secret-application-pushstream/README.md)
