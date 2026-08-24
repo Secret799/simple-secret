@@ -13,6 +13,8 @@ import com.ss.ics.exception.UnsupportedCameraSdkOperationException;
 public interface PlayService<T, R> extends CameraSdkService {
 
     /**
+     * 实时预览
+     *
      * @param device 设备
      * @param request 播放参数
      * @param target 目标或适配器参数
@@ -23,6 +25,8 @@ public interface PlayService<T, R> extends CameraSdkService {
     }
 
     /**
+     * 历史回放
+     *
      * @param device 设备
      * @param request 播放参数
      * @param target 目标或适配器参数

@@ -7,12 +7,16 @@ import com.ss.ics.domain.LoginDomain;
 public interface DeviceLoginService extends CameraSdkService {
 
     /**
+     * 登录
+     *
      * @param login 登录参数
      * @return 登录会话摘要
      */
     LoggedDomain login(LoginDomain login);
 
     /**
+     * 登出
+     *
      * @param userId 厂商登录句柄的字符串表示
      */
     void logout(String userId);

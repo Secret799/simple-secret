@@ -11,6 +11,8 @@ import java.util.List;
 public interface PlayQueryService extends CameraSdkService {
 
     /**
+     * 历史回放记录月历视图
+     *
      * @param device 设备
      * @param request 取流参数
      * @param year 年
