@@ -21,6 +21,8 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 - `simple-secret-springboot-starter-mqttv3`：MQTT 3.1.1 多客户端、发布订阅和请求响应。
 - `simple-secret-springboot-starter-mqttv5`：MQTT v5 多客户端、发布订阅和请求响应。
 - `simple-secret-springboot-starter-camera`：海康威视、大华摄像机和 NVR 的 RTSP 地址组装。
+- `simple-secret-springboot-starter-hikvision`：默认关闭的海康威视 HCNetSDK 自动配置与受管生命周期。
+- `simple-secret-springboot-starter-dahua`：默认关闭的大华 NetSDK 自动配置与受管生命周期。
 - `simple-secret-springboot-starter-nats`：NATS 多客户端、发布、请求响应和 queue group 订阅。
 - `simple-secret-springboot-starter-influxdb`：InfluxDB 1.x 注解映射、安全 InfluxQL DSL、写入、查询和初始化。
 - `simple-secret-springboot-starter-zlm4j`：嵌入式 ZLMediaKit、媒体代理、录像、RTP、截图和转码。

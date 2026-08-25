@@ -126,6 +126,16 @@
             </dependency>
             <dependency>
                 <groupId>com.ss</groupId>
+                <artifactId>simple-secret-springboot-starter-hikvision</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ss</groupId>
+                <artifactId>simple-secret-springboot-starter-dahua</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ss</groupId>
                 <artifactId>simple-secret-springboot-starter-zlm4j</artifactId>
                 <version>${revision}</version>
             </dependency>

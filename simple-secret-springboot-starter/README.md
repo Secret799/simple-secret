@@ -7,6 +7,8 @@
 - `mqttv3`：MQTT 3.1.1 多客户端、订阅、发布和请求响应。
 - `mqttv5`：MQTT v5 多客户端、共享订阅、发布和请求响应。
 - `camera`：摄像机与 NVR RTSP 地址组装。
+- `hikvision`：默认关闭的海康威视 HCNetSDK 自动配置与受管生命周期。
+- `dahua`：默认关闭的大华 NetSDK 自动配置与受管生命周期。
 - `nats`：NATS 发布、请求响应和 queue group 订阅。
 - `influxdb`：InfluxDB 1.x 映射、查询和初始化。
 - `netty-websocket`：独立 Netty WebSocket 服务端。
@@ -33,8 +35,9 @@ flowchart LR
 
 starter 只传递运行功能必需的依赖。MQTT v3/v5 直接依赖 Jackson 处理消息 payload，不依赖已删除的 JSON
 starter。Netty WebSocket 不依赖 Servlet WebSocket。各 starter 的配置前缀、Bean 名和生命周期彼此隔离。
-Camera-to-ZLM 只有显式启用且宿主提供大华 SDK Bean 时才初始化，不会把厂商 SDK 或 ZLM 反向加入
-纯 Camera SDK、Camera URL 或普通 EasyMedia 使用场景。
+海康与大华 Camera SDK starter 默认关闭，只有显式配置原生库目录并启用后才加载厂商 SDK；宿主可通过
+同类型服务 Bean 或专用 factory 覆盖默认创建方式。Camera-to-ZLM 只有显式启用且宿主提供大华 SDK Bean
+时才初始化，不会把 ZLM 反向加入纯 Camera SDK、Camera URL 或普通 EasyMedia 使用场景。
 DJI Camera starter 只在显式启用 SEI 诊断时注册轨道回调，并仅在 Servlet 环境注册 SSE 接口。
 
 ZLM 推拉流代理只在首次 native 连接成功后返回 key；失败、5 秒启动超时和等待中断会抛异常并释放代理。
