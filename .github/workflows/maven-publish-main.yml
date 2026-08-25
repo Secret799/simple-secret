@@ -1,0 +1,188 @@
+name: Main Branch Push NEXUS SNAPSHOT
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && format('invalid-snapshot-{0}', github.run_id) || 'nexus-snapshot' }}
+  cancel-in-progress: false
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+      full_build: ${{ steps.changes.outputs.full_build }}
+      module_list: ${{ steps.changes.outputs.module_list }}
+      snapshot_version: ${{ steps.version.outputs.snapshot_version }}
+      target_sha: ${{ steps.target.outputs.sha }}
+
+    steps:
+      - name: Validate manual dispatch branch
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Manual snapshot publishing is only allowed from main" >&2
+            exit 1
+          fi
+
+      - name: Checkout code with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Resolve deployment target
+        id: target
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve snapshot version
+        id: version
+        shell: bash
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import xml.etree.ElementTree as ET
+
+          namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+          root = ET.parse("pom.xml").getroot()
+          revision = root.find("m:properties/m:revision", namespace)
+          if revision is None or not revision.text or not revision.text.strip():
+              raise SystemExit("Missing properties/revision in pom.xml")
+
+          base_version = revision.text.strip()
+          snapshot_version = (
+              base_version
+              if base_version.endswith("-SNAPSHOT")
+              else f"{base_version}-SNAPSHOT"
+          )
+          print(f"snapshot_version={snapshot_version}")
+          PY
+
+      - name: Calculate affected Maven modules
+        id: changes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          emit_full_build() {
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "full_build=true" >> "$GITHUB_OUTPUT"
+            echo "module_list=" >> "$GITHUB_OUTPUT"
+            echo "debug_direct_changed=" >> "$GITHUB_OUTPUT"
+            echo "debug_all_affected=" >> "$GITHUB_OUTPUT"
+          }
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            emit_full_build
+          else
+            BASE_REF="$(
+              gh run list \
+                --repo "$GITHUB_REPOSITORY" \
+                --workflow maven-publish-main.yml \
+                --branch main \
+                --status success \
+                --limit 1 \
+                --json headSha \
+                --jq '.[0].headSha // empty' 2>/dev/null || true
+            )"
+
+            if [[ -z "$BASE_REF" ]] \
+              || ! git rev-parse --verify "$BASE_REF^{commit}" >/dev/null 2>&1 \
+              || ! git merge-base --is-ancestor "$BASE_REF" "$CURRENT_SHA"; then
+              echo "No usable successful deployment baseline; publishing full reactor"
+              emit_full_build
+              exit 0
+            fi
+
+            echo "Using last successful deployment baseline: $BASE_REF"
+            python3 script/calculate-changed-modules.py \
+              "$BASE_REF" \
+              "$CURRENT_SHA" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Show publish scope
+        shell: bash
+        run: |
+          echo "changed=${{ steps.changes.outputs.changed }}"
+          echo "full_build=${{ steps.changes.outputs.full_build }}"
+          echo "module_list=${{ steps.changes.outputs.module_list }}"
+          echo "direct_changed=${{ steps.changes.outputs.debug_direct_changed }}"
+          echo "all_affected=${{ steps.changes.outputs.debug_all_affected }}"
+
+  publish:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.detect-changes.outputs.target_sha }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+          cache: maven
+
+      - name: Configure Maven settings.xml
+        uses: whelk-io/maven-settings-xml-action@v22
+        with:
+          servers: |
+            [
+              {
+                "id": "junpzx-custom-nexus-releases",
+                "username": "${{ secrets.JUNPZX_NEXUS_USERNAME }}",
+                "password": "${{ secrets.JUNPZX_NEXUS_PASSWORD }}"
+              },
+              {
+                "id": "junpzx-custom-nexus-snapshots",
+                "username": "${{ secrets.JUNPZX_NEXUS_USERNAME }}",
+                "password": "${{ secrets.JUNPZX_NEXUS_PASSWORD }}"
+              }
+            ]
+
+      - name: Update BOM revision
+        env:
+          RELEASE_VERSION: ${{ needs.detect-changes.outputs.snapshot_version }}
+        run: |
+          python3 script/set-pom-revision.py \
+            simple-secret-common/simple-secret-common-bom/pom.xml \
+            "$RELEASE_VERSION"
+
+      - name: Publish affected modules to Nexus
+        if: needs.detect-changes.outputs.full_build == 'false'
+        env:
+          MODULE_LIST: ${{ needs.detect-changes.outputs.module_list }}
+          RELEASE_VERSION: ${{ needs.detect-changes.outputs.snapshot_version }}
+        run: |
+          mvn -B -ntp clean deploy \
+            -Dmaven.test.skip=true \
+            -DskipTests \
+            -DdeployAtEnd=true \
+            -Drevision="$RELEASE_VERSION" \
+            -pl "$MODULE_LIST" \
+            -am
+
+      - name: Publish full reactor to Nexus
+        if: needs.detect-changes.outputs.full_build == 'true'
+        env:
+          RELEASE_VERSION: ${{ needs.detect-changes.outputs.snapshot_version }}
+        run: |
+          mvn -B -ntp clean deploy \
+            -Dmaven.test.skip=true \
+            -DskipTests \
+            -DdeployAtEnd=true \
+            -Drevision="$RELEASE_VERSION"

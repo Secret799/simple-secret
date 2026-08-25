@@ -13,6 +13,7 @@
 - `zlm4j`：嵌入式 ZLMediaKit 管理能力。
 - `easymedia`：基于 zlm4j 的 WebRTC 网关和媒体管理能力。
 - `camera-zlm`：默认关闭的大华 H.264 Annex-B 到 EasyMedia/ZLM 独立适配层。
+- `dji-camera`：大疆 H.264/H.265 SEI 解析、SSE 实时诊断与 EasyMedia WHIP/WHEP 集成。
 
 ## 自动配置流程
 
@@ -34,6 +35,7 @@ starter 只传递运行功能必需的依赖。MQTT v3/v5 直接依赖 Jackson �
 starter。Netty WebSocket 不依赖 Servlet WebSocket。各 starter 的配置前缀、Bean 名和生命周期彼此隔离。
 Camera-to-ZLM 只有显式启用且宿主提供大华 SDK Bean 时才初始化，不会把厂商 SDK 或 ZLM 反向加入
 纯 Camera SDK、Camera URL 或普通 EasyMedia 使用场景。
+DJI Camera starter 只在显式启用 SEI 诊断时注册轨道回调，并仅在 Servlet 环境注册 SSE 接口。
 
 ZLM 推拉流代理只在首次 native 连接成功后返回 key；失败、5 秒启动超时和等待中断会抛异常并释放代理。
 ZLM 服务开始关闭后拒绝新增 native 资源；释放失败的资源会保留，允许再次调用 `close()` 重试。

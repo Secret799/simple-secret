@@ -1,0 +1,45 @@
+name: Create GitHub Release
+
+on:
+  workflow_call:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: github-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code with tags
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release tag
+        shell: bash
+        run: |
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must use x.y.z format, got: ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_VERSION: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          if gh release view "$TAG_VERSION" >/dev/null 2>&1; then
+            echo "GitHub Release already exists for $TAG_VERSION"
+            exit 0
+          fi
+
+          gh release create "$TAG_VERSION" \
+            --verify-tag \
+            --generate-notes \
+            --title "v$TAG_VERSION"

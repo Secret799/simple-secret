@@ -9,7 +9,7 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 - `simple-secret-common-toolbox`：零第三方运行时依赖的 Lambda 属性、URI、缓存、动态列和时间工具。
 - `simple-secret-common-core`：零第三方依赖的 Result、异常、HTTP 状态码和校验分组。
 - `simple-secret-common-dict`：只依赖 toolbox 的显式字典注册、枚举查询、TTL 缓存和对象字段翻译。
-- `simple-secret-plugins`：纯 Java 插件聚合模块，当前包含 Geo Referencing、KMZ/KML、UDP 和 Excel。
+- `simple-secret-plugins`：纯 Java 插件聚合模块，当前包含 Geo Referencing、KMZ/KML、UDP、Excel 和 Camera SDK。
 - `simple-secret-plugin-geo`：零运行时依赖的像素坐标、WGS84 地理坐标和 DJI 照片/遥测投影。
 - `simple-secret-plugin-kmz`：零运行时依赖的 KML、KMZ、DJI WPML 航点任务和 LineString 读取。
 - `simple-secret-plugin-udp`：零运行时依赖的 UDP 单播、组播监听和生命周期管理。
@@ -25,6 +25,7 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 - `simple-secret-springboot-starter-influxdb`：InfluxDB 1.x 注解映射、安全 InfluxQL DSL、写入、查询和初始化。
 - `simple-secret-springboot-starter-zlm4j`：嵌入式 ZLMediaKit、媒体代理、录像、RTP、截图和转码。
 - `simple-secret-springboot-starter-easymedia`：基于 zlm4j 的 WebRTC 网关、媒体管理 API、H.264 裸流，并复用 UDP 插件提供组播能力。
+- `simple-secret-springboot-starter-dji-camera`：大疆 Camera 集成工具，提供 H.264/H.265 SEI 解析、实时 SSE 诊断并复用 EasyMedia 的 WHIP/WHEP 网关。
 - `simple-secret-springboot-starter-camera-zlm`：默认关闭的大华 H.264 Annex-B 到 EasyMedia/ZLM 独立适配层。
 - `simple-secret-application-pushstream`：扫描受控本地目录，通过受管 FFmpeg 进程循环推送到内嵌 ZLMediaKit。
 - `simple-secret-application-dji-sei-test`：接收 RTMP H.264/H.265 视频并输出标准 SEI 诊断与流汇总。
@@ -40,7 +41,7 @@ Hutool、MyBatis-Plus 或存在安全维护负担的传递依赖。
 
 ## 整体架构
 
-Simple Secret 按“版本管理、公共能力、纯 Java 插件、Spring Boot 集成、示例应用”分层。业务模块不会依赖
+Simple Secret 按“版本管理、公共能力、纯 Java 插件、Spring Boot starter、示例应用”分层。业务模块不会依赖
 示例应用，纯 Java 插件不会反向依赖 starter，starter 只组合自身必需的第三方库和少量明确声明的公共模块。
 
 ```mermaid
@@ -54,8 +55,9 @@ flowchart TD
     CAMERA["大华 Camera SDK"] --> ADAPTER["Camera-to-ZLM adapter"]
     ADAPTER --> STARTER
     SAMPLE["EasyMedia 测试应用"] --> STARTER
-    DJI["DJI SEI 诊断应用"] --> STARTER
-    DJI --> SEI["有界 H.264 / H.265 SEI 解析"]
+    DJI["DJI SEI 诊断应用"] --> DJI_STARTER["DJI Camera starter"]
+    DJI_STARTER --> STARTER
+    DJI_STARTER --> SEI["有界 H.264 / H.265 SEI 解析"]
     PUSH["Pushstream 工具应用"] --> STARTER
     TEST["consumer integration tests"] --> BOM
     TEST --> COMMON
@@ -78,7 +80,7 @@ flowchart TD
 - [Common Core](simple-secret-common/simple-secret-common-core/README.md)
 - [Common Toolbox](simple-secret-common/simple-secret-common-toolbox/README.md)
 - [Common Dict](simple-secret-common/simple-secret-common-dict/README.md)
-- [纯 Java Plugins](simple-secret-plugins/README.md)
+- [Plugins](simple-secret-plugins/README.md)
 - [Spring Boot Starters](simple-secret-springboot-starter/README.md)
 - [示例应用](simple-secret-application/README.md)
 - [第三方消费者集成测试](integration-tests/README.md)

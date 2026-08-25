@@ -28,5 +28,5 @@ simple-secret:
 
 logging:
   level:
-    com.ss.application.djisei: INFO
+    com.ss.dji.camera: INFO
     org.springframework: WARN

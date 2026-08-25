@@ -20,8 +20,9 @@ flowchart LR
     PUSH --> FFMPEG["受管 FFmpeg 进程"]
     FFMPEG --> ZLM
     DJI["DJI RTMP 发布端"] --> DJISEI["DJI SEI 诊断应用"]
-    DJISEI --> STARTER
-    DJISEI --> DIAG["SEI 解析与流汇总"]
+    DJISEI --> DJISTARTER["DJI Camera starter"]
+    DJISTARTER --> STARTER
+    DJISTARTER --> DIAG["SEI 解析与流汇总"]
 ```
 
 测试应用只提供本地开发示例。示例令牌、默认端口和本地配置不能直接用于生产部署，生产环境必须接入宿主
@@ -33,6 +34,7 @@ Pushstream 是独立可运行应用。它默认关闭扫描和状态接口，不
 
 DJI SEI 诊断应用默认关闭所有原生媒体能力，`local` profile 才在 `0.0.0.0:7935` 启用唯一的原生 RTMP
 listener 和匿名 RTMP 发布，不启动 HTTP、RTSP 或 RTC listener，并保持匿名播放、WebRTC 和管理 API 关闭。
+应用本身只保留启动与部署配置，可复用实现来自 `simple-secret-springboot-starter-dji-camera`。
 构建、`mk_api` 链接器前置条件、环境变量、结果判读与真实 DJI 验证边界见
 [DJI RTMP SEI 诊断应用 README](simple-secret-application-dji-sei-test/README.md)。
 

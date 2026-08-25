@@ -16,8 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>com.ss</groupId>
-            <artifactId>simple-secret-application-dji-sei-test</artifactId>
-            <version>${revision}</version>
+            <artifactId>simple-secret-springboot-starter-dji-camera</artifactId>
         </dependency>
         <dependency>
             <groupId>com.ss</groupId>

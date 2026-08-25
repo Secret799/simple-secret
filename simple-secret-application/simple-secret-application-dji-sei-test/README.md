@@ -3,6 +3,8 @@
 `simple-secret-application-dji-sei-test` 是独立可执行的 Spring Boot 诊断程序，用于判断 RTMP 的 H.264/H.265
 视频帧中是否包含标准 SEI 消息。程序不提供 MQTT、数据库、REST 管理接口或业务数据持久化。
 
+SEI 解析、媒体轨道回调和自动配置由 `simple-secret-springboot-starter-dji-camera` 提供；本模块只保留可运行示例及其本地配置。
+
 ## 架构与流程
 
 ```mermaid

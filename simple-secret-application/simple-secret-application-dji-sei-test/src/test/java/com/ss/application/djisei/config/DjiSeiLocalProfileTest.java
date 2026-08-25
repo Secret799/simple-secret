@@ -1,12 +1,15 @@
 package com.ss.application.djisei.config;
 
-import com.ss.application.djisei.diagnostic.DjiSeiTrackCallback;
+import com.ss.dji.camera.config.DjiCameraAutoConfiguration;
+import com.ss.dji.camera.config.DjiSeiProperties;
+import com.ss.dji.camera.diagnostic.DjiSeiTrackCallback;
 import com.ss.easymedia.config.properties.EmsProperties;
 import com.ss.zlm4j.config.properties.ZlmMediaProperties;
 import com.ss.zlm4j.context.ZlmMediaContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
@@ -65,6 +68,7 @@ class DjiSeiLocalProfileTest {
      */
     @Configuration(proxyBeanMethods = false)
     @EnableConfigurationProperties({ZlmMediaProperties.class, EmsProperties.class})
-    static class LocalProfileConfiguration extends DjiSeiConfiguration {
+    @ImportAutoConfiguration(DjiCameraAutoConfiguration.class)
+    static class LocalProfileConfiguration {
     }
 }
