@@ -1,6 +1,6 @@
 # 大疆 Camera Spring Boot Starter
 
-`simple-secret-springboot-starter-dji-camera` 将大疆视频接入所需的 SEI 解析、事件发布和 WebRTC 接入能力封装为可复用的 Spring Boot starter。
+`simple-secret-springboot-starter-dji` 将大疆视频接入所需的 SEI 解析、事件发布和 WebRTC 接入能力封装为可复用的 Spring Boot starter。
 
 模块提供：
 
@@ -14,7 +14,7 @@
 ```xml
 <dependency>
     <groupId>com.ss</groupId>
-    <artifactId>simple-secret-springboot-starter-dji-camera</artifactId>
+    <artifactId>simple-secret-springboot-starter-dji</artifactId>
 </dependency>
 ```
 

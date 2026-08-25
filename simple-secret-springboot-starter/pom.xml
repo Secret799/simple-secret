@@ -21,7 +21,7 @@
         <module>simple-secret-springboot-starter-zlm4j</module>
         <module>simple-secret-springboot-starter-easymedia</module>
         <module>simple-secret-springboot-starter-camera-zlm</module>
-        <module>simple-secret-springboot-starter-dji-camera</module>
+        <module>simple-secret-springboot-starter-dji</module>
     </modules>
 
     <properties>

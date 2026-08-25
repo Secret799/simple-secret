@@ -13,7 +13,7 @@
 - `zlm4j`：嵌入式 ZLMediaKit 管理能力。
 - `easymedia`：基于 zlm4j 的 WebRTC 网关和媒体管理能力。
 - `camera-zlm`：默认关闭的大华 H.264 Annex-B 到 EasyMedia/ZLM 独立适配层。
-- `dji-camera`：大疆 H.264/H.265 SEI 解析、SSE 实时诊断与 EasyMedia WHIP/WHEP 集成。
+- `dji`：大疆 H.264/H.265 SEI 解析、SSE 实时诊断与 EasyMedia WHIP/WHEP 集成。
 
 ## 自动配置流程
 

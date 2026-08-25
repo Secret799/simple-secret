@@ -25,7 +25,7 @@ Simple Secret 是一组按需引入的 Java 17 插件和 Spring Boot 3.5 starter
 - `simple-secret-springboot-starter-influxdb`：InfluxDB 1.x 注解映射、安全 InfluxQL DSL、写入、查询和初始化。
 - `simple-secret-springboot-starter-zlm4j`：嵌入式 ZLMediaKit、媒体代理、录像、RTP、截图和转码。
 - `simple-secret-springboot-starter-easymedia`：基于 zlm4j 的 WebRTC 网关、媒体管理 API、H.264 裸流，并复用 UDP 插件提供组播能力。
-- `simple-secret-springboot-starter-dji-camera`：大疆 Camera 集成工具，提供 H.264/H.265 SEI 解析、实时 SSE 诊断并复用 EasyMedia 的 WHIP/WHEP 网关。
+- `simple-secret-springboot-starter-dji`：大疆 Camera 集成工具，提供 H.264/H.265 SEI 解析、实时 SSE 诊断并复用 EasyMedia 的 WHIP/WHEP 网关。
 - `simple-secret-springboot-starter-camera-zlm`：默认关闭的大华 H.264 Annex-B 到 EasyMedia/ZLM 独立适配层。
 - `simple-secret-application-pushstream`：扫描受控本地目录，通过受管 FFmpeg 进程循环推送到内嵌 ZLMediaKit。
 - `simple-secret-application-dji-sei-test`：接收 RTMP H.264/H.265 视频并输出标准 SEI 诊断与流汇总。

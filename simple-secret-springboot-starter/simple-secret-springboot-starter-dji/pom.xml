@@ -10,7 +10,7 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>simple-secret-springboot-starter-dji-camera</artifactId>
+    <artifactId>simple-secret-springboot-starter-dji</artifactId>
     <description>大疆 Camera 集成工具模块，提供 H.264/H.265 SEI 解析、事件发布与 EasyMedia WebRTC 集成</description>
 
     <dependencies>

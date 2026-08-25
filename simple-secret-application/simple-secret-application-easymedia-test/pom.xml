@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>com.ss</groupId>
-            <artifactId>simple-secret-springboot-starter-dji-camera</artifactId>
+            <artifactId>simple-secret-springboot-starter-dji</artifactId>
         </dependency>
         <dependency>
             <groupId>com.ss</groupId>
