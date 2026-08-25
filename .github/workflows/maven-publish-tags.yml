@@ -77,14 +77,25 @@ jobs:
             simple-secret-common/simple-secret-common-bom/pom.xml \
             "$RELEASE_VERSION"
 
+      - name: Verify Nexus availability
+        run: |
+          curl --fail --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 30 \
+            https://repository.junpzx.cn/service/rest/v1/status \
+            > /dev/null
+
       - name: Publish release to Nexus
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          mvn -B -ntp clean deploy \
+          mvn -B clean deploy \
             -Dmaven.test.skip=true \
             -DskipTests \
             -DdeployAtEnd=true \
+            -DretryFailedDeploymentCount=2 \
+            -Daether.connector.connectTimeout=30000 \
+            -Daether.connector.requestTimeout=120000 \
             -Drevision="$RELEASE_VERSION"
 
   create-release:

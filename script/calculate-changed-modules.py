@@ -59,7 +59,7 @@ def parse_pom(pom_path: Path) -> dict[str, object]:
         if module.text and module.text.strip()
     ]
 
-    skip_deploy = False
+    skip_deploy_override: bool | None = None
     plugin_paths = (
         "m:build/m:plugins/m:plugin",
         "m:build/m:pluginManagement/m:plugins/m:plugin",
@@ -69,8 +69,8 @@ def parse_pom(pom_path: Path) -> dict[str, object]:
             if element_text(plugin, "m:artifactId") != "maven-deploy-plugin":
                 continue
             skip_value = element_text(plugin, "m:configuration/m:skip")
-            if skip_value and skip_value.lower() == "true":
-                skip_deploy = True
+            if skip_value is not None:
+                skip_deploy_override = skip_value.lower() == "true"
 
     return {
         "artifact_id": artifact_id,
@@ -78,7 +78,8 @@ def parse_pom(pom_path: Path) -> dict[str, object]:
         "parent_artifact_id": parent_artifact_id,
         "internal_dependencies": internal_dependencies,
         "submodules": submodules,
-        "skip_deploy": skip_deploy,
+        "skip_deploy_override": skip_deploy_override,
+        "skip_deploy": False,
     }
 
 
@@ -127,6 +128,32 @@ def scan_reactor(
 
     for submodule in root_info["submodules"]:
         visit(root_dir / str(submodule))
+
+    resolving: set[str] = set()
+
+    def resolve_skip_deploy(artifact_id: str) -> bool:
+        module_dir = modules_by_artifact[artifact_id]
+        info = modules_by_dir[module_dir]
+        override = info["skip_deploy_override"]
+        if override is not None:
+            effective = bool(override)
+        else:
+            parent_artifact_id = info["parent_artifact_id"]
+            if parent_artifact_id not in modules_by_artifact:
+                effective = False
+            else:
+                if artifact_id in resolving:
+                    raise ValueError(
+                        f"Cyclic Maven parent relationship involving {artifact_id}"
+                    )
+                resolving.add(artifact_id)
+                effective = resolve_skip_deploy(str(parent_artifact_id))
+                resolving.remove(artifact_id)
+        info["skip_deploy"] = effective
+        return effective
+
+    for artifact_id in modules_by_artifact:
+        resolve_skip_deploy(artifact_id)
 
     return modules_by_dir, modules_by_artifact
 
