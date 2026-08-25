@@ -33,7 +33,7 @@ Easy Media 的 WebRTC 网关处理 WHIP/WHEP 信令：鉴权、限流，以及�
 
 支持两种信令模式：
 
-- `local-zlm-enabled: true`：调用当前服务内嵌 ZLM 的 `mk_webrtc_get_answer_sdp`。WHIP 映射为 `push`，WHEP 映射为 `play`，媒体地址为 `rtc://__defaultVhost__/{app}/{stream}`。此模式只创建 SDP Answer，不提供受管会话的 Location、PATCH 或 DELETE。
+- `local-zlm-enabled: true`：调用当前服务内嵌 ZLM 的 `mk_webrtc_get_answer_sdp`。WHIP 映射为 `push`，WHEP 映射为 `play`，媒体地址为 `rtc://__defaultVhost__/{app}/{stream}`。网关提供公开 Location 和 DELETE；当前 C API 不支持 Trickle ICE PATCH。
 - `local-zlm-enabled: false`：向 `signaling-base-url` 指向的外置 ZLM WHIP/WHEP HTTP API 转发。该模式保留 Redis 映射、公开 Location 和会话生命周期管理。
 
 内嵌模式下，客户端必须在发送 Offer 前等待 ICE gathering 完成；当前 C API 信令路径不支持 Trickle ICE PATCH。
@@ -145,7 +145,7 @@ zlm4j 1.11.0 的 `mk_track_add_delegate` Java 绑定返回 `void`，无法取得
 
 默认 `WebRtcAccessPolicy` 只验证认证状态和会话所有权。业务系统需要设备、租户或流级 ACL 时，应注册自定义 `WebRtcAccessPolicy` 与 `WebRtcIdentityProvider` Bean 替换默认实现（模块不依赖任何认证框架）。
 
-本地 C API 模式成功响应没有 `Location`。`PATCH /sessions/{sessionId}` 和 `DELETE /sessions/{sessionId}` 均返回 `405 WEBRTC_LOCAL_ZLM_SESSION_OPERATION_UNSUPPORTED`。
+本地 C API 模式成功响应包含公开 `Location`，并支持 `DELETE /sessions/{sessionId}`。`PATCH /sessions/{sessionId}` 返回 `405 WEBRTC_LOCAL_ZLM_SESSION_OPERATION_UNSUPPORTED`。
 
 ## 网络要求
 

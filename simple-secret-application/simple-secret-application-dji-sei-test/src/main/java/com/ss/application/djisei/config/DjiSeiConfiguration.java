@@ -1,6 +1,7 @@
 package com.ss.application.djisei.config;
 
 import com.ss.application.djisei.diagnostic.DjiSeiTrackCallback;
+import com.ss.application.djisei.diagnostic.DjiSeiEventListener;
 import com.ss.application.djisei.parser.H26xSeiParser;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -9,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Clock;
+import java.util.List;
 
 /**
  * DJI RTMP SEI 诊断组件配置。
@@ -40,7 +42,8 @@ public class DjiSeiConfiguration {
      */
     @Bean
     @ConditionalOnProperty(prefix = "simple-secret.dji-sei", name = "enabled", havingValue = "true")
-    public DjiSeiTrackCallback djiSeiTrackCallback(DjiSeiProperties properties, Clock clock) {
-        return new DjiSeiTrackCallback(new H26xSeiParser(), properties, clock);
+    public DjiSeiTrackCallback djiSeiTrackCallback(DjiSeiProperties properties, Clock clock,
+                                                    List<DjiSeiEventListener> eventListeners) {
+        return new DjiSeiTrackCallback(new H26xSeiParser(), properties, clock, eventListeners);
     }
 }

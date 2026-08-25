@@ -60,3 +60,7 @@ tmp
 .agents
 .cursor
 .gitattributes
+simple-secret-application/simple-secret-application-easymedia-test/.env
+simple-secret-application/simple-secret-application-easymedia-test/docker/certs/*.pem
+simple-secret-application/simple-secret-application-easymedia-test/docker/certs/*.key
+/dist/

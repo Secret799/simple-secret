@@ -449,6 +449,11 @@ public class DefaultWebRtcSessionService implements WebRtcSessionService {
             throw WebRtcSessionException.badGateway(
                     "WEBRTC_UPSTREAM_LOCATION_MISSING", "ZLM did not return a session Location");
         }
+        if (properties.isLocalZlmEnabled()
+                && "rtc".equalsIgnoreCase(location.getScheme())
+                && location.equals(upstream.requestUri())) {
+            return location;
+        }
         try {
             return uriPolicy.requireTrustedLocation(upstream.requestUri(), location);
         } catch (IllegalArgumentException exception) {

@@ -4,6 +4,8 @@
 
 应用默认只监听 `127.0.0.1:9878`。未启用 `local` profile 时，ZLM 和 EasyMedia 均保持关闭，因此可以在没有原生库的环境中完成 Spring 上下文测试。
 
+需要通过域名和 HTTPS 部署时，使用本目录的 `Dockerfile`、`docker-compose.yml`，并参阅 [DOCKER.md](DOCKER.md)。
+
 ## 运行要求
 
 - Java 17。
@@ -77,7 +79,7 @@ curl -i \
   'http://127.0.0.1:9878/easyMedia/api/webrtc/whep?app=live&stream=camera-01'
 ```
 
-成功响应状态为 `201`，响应体是 `application/sdp` 格式的 SDP Answer。local profile 使用本地 C API 信令模式，不会返回 `Location`，也不支持 `/sessions/{sessionId}` 的 PATCH 或 DELETE 操作。
+成功响应状态为 `201`，响应体是 `application/sdp` 格式的 SDP Answer，并返回 `/easyMedia/api/webrtc/sessions/{sessionId}` 格式的 `Location`。local profile 使用本地 C API 信令模式，支持会话 `DELETE`，不支持 Trickle ICE `PATCH`。
 
 ## 管理 API
 

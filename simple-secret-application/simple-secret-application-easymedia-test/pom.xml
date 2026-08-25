@@ -16,6 +16,11 @@
     <dependencies>
         <dependency>
             <groupId>com.ss</groupId>
+            <artifactId>simple-secret-application-dji-sei-test</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ss</groupId>
             <artifactId>simple-secret-springboot-starter-easymedia</artifactId>
             <exclusions>
                 <exclusion>

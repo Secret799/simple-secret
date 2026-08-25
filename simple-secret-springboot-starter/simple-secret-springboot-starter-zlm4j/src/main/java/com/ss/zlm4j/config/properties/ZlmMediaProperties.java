@@ -43,6 +43,10 @@ public class ZlmMediaProperties {
      */
     private Integer rtcPort = 8000;
     /**
+     * 是否过滤 RTC H.264 B 帧，避免不合规推流端的帧重排导致播放时间戳抖动。
+     */
+    private Integer rtcBfilter = 0;
+    /**
      * 是否启动原生 HTTP 监听器。
      */
     private Boolean httpListenerEnabled = true;
@@ -188,6 +192,17 @@ public class ZlmMediaProperties {
      * 是否启用HTTPS
      */
     private Boolean enableHttps = false;
+
+    /**
+     * ZLMediaKit SSL/DTLS 证书 PEM 文件路径。
+     * 文件需要同时包含证书链和私钥。
+     */
+    private String sslCertificatePath;
+
+    /**
+     * ZLMediaKit SSL/DTLS 证书密码。
+     */
+    private String sslCertificatePassword;
 
     /**
      * 原生媒体服务监听地址。

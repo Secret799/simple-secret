@@ -128,7 +128,6 @@ public class Zlm4jWebRTCController {
     @DeleteMapping("/sessions/{sessionId}")
     public ResponseEntity<Void> delete(@PathVariable String sessionId,
                                        HttpServletRequest request) {
-        requireManagedSessionOperations();
         sessionService.delete(sessionId, request.getRemoteAddr());
         return ResponseEntity.noContent()
                 .cacheControl(org.springframework.http.CacheControl.noStore())
@@ -221,7 +220,7 @@ public class Zlm4jWebRTCController {
     }
 
     /**
-     * 拒绝内嵌 ZLM 模式下没有上游 HTTP 会话资源的 PATCH 和 DELETE 请求。
+     * 拒绝内嵌 ZLM 模式不支持的 PATCH 请求。
      */
     private void requireManagedSessionOperations() {
         if (properties.isLocalZlmEnabled()) {

@@ -162,6 +162,32 @@ class DefaultWebRtcSessionServiceCreateTest {
     }
 
     @Test
+    void shouldCreateManagedLocalSessionWithoutHttpUriPolicy() {
+        properties.setLocalZlmEnabled(true);
+        when(identityProvider.current("10.0.0.8")).thenReturn(identity);
+        URI localSession = URI.create("rtc://__defaultVhost__/live/cam-01?type=whip");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(WebRtcMediaTypes.APPLICATION_SDP);
+        headers.setLocation(localSession);
+        when(client.create(any(), anyString(), anyString(), any(), any()))
+                .thenReturn(new ZlmWebRtcResponse(
+                        localSession, HttpStatus.CREATED, headers,
+                        "answer-sdp".getBytes(StandardCharsets.UTF_8), true));
+        when(idGenerator.generate()).thenReturn("abcdefghijklmnopqrstuvwxyzABCDEF");
+        when(repository.create(any(), eq(Duration.ofHours(1)))).thenReturn(true);
+
+        WebRtcGatewayResponse response = service.create(
+                WebRtcSessionType.WHIP, "live", "cam-01", sdpHeaders(), OFFER, "10.0.0.8");
+
+        assertEquals("/easyMedia/api/webrtc/sessions/abcdefghijklmnopqrstuvwxyzABCDEF",
+                response.headers().getFirst(HttpHeaders.LOCATION));
+        verify(repository).create(argThat(record ->
+                        localSession.toString().equals(record.getUpstreamLocation())),
+                eq(Duration.ofHours(1)));
+        verifyNoInteractions(uriPolicy);
+    }
+
+    @Test
     void shouldMapUpstreamConnectionFailureToBadGateway() {
         when(identityProvider.current("10.0.0.8")).thenReturn(identity);
         when(client.create(any(), anyString(), anyString(), any(), any()))

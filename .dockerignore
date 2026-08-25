@@ -1,0 +1,12 @@
+.git
+.idea
+.vscode
+.DS_Store
+**/target
+**/build
+**/.flattened-pom.xml
+**/*.iml
+simple-secret-application/simple-secret-application-easymedia-test/.env
+simple-secret-application/simple-secret-application-easymedia-test/docker/certs/*.pem
+simple-secret-application/simple-secret-application-easymedia-test/docker/certs/*.key
+simple-secret-application/simple-secret-application-easymedia-test/runtime

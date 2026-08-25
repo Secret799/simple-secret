@@ -151,7 +151,7 @@ class Zlm4jWebRTCControllerTest {
     }
 
     @Test
-    void shouldRejectPatchAndDeleteWhenUsingLocalZlmSignaling() throws Exception {
+    void shouldRejectPatchWhenUsingLocalZlmSignaling() throws Exception {
         properties.setLocalZlmEnabled(true);
         properties.setTrickleIceEnabled(true);
         rebuildMockMvc();
@@ -163,12 +163,22 @@ class Zlm4jWebRTCControllerTest {
                 .andExpect(jsonPath("$.code").value(
                         "WEBRTC_LOCAL_ZLM_SESSION_OPERATION_UNSUPPORTED"));
 
-        mockMvc.perform(delete("/easyMedia/api/webrtc/sessions/{sessionId}", SESSION_ID))
-                .andExpect(status().isMethodNotAllowed())
-                .andExpect(jsonPath("$.code").value(
-                        "WEBRTC_LOCAL_ZLM_SESSION_OPERATION_UNSUPPORTED"));
-
         verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldDeleteManagedSessionWhenUsingLocalZlmSignaling() throws Exception {
+        properties.setLocalZlmEnabled(true);
+        rebuildMockMvc();
+
+        mockMvc.perform(delete("/easyMedia/api/webrtc/sessions/{sessionId}", SESSION_ID)
+                        .with(request -> {
+                            request.setRemoteAddr("10.0.0.8");
+                            return request;
+                        }))
+                .andExpect(status().isNoContent());
+
+        verify(service).delete(SESSION_ID, "10.0.0.8");
     }
 
     @Test

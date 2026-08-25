@@ -94,6 +94,35 @@ class ZlmMediaContextTest {
         assertThat(fake.stopCalls()).isZero();
     }
 
+    @Test
+    void passesConfiguredSslCertificateToNativeEnvironment() {
+        ZlmMediaProperties properties = new ZlmMediaProperties();
+        properties.setSslCertificatePath("/run/easymedia/webrtc.pem");
+        properties.setSslCertificatePassword("certificate-password");
+        FakeZlmApi fake = new FakeZlmApi(Map.of());
+        ZlmMediaContext context = new TestZlmMediaContext(properties, fake.api());
+
+        context.initMediaServerConf();
+
+        Object[] arguments = fake.arguments("mk_env_init2");
+        assertThat(arguments[7]).isEqualTo(1);
+        assertThat(arguments[8]).isEqualTo("/run/easymedia/webrtc.pem");
+        assertThat(arguments[9]).isEqualTo("certificate-password");
+    }
+
+    @Test
+    void leavesNativeSslCertificateUnsetByDefault() {
+        FakeZlmApi fake = new FakeZlmApi(Map.of());
+        ZlmMediaContext context = new TestZlmMediaContext(fake.api());
+
+        context.initMediaServerConf();
+
+        Object[] arguments = fake.arguments("mk_env_init2");
+        assertThat(arguments[7]).isEqualTo(0);
+        assertThat(arguments[8]).isNull();
+        assertThat(arguments[9]).isNull();
+    }
+
     private static ZlmMediaProperties rtmpOnlyProperties() {
         ZlmMediaProperties properties = new ZlmMediaProperties();
         properties.setHttpListenerEnabled(false);
@@ -125,6 +154,7 @@ class ZlmMediaContextTest {
         private final Map<String, Short> ports;
         /** Records the invocation count for each native API method. */
         private final Map<String, AtomicInteger> calls = new HashMap<>();
+        private final Map<String, Object[]> arguments = new HashMap<>();
         private final AtomicInteger stopCalls = new AtomicInteger();
         private final ZLMApi api;
 
@@ -135,6 +165,7 @@ class ZlmMediaContextTest {
                     new Class<?>[]{ZLMApi.class},
                     (proxy, method, args) -> {
                         calls.computeIfAbsent(method.getName(), ignored -> new AtomicInteger()).incrementAndGet();
+                        arguments.put(method.getName(), args == null ? new Object[0] : args.clone());
                         if (ports.containsKey(method.getName())) {
                             return ports.get(method.getName());
                         }
@@ -156,6 +187,10 @@ class ZlmMediaContextTest {
         private int calls(String methodName) {
             AtomicInteger count = calls.get(methodName);
             return count == null ? 0 : count.get();
+        }
+
+        private Object[] arguments(String methodName) {
+            return arguments.get(methodName);
         }
 
         private int totalStartCalls() {

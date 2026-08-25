@@ -49,6 +49,9 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
     /** 用于确定汇总周期和流存续时间的时钟。 */
     private final Clock clock;
 
+    /** 快速、隔离失败的诊断事件监听器。 */
+    private final List<DjiSeiEventListener> eventListeners;
+
     /** 按媒体流隔离的线程安全生命周期。 */
     private final ConcurrentHashMap<StreamKey, StreamLifecycle> lifecycles = new ConcurrentHashMap<>();
 
@@ -60,7 +63,20 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
      * @param clock 统计汇总时钟
      */
     public DjiSeiTrackCallback(H26xSeiParser parser, DjiSeiProperties properties, Clock clock) {
-        this(parserWithLimits(parser, properties), properties, clock);
+        this(parserWithLimits(parser, properties), properties, clock, List.of());
+    }
+
+    /**
+     * 创建带结构化事件监听器的 RTMP SEI 诊断回调。
+     *
+     * @param parser H.264/H.265 SEI 解析器
+     * @param properties 有界诊断配置
+     * @param clock 统计汇总时钟
+     * @param eventListeners 诊断事件监听器
+     */
+    public DjiSeiTrackCallback(H26xSeiParser parser, DjiSeiProperties properties, Clock clock,
+                               List<DjiSeiEventListener> eventListeners) {
+        this(parserWithLimits(parser, properties), properties, clock, eventListeners);
     }
 
     /**
@@ -71,9 +87,15 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
      * @param clock 统计汇总时钟
      */
     DjiSeiTrackCallback(FrameParser parser, DjiSeiProperties properties, Clock clock) {
+        this(parser, properties, clock, List.of());
+    }
+
+    DjiSeiTrackCallback(FrameParser parser, DjiSeiProperties properties, Clock clock,
+                        List<DjiSeiEventListener> eventListeners) {
         this.parser = Objects.requireNonNull(parser, "parser");
         this.properties = Objects.requireNonNull(properties, "properties");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.eventListeners = eventListeners == null ? List.of() : List.copyOf(eventListeners);
     }
 
     /**
@@ -101,6 +123,7 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
         lifecycles.compute(key, (ignored, current) -> replaceLifecycle(current, mediaSource, replaced));
         closeAndLogReplacedLifecycle(mediaSource, replaced.get());
         LOG.info("DJI RTMP stream registered: app={}, stream={}", mediaSource.getApp(), mediaSource.getStream());
+        notifyListeners(listener -> listener.onStreamRegistered(mediaSource));
     }
 
     /**
@@ -117,6 +140,7 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
         StreamLifecycle current = lifecycles.get(key);
         if (current != null && current.belongsTo(mediaSource) && lifecycles.remove(key, current)) {
             logSummary("stream summary", mediaSource, current.close(clock.instant()));
+            notifyListeners(listener -> listener.onStreamDeregistered(mediaSource));
         }
     }
 
@@ -160,6 +184,7 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
                     properties.getMaxFrameBytes(), properties.getMaxPayloadBytes());
             Optional<DiagnosticsSnapshot> summary = lifecycle.record(
                     result, clock.instant(), properties.getSummaryInterval());
+            notifyListeners(listener -> listener.onFrame(source, frame, codec, result));
             logMalformedFrame(source, codec, result.issues());
             int logCount = Math.min(result.messages().size(), properties.getMaxMessageLogs());
             for (int index = 0; index < logCount; index++) {
@@ -232,6 +257,22 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
                         + "malformedMessages={}, elapsedMs={}",
                 summaryType, source.getApp(), source.getStream(), snapshot.videoFrames,
                 snapshot.seiNalUnits, snapshot.seiMessages, snapshot.malformedMessages, snapshot.elapsedMillis);
+    }
+
+    /**
+     * 隔离业务监听器失败，避免中断原生轨道回调。
+     *
+     * @param notification 单个监听器通知
+     */
+    private void notifyListeners(java.util.function.Consumer<DjiSeiEventListener> notification) {
+        for (DjiSeiEventListener listener : eventListeners) {
+            try {
+                notification.accept(listener);
+            } catch (RuntimeException exception) {
+                LOG.warn("DJI SEI event listener failed: listener={}",
+                        listener.getClass().getName(), exception);
+            }
+        }
     }
 
     /**

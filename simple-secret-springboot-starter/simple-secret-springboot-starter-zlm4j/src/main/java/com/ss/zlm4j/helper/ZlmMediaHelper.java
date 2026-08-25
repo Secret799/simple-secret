@@ -501,6 +501,8 @@ public interface ZlmMediaHelper {
         static void setConfig(ZLMApi zlmApi, MK_INI ini, ZlmMediaProperties properties) {
             setConfig(zlmApi, ini, "general.mediaServerId", "SimpleSecretMediaServer");
             setConfig(zlmApi, ini, "general.listen_ip", properties.getListenIp());
+            setConfig(zlmApi, ini, "rtc.externIP", properties.getRtcHost());
+            setConfig(zlmApi, ini, "rtc.bfilter", properties.getRtcBfilter());
             setConfig(zlmApi, ini, "http.notFound", "<h1 style=\"text-align:center;\">SimpleSecret Media Server By Secret丶君</h1>");
             setConfig(zlmApi, ini, "protocol.auto_close", properties.getAutoClose());
             setConfig(zlmApi, ini, "general.streamNoneReaderDelayMS", properties.getStreamNoneReaderDelayMs());

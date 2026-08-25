@@ -1,0 +1,66 @@
+name: simple-secret-easymedia
+
+services:
+  easymedia:
+    build:
+      context: ../..
+      dockerfile: simple-secret-application/simple-secret-application-easymedia-test/Dockerfile
+      args:
+        ZLM_REF: ${ZLM_REF:-fdaec2604d4091886158cbaca39dca2b5e5d25db}
+    environment:
+      DOMAIN: ${DOMAIN:?请在 .env 中配置 DOMAIN}
+      WEBRTC_PUBLIC_IP: ${WEBRTC_PUBLIC_IP:-}
+      SPRING_PROFILES_ACTIVE: local
+      SERVER_ADDRESS: 0.0.0.0
+      SIMPLE_SECRET_EASYMEDIA_ROOT: /data/easymedia
+      SIMPLE_SECRET_ZLM4J_LISTEN_IP: 0.0.0.0
+      SIMPLE_SECRET_ZLM4J_HTTP_LISTENER_ENABLED: "false"
+      SIMPLE_SECRET_ZLM4J_RTSP_LISTENER_ENABLED: "false"
+      SIMPLE_SECRET_ZLM4J_RTMP_LISTENER_ENABLED: "false"
+      SIMPLE_SECRET_ZLM4J_RTC_LISTENER_ENABLED: "true"
+      SIMPLE_SECRET_ZLM4J_RTC_PORT: 8000
+      SIMPLE_SECRET_ZLM4J_ALLOW_ANONYMOUS_PUBLISH: "true"
+      SIMPLE_SECRET_ZLM4J_ALLOW_ANONYMOUS_PLAY: "true"
+      SIMPLE_SECRET_EASYMEDIA_MANAGEMENT_ENABLED: ${MANAGEMENT_ENABLED:-false}
+      SIMPLE_SECRET_EASYMEDIA_MANAGEMENT_TOKEN: ${MANAGEMENT_TOKEN:-}
+    expose:
+      - "9878"
+    ports:
+      - "8000:8000/tcp"
+      - "8000:8000/udp"
+    volumes:
+      - easymedia-data:/data/easymedia
+    secrets:
+      - tls_fullchain
+      - tls_private_key
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sS", "-o", "/dev/null", "http://127.0.0.1:9878/"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      easymedia:
+        condition: service_healthy
+    environment:
+      DOMAIN: ${DOMAIN:?请在 .env 中配置 DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./docker/certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+
+volumes:
+  easymedia-data:
+
+secrets:
+  tls_fullchain:
+    file: ./docker/certs/fullchain.pem
+  tls_private_key:
+    file: ./docker/certs/privkey.pem

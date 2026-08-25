@@ -123,8 +123,15 @@ public class ZlmMediaContext {
         // 设置配置项
         ZlmMediaHelper.Configurator.setConfig(zlmApi, mkIni, defaultProperties);
         //初始化zmk服务器
+        String sslCertificatePath = normalized(defaultProperties.getSslCertificatePath());
+        String sslCertificatePassword = normalized(defaultProperties.getSslCertificatePassword());
         zlmApi.mk_env_init2(defaultProperties.getThreadNum(), defaultProperties.getLogLevel(), defaultProperties.getLogMask(),
-                defaultProperties.getLogPath(), defaultProperties.getLogFileDays(), 0, null, 0, null, null);
+                defaultProperties.getLogPath(), defaultProperties.getLogFileDays(), 0, null,
+                sslCertificatePath == null ? 0 : 1, sslCertificatePath, sslCertificatePassword);
+    }
+
+    private static String normalized(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
 

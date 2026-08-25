@@ -5,7 +5,9 @@ import com.aizuda.zlm4j.core.ZLMApi;
 import com.ss.easymedia.webrtc.domain.WebRtcMediaTypes;
 import com.ss.easymedia.webrtc.domain.WebRtcSessionType;
 import com.ss.easymedia.webrtc.domain.ZlmWebRtcResponse;
+import com.ss.zlm4j.callback.MKSourceFindCallBack;
 import com.ss.zlm4j.constants.ZlmMediaServerConstants;
+import com.sun.jna.Pointer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -13,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,7 +45,7 @@ public class LocalZlmWebRtcSignalingClient implements ZlmWebRtcSignalingClient {
     /**
      * 使用 ZLM C API 把 SDP Offer 交换为 SDP Answer。
      *
-     * @return 不带受管会话资源的 SDP Answer 响应
+     * @return 带网关托管会话标识的 SDP Answer 响应
      */
     @Override
     public ZlmWebRtcResponse create(WebRtcSessionType type, String app, String stream,
@@ -70,17 +73,56 @@ public class LocalZlmWebRtcSignalingClient implements ZlmWebRtcSignalingClient {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(WebRtcMediaTypes.APPLICATION_SDP);
-        return new ZlmWebRtcResponse(URI.create(rtcUrl), HttpStatus.CREATED, headers,
-                answer.get().getBytes(StandardCharsets.UTF_8), false);
+        URI sessionUri = URI.create(rtcUrl + "?type=" + type.name().toLowerCase(Locale.ROOT));
+        headers.setLocation(sessionUri);
+        return new ZlmWebRtcResponse(sessionUri, HttpStatus.CREATED, headers,
+                answer.get().getBytes(StandardCharsets.UTF_8), true);
     }
 
     /**
-     * 内嵌 C API 没有 HTTP 会话资源，不能执行 PATCH 或 DELETE。
+     * 删除网关托管的本地会话；WHIP 删除同时关闭对应发布流。
      */
     @Override
     public ZlmWebRtcResponse exchange(URI upstreamLocation, HttpMethod method,
                                       HttpHeaders requestHeaders, byte[] body) {
-        throw new IllegalStateException("Embedded ZLM signaling does not expose managed session operations");
+        LocalSession session = requireLocalSession(upstreamLocation);
+        if (method != HttpMethod.DELETE) {
+            throw new IllegalStateException("Embedded ZLM signaling only supports managed session DELETE");
+        }
+        if (session.type() == WebRtcSessionType.WHIP) {
+            closePublishedStream(session.app(), session.stream());
+        }
+        return new ZlmWebRtcResponse(upstreamLocation, HttpStatus.NO_CONTENT,
+                new HttpHeaders(), new byte[0], true);
+    }
+
+    /** 关闭 WHIP 发布产生的所有同名媒体源。 */
+    private void closePublishedStream(String app, String stream) {
+        zlmApi.mk_media_source_for_each(Pointer.NULL, new MKSourceFindCallBack(
+                        mediaSource -> zlmApi.mk_media_source_close(mediaSource, 1)),
+                null, ZlmMediaServerConstants.DEFAULT_VHOST, app, stream);
+    }
+
+    /** 解析并校验只由本客户端生成的本地会话 URI。 */
+    private LocalSession requireLocalSession(URI uri) {
+        if (uri == null || !"rtc".equalsIgnoreCase(uri.getScheme())
+                || !ZlmMediaServerConstants.DEFAULT_VHOST.equals(uri.getRawAuthority())) {
+            throw new IllegalArgumentException("Invalid embedded ZLM session URI");
+        }
+        String[] parts = uri.getPath().split("/", -1);
+        if (parts.length != 3 || parts[1].isBlank() || parts[2].isBlank()) {
+            throw new IllegalArgumentException("Invalid embedded ZLM session path");
+        }
+        WebRtcSessionType type = switch (uri.getRawQuery()) {
+            case "type=whip" -> WebRtcSessionType.WHIP;
+            case "type=whep" -> WebRtcSessionType.WHEP;
+            default -> throw new IllegalArgumentException("Invalid embedded ZLM session type");
+        };
+        return new LocalSession(type, parts[1], parts[2]);
+    }
+
+    /** 已验证的本地会话路由信息。 */
+    private record LocalSession(WebRtcSessionType type, String app, String stream) {
     }
 
     /**
