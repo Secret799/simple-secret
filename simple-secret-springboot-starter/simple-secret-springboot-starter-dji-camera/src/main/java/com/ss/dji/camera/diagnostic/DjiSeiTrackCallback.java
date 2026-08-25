@@ -1,6 +1,7 @@
 package com.ss.dji.camera.diagnostic;
 
 import com.ss.dji.camera.config.DjiSeiProperties;
+import com.ss.dji.camera.event.DjiSeiPacketParsedEvent;
 import com.ss.dji.camera.parser.H26xSeiParser;
 import com.ss.dji.camera.parser.SeiMessage;
 import com.ss.dji.camera.parser.SeiParseIssue;
@@ -12,6 +13,7 @@ import com.ss.zlm4j.domain.MediaSourceDomain;
 import com.ss.zlm4j.domain.TrackDomain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -52,6 +54,9 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
     /** 快速、隔离失败的诊断事件监听器。 */
     private final List<DjiSeiEventListener> eventListeners;
 
+    /** 向宿主应用发布完整 SEI 消息。 */
+    private final ApplicationEventPublisher applicationEventPublisher;
+
     /** 按媒体流隔离的线程安全生命周期。 */
     private final ConcurrentHashMap<StreamKey, StreamLifecycle> lifecycles = new ConcurrentHashMap<>();
 
@@ -63,7 +68,7 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
      * @param clock 统计汇总时钟
      */
     public DjiSeiTrackCallback(H26xSeiParser parser, DjiSeiProperties properties, Clock clock) {
-        this(parserWithLimits(parser, properties), properties, clock, List.of());
+        this(parserWithLimits(parser, properties), properties, clock, List.of(), event -> { });
     }
 
     /**
@@ -76,7 +81,23 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
      */
     public DjiSeiTrackCallback(H26xSeiParser parser, DjiSeiProperties properties, Clock clock,
                                List<DjiSeiEventListener> eventListeners) {
-        this(parserWithLimits(parser, properties), properties, clock, eventListeners);
+        this(parserWithLimits(parser, properties), properties, clock, eventListeners, event -> { });
+    }
+
+    /**
+     * 创建向 Spring 宿主发布完整 SEI 事件的 RTMP 轨道回调。
+     *
+     * @param parser H.264/H.265 SEI 解析器
+     * @param properties 有界诊断配置
+     * @param clock 统计汇总时钟
+     * @param eventListeners 诊断事件监听器
+     * @param applicationEventPublisher Spring 应用事件发布器
+     */
+    public DjiSeiTrackCallback(H26xSeiParser parser, DjiSeiProperties properties, Clock clock,
+                               List<DjiSeiEventListener> eventListeners,
+                               ApplicationEventPublisher applicationEventPublisher) {
+        this(parserWithLimits(parser, properties), properties, clock, eventListeners,
+                applicationEventPublisher);
     }
 
     /**
@@ -87,15 +108,23 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
      * @param clock 统计汇总时钟
      */
     DjiSeiTrackCallback(FrameParser parser, DjiSeiProperties properties, Clock clock) {
-        this(parser, properties, clock, List.of());
+        this(parser, properties, clock, List.of(), event -> { });
     }
 
     DjiSeiTrackCallback(FrameParser parser, DjiSeiProperties properties, Clock clock,
                         List<DjiSeiEventListener> eventListeners) {
+        this(parser, properties, clock, eventListeners, event -> { });
+    }
+
+    DjiSeiTrackCallback(FrameParser parser, DjiSeiProperties properties, Clock clock,
+                        List<DjiSeiEventListener> eventListeners,
+                        ApplicationEventPublisher applicationEventPublisher) {
         this.parser = Objects.requireNonNull(parser, "parser");
         this.properties = Objects.requireNonNull(properties, "properties");
         this.clock = Objects.requireNonNull(clock, "clock");
         this.eventListeners = eventListeners == null ? List.of() : List.copyOf(eventListeners);
+        this.applicationEventPublisher = Objects.requireNonNull(applicationEventPublisher,
+                "applicationEventPublisher");
     }
 
     /**
@@ -182,8 +211,10 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
         try {
             SeiParseResult result = parser.parse(frame.getData(), codec,
                     properties.getMaxFrameBytes(), properties.getMaxPayloadBytes());
+            Instant parsedAt = clock.instant();
             Optional<DiagnosticsSnapshot> summary = lifecycle.record(
-                    result, clock.instant(), properties.getSummaryInterval());
+                    result, parsedAt, properties.getSummaryInterval());
+            publishCompleteSeiPackets(source, frame, codec, result.messages(), parsedAt);
             notifyListeners(listener -> listener.onFrame(source, frame, codec, result));
             logMalformedFrame(source, codec, result.issues());
             int logCount = Math.min(result.messages().size(), properties.getMaxMessageLogs());
@@ -211,6 +242,20 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
                         + "payloadType={}, payloadBytes={}, uuid={}, hex={}, text={}",
                 source.getApp(), source.getStream(), codec, frame.getPts(), frame.getDts(), message.payloadType(),
                 payload.length, message.uuid().orElse(null), preview.hex(), preview.text());
+    }
+
+    /** 发布每一条已通过长度校验并完整读取的 SEI 消息。 */
+    private void publishCompleteSeiPackets(MediaSourceDomain source, TackDelegateInfo frame, VideoCodec codec,
+                                           List<SeiMessage> messages, Instant parsedAt) {
+        for (SeiMessage message : messages) {
+            try {
+                applicationEventPublisher.publishEvent(
+                        new DjiSeiPacketParsedEvent(source, frame, codec, message, parsedAt));
+            } catch (RuntimeException exception) {
+                LOG.warn("DJI SEI packet event publication failed: app={}, stream={}, payloadType={}",
+                        source.getApp(), source.getStream(), message.payloadType(), exception);
+            }
+        }
     }
 
     /**

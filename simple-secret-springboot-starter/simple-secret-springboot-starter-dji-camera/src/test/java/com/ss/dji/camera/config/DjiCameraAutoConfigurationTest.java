@@ -1,13 +1,10 @@
 package com.ss.dji.camera.config;
 
 import com.ss.dji.camera.diagnostic.DjiSeiTrackCallback;
-import com.ss.dji.camera.web.DjiSeiController;
-import com.ss.dji.camera.web.DjiSeiEventHub;
 import com.ss.easymedia.callback.TrackDelegateCallback;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -21,39 +18,21 @@ class DjiCameraAutoConfigurationTest {
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(DjiCameraAutoConfiguration.class));
 
-    private final WebApplicationContextRunner webContextRunner = new WebApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(DjiCameraAutoConfiguration.class));
-
     @Test
     void shouldNotCreateIntegrationBeansWhenDisabled() {
-        webContextRunner.run(context -> {
+        contextRunner.run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).doesNotHaveBean(TrackDelegateCallback.class);
-            assertThat(context).doesNotHaveBean(DjiSeiEventHub.class);
-            assertThat(context).doesNotHaveBean(DjiSeiController.class);
         });
     }
 
     @Test
-    void shouldCreateTrackCallbackWithoutWebDiagnosticsInNonWebApplication() {
+    void shouldCreateTrackCallbackWhenEnabled() {
         contextRunner.withPropertyValues("simple-secret.dji-sei.enabled=true")
                 .run(context -> {
                     assertThat(context).hasNotFailed();
                     assertThat(context).hasSingleBean(TrackDelegateCallback.class);
                     assertThat(context).hasSingleBean(DjiSeiTrackCallback.class);
-                    assertThat(context).doesNotHaveBean(DjiSeiEventHub.class);
-                    assertThat(context).doesNotHaveBean(DjiSeiController.class);
-                });
-    }
-
-    @Test
-    void shouldCreateTrackCallbackAndDiagnosticsInServletApplication() {
-        webContextRunner.withPropertyValues("simple-secret.dji-sei.enabled=true")
-                .run(context -> {
-                    assertThat(context).hasNotFailed();
-                    assertThat(context).hasSingleBean(DjiSeiTrackCallback.class);
-                    assertThat(context).hasSingleBean(DjiSeiEventHub.class);
-                    assertThat(context).hasSingleBean(DjiSeiController.class);
                 });
     }
 
