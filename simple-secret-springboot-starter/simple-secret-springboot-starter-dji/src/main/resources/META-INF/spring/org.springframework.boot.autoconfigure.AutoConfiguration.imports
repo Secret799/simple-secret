@@ -1,1 +1,2 @@
 com.ss.dji.camera.config.DjiCameraAutoConfiguration
+com.ss.dji.camera.config.DjiSeiSseAutoConfiguration

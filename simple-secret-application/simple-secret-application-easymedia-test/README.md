@@ -1,6 +1,6 @@
 # EasyMedia 测试应用
 
-`simple-secret-application-easymedia-test` 是一个可直接启动的 Spring Boot 测试程序，用于验证 `simple-secret-springboot-starter-easymedia` 的内嵌 ZLMediaKit、媒体管理 API 以及 WHIP/WHEP WebRTC 能力。
+`simple-secret-application-easymedia-test` 是一个可直接启动的 Spring Boot 测试程序，用于验证 `simple-secret-springboot-starter-easymedia` 的内嵌 ZLMediaKit、媒体管理 API、WHIP/WHEP WebRTC 以及设备 SEI SSE 推送能力。
 
 应用默认只监听 `127.0.0.1:9878`。未启用 `local` profile 时，ZLM 和 EasyMedia 均保持关闭，因此可以在没有原生库的环境中完成 Spring 上下文测试。
 
@@ -54,6 +54,27 @@ java -Djna.library.path=/path/to/zlmediakit/lib \
 ```
 
 测试配置固定使用 `local-test` 租户和 `easymedia-test-user` 主体，以便直接验证 WebRTC 流程。该身份配置仅用于本地测试，不应复制到生产应用。
+
+## 设备 SEI SSE
+
+`local` profile 在 `1935/tcp` 接收 DJI RTMP 推流。RTMP stream ID 作为设备 ID，例如设备推流到
+`rtmp://127.0.0.1:1935/live/device-01` 后，通过以下接口订阅完整 SEI 解析结果：
+
+```bash
+curl -N -H 'Accept: text/event-stream' \
+  'http://127.0.0.1:9878/easyMedia/api/sei/devices/device-01/events'
+```
+
+接口发送 `connected`、`sei` 和 `heartbeat` 三类事件。`sei` 数据中的 `data` 为可解码的 UTF-8
+内容，`payloadBase64` 为完整原始 payload；`payloadType=5` 时 `data` 不包含开头的 16 字节 UUID。
+
+服务器播放器继续使用诊断兼容接口：
+
+```text
+GET /easyMedia/api/sei/events?app=live&stream=device-01
+```
+
+该接口发送 `snapshot`、`stream`、`stats`、`sei`、`issue` 和 `heartbeat` 事件。
 
 ## WHIP/WHEP 测试
 

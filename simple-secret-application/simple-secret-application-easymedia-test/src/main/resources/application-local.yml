@@ -1,7 +1,10 @@
 simple-secret:
   zlm4j:
     enabled: true
-    listen-ip: 127.0.0.1
+    listen-ip: ${SIMPLE_SECRET_ZLM4J_LISTEN_IP:127.0.0.1}
+    rtmp-port: ${SIMPLE_SECRET_ZLM4J_RTMP_PORT:1935}
+    rtmp-listener-enabled: ${SIMPLE_SECRET_ZLM4J_RTMP_LISTENER_ENABLED:true}
+    enable-rtmp: 1
     allow-anonymous-play: false
     allow-anonymous-publish: false
     root-path: ${SIMPLE_SECRET_EASYMEDIA_ROOT:./runtime/easymedia}
@@ -24,3 +27,6 @@ simple-secret:
         default-subject: easymedia-test-user
       rate-limit:
         enabled: true
+  dji-sei:
+    enabled: true
+    allowed-app: ${SIMPLE_SECRET_DJI_SEI_APP:live}
