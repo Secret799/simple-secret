@@ -38,6 +38,7 @@ class ConfigurationMetadataTest {
             assertThat(input).as("DJI Camera auto-configuration imports").isNotNull();
             String imports = new String(input.readAllBytes(), StandardCharsets.UTF_8);
             assertThat(imports).contains(DjiCameraAutoConfiguration.class.getName());
+            assertThat(imports).contains(DjiSeiSseAutoConfiguration.class.getName());
         }
     }
 }
