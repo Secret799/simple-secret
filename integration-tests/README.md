@@ -22,13 +22,18 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn install -DskipTests
 JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -f integration-tests/pom.xml test
 ```
 
-第一条命令把最新构件安装到本地 Maven 仓库，第二条命令让 15 个独立 consumer 解析并测试这些构件。
+第一条命令把最新构件安装到本地 Maven 仓库，第二条命令让 22 个独立 consumer 解析并测试这些构件。
 
 ## Consumer 对应关系
 
-- common：`consumer-toolbox`、`consumer-dict`
-- plugin：`consumer-udp`、`consumer-excel`、`consumer-camera-sdk` 及两个厂商 SDK consumer
+- common：`consumer-toolbox`、`consumer-core`、`consumer-dict`
+- plugin：`consumer-geo`、`consumer-kmz`、`consumer-udp`、`consumer-excel`、`consumer-camera-sdk`
+  及两个厂商 SDK consumer
 - starter：`consumer-mqttv3`、`consumer-mqttv5`、`consumer-camera`、`consumer-nats`、
-  `consumer-influxdb`、`consumer-zlm4j`、`consumer-easymedia`、`consumer-netty-websocket`
+  `consumer-influxdb`、`consumer-zlm4j`、`consumer-easymedia`、`consumer-netty-websocket`、
+  `consumer-hikvision-starter`、`consumer-dahua-starter`、`consumer-camera-zlm`、`consumer-dji`
+
+`script/verify-published-module-coverage.py` 会校验根依赖管理、对外 BOM 和 consumer 列表的一致性，并要求每个
+可发布 JAR 都存在唯一的独立 consumer。CI 和 `tools/verify-consumers.sh` 都会先执行该检查。
 
 这些模块只用于兼容性验证，不发布为业务构件。

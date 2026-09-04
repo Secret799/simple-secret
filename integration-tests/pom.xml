@@ -11,15 +11,22 @@
 
     <modules>
         <module>consumer-toolbox</module>
+        <module>consumer-core</module>
         <module>consumer-dict</module>
         <module>consumer-mqttv3</module>
         <module>consumer-mqttv5</module>
         <module>consumer-camera</module>
+        <module>consumer-hikvision-starter</module>
+        <module>consumer-dahua-starter</module>
         <module>consumer-nats</module>
         <module>consumer-influxdb</module>
         <module>consumer-zlm4j</module>
         <module>consumer-easymedia</module>
+        <module>consumer-camera-zlm</module>
+        <module>consumer-dji</module>
         <module>consumer-udp</module>
+        <module>consumer-geo</module>
+        <module>consumer-kmz</module>
         <module>consumer-excel</module>
         <module>consumer-camera-sdk</module>
         <module>consumer-camera-sdk-hikvision</module>

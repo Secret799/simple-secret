@@ -54,6 +54,7 @@ public class DjiSeiSseService implements DjiSeiEventListener {
     private final ScheduledThreadPoolExecutor heartbeatExecutor;
 
 
+    @Autowired
     public DjiSeiSseService(DjiSeiProperties properties, Clock clock) {
         this(properties, clock, () -> new SseEmitter(0L));
     }

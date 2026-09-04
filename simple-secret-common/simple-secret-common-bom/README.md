@@ -45,3 +45,6 @@ Java 类，也不会给应用传递任何运行时依赖。
 2. 运行全量 `mvn verify`，确认依赖收敛和禁止依赖规则通过。
 3. 发布 BOM 与各模块构件。
 4. 使用 `integration-tests` 从本地或制品仓库解析已发布 POM，验证第三方消费方式。
+
+`script/verify-published-module-coverage.py` 会校验根依赖管理与本 BOM 覆盖全部可发布 JAR，并确认每个构件
+都有唯一的独立 consumer。发布 CI 会在部署前执行该检查。

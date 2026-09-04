@@ -1,9 +1,9 @@
 package com.ss.application.djisei;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,25 +14,21 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author junpzx
  * @since 2026-08-13
  */
-@SpringBootTest(classes = DjiSeiTestApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class DjiSeiTestApplicationTest {
-
-    /** Spring 环境配置。 */
-    @Autowired
-    private Environment environment;
-
-    /** 当前应用上下文。 */
-    @Autowired
-    private ApplicationContext applicationContext;
 
     @Test
     void shouldStartWithoutNativeMediaLibraryByDefault() {
-        assertThat(environment.getProperty("simple-secret.zlm4j.enabled", Boolean.class)).isFalse();
-        assertThat(environment.getProperty("simple-secret.easymedia.enabled", Boolean.class)).isFalse();
-        assertThat(environment.getProperty(
-                "simple-secret.easymedia.management-api-enabled", Boolean.class)).isFalse();
-        assertThat(environment.getProperty("simple-secret.dji-sei.enabled", Boolean.class)).isFalse();
-        assertThat(applicationContext.containsBean("zlmMediaContext")).isFalse();
+        SpringApplication application = new SpringApplication(DjiSeiTestApplication.class);
+        application.setWebApplicationType(WebApplicationType.NONE);
+        try (ConfigurableApplicationContext context = application.run()) {
+            Environment environment = context.getEnvironment();
+
+            assertThat(environment.getProperty("simple-secret.zlm4j.enabled", Boolean.class)).isFalse();
+            assertThat(environment.getProperty("simple-secret.easymedia.enabled", Boolean.class)).isFalse();
+            assertThat(environment.getProperty(
+                    "simple-secret.easymedia.management-api-enabled", Boolean.class)).isFalse();
+            assertThat(environment.getProperty("simple-secret.dji-sei.enabled", Boolean.class)).isFalse();
+            assertThat(context.containsBean("zlmMediaContext")).isFalse();
+        }
     }
 }

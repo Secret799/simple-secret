@@ -108,7 +108,10 @@ flowchart TD
 | Consumer | 验证对象 | 文档 |
 | --- | --- | --- |
 | `consumer-toolbox` | Common Toolbox | [查看文档](integration-tests/consumer-toolbox/README.md) |
+| `consumer-core` | Common Core | [查看文档](integration-tests/consumer-core/README.md) |
 | `consumer-dict` | Common Dict | [查看文档](integration-tests/consumer-dict/README.md) |
+| `consumer-geo` | Geo Plugin | [查看文档](integration-tests/consumer-geo/README.md) |
+| `consumer-kmz` | KMZ Plugin | [查看文档](integration-tests/consumer-kmz/README.md) |
 | `consumer-udp` | UDP Plugin | [查看文档](integration-tests/consumer-udp/README.md) |
 | `consumer-excel` | Excel Plugin | [查看文档](integration-tests/consumer-excel/README.md) |
 | `consumer-camera-sdk` | Camera SDK API Plugin | [查看文档](integration-tests/consumer-camera-sdk/README.md) |
@@ -117,11 +120,15 @@ flowchart TD
 | `consumer-mqttv3` | MQTT v3 Starter | [查看文档](integration-tests/consumer-mqttv3/README.md) |
 | `consumer-mqttv5` | MQTT v5 Starter | [查看文档](integration-tests/consumer-mqttv5/README.md) |
 | `consumer-camera` | Camera Starter | [查看文档](integration-tests/consumer-camera/README.md) |
+| `consumer-hikvision-starter` | Hikvision Starter | [查看文档](integration-tests/consumer-hikvision-starter/README.md) |
+| `consumer-dahua-starter` | Dahua Starter | [查看文档](integration-tests/consumer-dahua-starter/README.md) |
 | `consumer-nats` | NATS Starter | [查看文档](integration-tests/consumer-nats/README.md) |
 | `consumer-influxdb` | InfluxDB Starter | [查看文档](integration-tests/consumer-influxdb/README.md) |
 | `consumer-netty-websocket` | Netty WebSocket Starter | [查看文档](integration-tests/consumer-netty-websocket/README.md) |
 | `consumer-zlm4j` | ZLM4J Starter | [查看文档](integration-tests/consumer-zlm4j/README.md) |
 | `consumer-easymedia` | EasyMedia Starter | [查看文档](integration-tests/consumer-easymedia/README.md) |
+| `consumer-camera-zlm` | Camera-to-ZLM Starter | [查看文档](integration-tests/consumer-camera-zlm/README.md) |
+| `consumer-dji` | DJI Starter | [查看文档](integration-tests/consumer-dji/README.md) |
 
 ## Maven 接入
 

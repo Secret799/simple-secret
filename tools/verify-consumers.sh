@@ -20,6 +20,8 @@ trap cleanup EXIT HUP INT TERM
 
 cd "$PROJECT_ROOT"
 
+python3 script/verify-published-module-coverage.py
+
 mvn \
     -Dmaven.repo.local="$MAVEN_REPO" \
     -DskipTests \
