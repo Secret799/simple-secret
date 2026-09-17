@@ -21,3 +21,9 @@ simple-secret:
     thread-num: 4
   camera-zlm:
     enabled: true
+  camera-sdk:
+    dahua:
+      enabled: true
+      library-directory: /Users/junpzx/Workspace/honeybee-workspace/sdk/dahua
+    hikvision:
+      enabled: false

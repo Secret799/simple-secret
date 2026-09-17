@@ -1,7 +1,7 @@
 package com.ss.camerazlm;
 
 import com.ss.ics.dahua.DahuaStreamCallback;
-import com.ss.ics.dahua.DahuaStreamFrame;
+import com.ss.ics.dahua.domain.DahuaStreamFrame;
 import com.ss.ics.domain.DeviceDomain;
 import com.ss.ics.domain.PlayDomain;
 import org.junit.jupiter.api.Test;

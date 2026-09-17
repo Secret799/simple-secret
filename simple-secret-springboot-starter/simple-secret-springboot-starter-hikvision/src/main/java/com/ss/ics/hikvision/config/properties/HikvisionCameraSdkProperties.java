@@ -1,4 +1,4 @@
-package com.ss.ics.hikvision.config;
+package com.ss.ics.hikvision.config.properties;
 
 import com.ss.ics.hikvision.HikvisionSdkOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;

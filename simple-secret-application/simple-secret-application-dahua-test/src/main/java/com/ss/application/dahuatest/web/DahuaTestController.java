@@ -2,8 +2,8 @@ package com.ss.application.dahuatest.web;
 
 import com.ss.camerazlm.DahuaZlmStreamService;
 import com.ss.camerazlm.DahuaZlmStreamSession;
-import com.ss.ics.constants.enums.PtzControlCommandEnums;
 import com.ss.ics.dahua.DahuaCameraSdkService;
+import com.ss.ics.dahua.domain.DahuaRealPlaySession;
 import com.ss.ics.domain.DeviceDomain;
 import com.ss.ics.domain.PlayDomain;
 import com.ss.ics.domain.PTZControlDomain;
@@ -199,7 +199,7 @@ public class DahuaTestController {
         java.util.concurrent.atomic.AtomicLong frames = new java.util.concurrent.atomic.AtomicLong();
         java.util.concurrent.atomic.AtomicLong bytes = new java.util.concurrent.atomic.AtomicLong();
         java.util.Map<Integer, java.util.concurrent.atomic.AtomicLong> frameTypes = new java.util.concurrent.ConcurrentHashMap<>();
-        com.ss.ics.dahua.DahuaRealPlaySession debug = sdk.realPlay(
+        DahuaRealPlaySession debug = sdk.realPlay(
                 toDevice(request),
                 new PlayDomain().setTakeStreamParam(new PlayDomain.TakeStreamParam().setStreamType(0)),
                 frame -> {

@@ -1,6 +1,6 @@
 package com.ss.ics.dahua.internal.model;
 
-import com.ss.ics.dahua.DahuaPoint;
+import com.ss.ics.dahua.domain.DahuaPoint;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.ss.ics.dahua;
+package com.ss.ics.dahua.domain;
 
 /** 点、线或区域的温度统计。 */
 public record DahuaTemperatureSummary(

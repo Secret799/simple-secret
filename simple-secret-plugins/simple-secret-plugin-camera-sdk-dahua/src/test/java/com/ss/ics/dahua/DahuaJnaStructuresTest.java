@@ -1,5 +1,6 @@
 package com.ss.ics.dahua;
 
+import com.ss.ics.dahua.internal.structures.DahuaJnaStructures;
 import org.junit.jupiter.api.Test;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;

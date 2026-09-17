@@ -12,6 +12,10 @@ import java.time.Duration;
  */
 @ConfigurationProperties("simple-secret.camera-zlm")
 public class CameraZlmProperties {
+    /**
+     * 是否启动有界转推
+     */
+    private Boolean enabled;
 
     /** 队列允许配置的最大帧数。 */
     private static final int MAX_QUEUE_CAPACITY = 10_000;
@@ -112,5 +116,13 @@ public class CameraZlmProperties {
      */
     public void setCloseTimeout(Duration closeTimeout) {
         this.closeTimeout = closeTimeout;
+    }
+
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
     }
 }

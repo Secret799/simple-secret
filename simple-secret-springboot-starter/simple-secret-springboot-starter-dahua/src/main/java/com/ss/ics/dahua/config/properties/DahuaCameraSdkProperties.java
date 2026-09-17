@@ -1,6 +1,6 @@
-package com.ss.ics.dahua.config;
+package com.ss.ics.dahua.config.properties;
 
-import com.ss.ics.dahua.DahuaSdkOptions;
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.nio.file.Path;

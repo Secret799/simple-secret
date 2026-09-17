@@ -1,7 +1,6 @@
-package com.ss.ics.dahua.config;
+package com.ss.ics.dahua;
 
-import com.ss.ics.dahua.DahuaCameraSdkService;
-import com.ss.ics.dahua.DahuaSdkOptions;
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
 
 /** 创建大华 Camera SDK 服务的可替换入口。 */
 @FunctionalInterface

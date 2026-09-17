@@ -1,4 +1,4 @@
-package com.ss.ics.dahua;
+package com.ss.ics.dahua.domain;
 
 /** 消费大华热成像帧。 */
 @FunctionalInterface

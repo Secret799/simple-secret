@@ -1,7 +1,7 @@
 package com.ss.ics.hikvision.internal.jna;
 
 import com.ss.ics.hikvision.HikvisionJnaStructures;
-import com.ss.ics.hikvision.HikvisionSdkException;
+import com.ss.ics.hikvision.exception.HikvisionSdkException;
 import com.ss.ics.hikvision.HikvisionSdkOptions;
 import com.ss.ics.hikvision.internal.HikvisionNativeApi;
 import com.ss.ics.hikvision.internal.HikvisionNativeStreamCallback;

@@ -4,6 +4,7 @@ import com.ss.ics.constants.enums.PtzControlCommandEnums;
 import com.ss.ics.domain.DeviceDomain;
 import com.ss.ics.domain.LoginDomain;
 import com.ss.ics.domain.PTZControlDomain;
+import com.ss.ics.hikvision.exception.HikvisionSdkException;
 import com.ss.ics.hikvision.internal.HikvisionNativeApi;
 import com.ss.ics.hikvision.internal.model.HikvisionNativeLoginResult;
 import org.junit.jupiter.api.Test;

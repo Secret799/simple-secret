@@ -1,4 +1,4 @@
-package com.ss.ics.dahua;
+package com.ss.ics.dahua.domain;
 
 /** 大华热成像 8192 坐标系中的点。 */
 public record DahuaPoint(int x, int y) {

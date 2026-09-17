@@ -1,7 +1,4 @@
-package com.ss.ics.hikvision.config;
-
-import com.ss.ics.hikvision.HikvisionCameraSdkService;
-import com.ss.ics.hikvision.HikvisionSdkOptions;
+package com.ss.ics.hikvision;
 
 /** 创建海康威视 Camera SDK 服务的可替换入口。 */
 @FunctionalInterface

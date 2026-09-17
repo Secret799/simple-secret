@@ -1,7 +1,7 @@
 package com.ss.ics.hikvision;
 
+import com.ss.ics.hikvision.exception.HikvisionSdkException;
 import com.ss.ics.hikvision.internal.HikvisionNativeApi;
-import com.ss.ics.hikvision.internal.model.HikvisionNativeLoginResult;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;

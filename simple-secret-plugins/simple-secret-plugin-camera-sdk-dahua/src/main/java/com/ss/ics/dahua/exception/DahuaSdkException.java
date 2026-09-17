@@ -1,4 +1,4 @@
-package com.ss.ics.dahua;
+package com.ss.ics.dahua.exception;
 
 /**
  * 大华原生 SDK 操作失败。

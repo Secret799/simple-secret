@@ -1,6 +1,6 @@
 package com.ss.ics.dahua.internal.model;
 
-import com.ss.ics.dahua.DahuaPoint;
+import com.ss.ics.dahua.domain.DahuaPoint;
 
 /**
  * 原生区域温度快照。

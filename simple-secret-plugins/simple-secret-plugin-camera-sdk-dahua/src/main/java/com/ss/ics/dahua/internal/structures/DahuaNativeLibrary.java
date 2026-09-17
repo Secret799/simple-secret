@@ -1,5 +1,6 @@
-package com.ss.ics.dahua;
+package com.ss.ics.dahua.internal.structures;
 
+import com.ss.ics.dahua.DahuaCameraSdkService;
 import com.sun.jna.Callback;
 import com.sun.jna.Pointer;
 

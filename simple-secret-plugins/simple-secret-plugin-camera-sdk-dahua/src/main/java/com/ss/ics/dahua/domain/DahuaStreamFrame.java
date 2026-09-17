@@ -1,4 +1,4 @@
-package com.ss.ics.dahua;
+package com.ss.ics.dahua.domain;
 
 /** 已复制的 H.264 Annex-B 帧。 */
 public record DahuaStreamFrame(

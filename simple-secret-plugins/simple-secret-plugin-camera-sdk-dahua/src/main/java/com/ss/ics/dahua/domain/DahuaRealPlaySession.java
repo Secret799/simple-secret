@@ -1,4 +1,4 @@
-package com.ss.ics.dahua;
+package com.ss.ics.dahua.domain;
 
 /** 大华实时预览句柄；关闭时停止预览并释放其临时登录。 */
 public final class DahuaRealPlaySession implements AutoCloseable {
@@ -6,7 +6,7 @@ public final class DahuaRealPlaySession implements AutoCloseable {
     private final Runnable closeAction;
     private boolean closed;
 
-    DahuaRealPlaySession(long handle, Runnable closeAction) {
+    public DahuaRealPlaySession(long handle, Runnable closeAction) {
         this.handle = handle;
         this.closeAction = closeAction;
     }

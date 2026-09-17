@@ -1,4 +1,4 @@
-package com.ss.ics.dahua;
+package com.ss.ics.dahua.internal.structures;
 
 import com.sun.jna.IntegerType;
 import com.sun.jna.Pointer;

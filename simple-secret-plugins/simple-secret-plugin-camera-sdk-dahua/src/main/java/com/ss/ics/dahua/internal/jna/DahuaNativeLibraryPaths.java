@@ -1,6 +1,6 @@
 package com.ss.ics.dahua.internal.jna;
 
-import com.ss.ics.dahua.DahuaSdkOptions;
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

@@ -13,8 +13,8 @@ class DahuaPackageStructureTest {
         assertThat(Class.forName("com.ss.ics.dahua.internal.DahuaNativeApi")).isNotNull();
         assertThat(Class.forName("com.ss.ics.dahua.internal.jna.JnaDahuaNativeApi")).isNotNull();
         assertThat(Class.forName("com.ss.ics.dahua.internal.jna.DahuaNetSdkLibrary")).isNotNull();
-        assertThat(Class.forName("com.ss.ics.dahua.DahuaJnaStructures")).isNotNull();
-        assertThat(Class.forName("com.ss.ics.dahua.DahuaNativeLibrary")).isNotNull();
+        assertThat(Class.forName("com.ss.ics.dahua.internal.structures.DahuaJnaStructures")).isNotNull();
+        assertThat(Class.forName("com.ss.ics.dahua.internal.structures.DahuaNativeLibrary")).isNotNull();
         assertThat(Class.forName("com.ss.ics.dahua.internal.model.DahuaNativeLoginResult")).isNotNull();
         assertThat(Class.forName("com.ss.ics.dahua.internal.jna.DahuaCallbackGate")).isNotNull();
 

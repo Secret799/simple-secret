@@ -1,4 +1,4 @@
-package com.ss.ics.hikvision;
+package com.ss.ics.hikvision.exception;
 
 /**
  * 海康原生 SDK 操作失败时抛出的异常。

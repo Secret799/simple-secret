@@ -1,5 +1,6 @@
 package com.ss.ics.hikvision;
 
+import com.ss.ics.hikvision.exception.HikvisionSdkException;
 import com.ss.ics.hikvision.internal.HikvisionNativeApi;
 import com.ss.ics.hikvision.internal.jna.JnaHikvisionNativeApi;
 

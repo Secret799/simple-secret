@@ -1,5 +1,6 @@
 package com.ss.ics.dahua;
 
+import com.ss.ics.dahua.domain.DahuaPoint;
 import com.ss.ics.domain.LoginDomain;
 import com.ss.ics.dahua.internal.DahuaNativeApi;
 import com.ss.ics.dahua.internal.DahuaNativeStreamCallback;

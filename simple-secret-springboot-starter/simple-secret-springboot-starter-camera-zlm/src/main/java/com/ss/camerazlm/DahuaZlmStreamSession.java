@@ -1,6 +1,6 @@
 package com.ss.camerazlm;
 
-import com.ss.ics.dahua.DahuaStreamFrame;
+import com.ss.ics.dahua.domain.DahuaStreamFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

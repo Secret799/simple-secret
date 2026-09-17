@@ -15,7 +15,11 @@
     <dependencies>
         <dependency>
             <groupId>com.ss</groupId>
-            <artifactId>simple-secret-plugin-camera-sdk-dahua</artifactId>
+            <artifactId>simple-secret-springboot-starter-dahua</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ss</groupId>
+            <artifactId>simple-secret-springboot-starter-hikvision</artifactId>
         </dependency>
         <dependency>
             <groupId>com.ss</groupId>

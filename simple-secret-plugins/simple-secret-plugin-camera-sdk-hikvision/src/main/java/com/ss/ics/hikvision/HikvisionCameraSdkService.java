@@ -7,6 +7,7 @@ import com.ss.ics.domain.PTZControlDomain;
 import com.ss.ics.domain.PlayDomain;
 import com.ss.ics.domain.PlaybackTimePeriodDomain;
 import com.ss.ics.constants.enums.PtzControlCommandEnums;
+import com.ss.ics.hikvision.exception.HikvisionSdkException;
 import com.ss.ics.service.DeviceLoginService;
 import com.ss.ics.service.PlayService;
 import com.ss.ics.service.PlayQueryService;

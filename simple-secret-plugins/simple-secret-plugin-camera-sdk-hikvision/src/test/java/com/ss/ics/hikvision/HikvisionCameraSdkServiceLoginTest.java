@@ -2,6 +2,7 @@ package com.ss.ics.hikvision;
 
 import com.ss.ics.domain.LoggedDomain;
 import com.ss.ics.domain.LoginDomain;
+import com.ss.ics.hikvision.exception.HikvisionSdkException;
 import com.ss.ics.hikvision.internal.HikvisionNativeApi;
 import com.ss.ics.hikvision.internal.model.HikvisionNativeLoginResult;
 import org.junit.jupiter.api.Test;

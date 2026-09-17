@@ -1,4 +1,4 @@
-package com.ss.ics.dahua;
+package com.ss.ics.dahua.domain;
 
 import java.nio.file.Path;
 import java.time.Duration;

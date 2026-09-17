@@ -1,6 +1,6 @@
 package com.ss.ics.dahua.internal;
 
-import com.ss.ics.dahua.DahuaPoint;
+import com.ss.ics.dahua.domain.DahuaPoint;
 import com.ss.ics.dahua.internal.model.DahuaNativeLoginResult;
 import com.ss.ics.dahua.internal.model.DahuaNativeRadiometryRecord;
 import com.ss.ics.dahua.internal.model.DahuaNativeRegionTemperature;
