@@ -24,6 +24,6 @@ simple-secret:
   camera-sdk:
     dahua:
       enabled: true
-      library-directory: /Users/junpzx/Workspace/honeybee-workspace/sdk/dahua
+      library-directory: E:\camera-run-lib\dahua-sdk
     hikvision:
       enabled: false
