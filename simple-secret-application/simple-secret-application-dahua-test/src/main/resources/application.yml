@@ -24,6 +24,6 @@ simple-secret:
   camera-sdk:
     dahua:
       enabled: true
-      library-directory: E:\camera-run-lib\dahua-sdk
+      library-directory: /opt/junpzx/sdk/dahua
     hikvision:
       enabled: false
