@@ -858,7 +858,7 @@ public class ZlmMediaServiceImpl implements IZlmMediaService {
         rtpDetachCallbacks.put(param.getStream(), detachCallback);
         try {
             api().mk_rtp_server_set_on_detach(mkRtpServer, detachCallback, null);
-            return (int) port;
+            return Short.toUnsignedInt(port);
         } catch (RuntimeException | Error exception) {
             releaseRtpAfterFailure(param.getStream(), mkRtpServer, exception);
             throw exception;
@@ -928,7 +928,7 @@ public class ZlmMediaServiceImpl implements IZlmMediaService {
         if (!rtpServers.isEmpty()) {
             rtpServers.forEach((key, value) -> {
                 RtpServerVo rtpServerResult = new RtpServerVo();
-                rtpServerResult.setPort((int) api().mk_rtp_server_port(value));
+                rtpServerResult.setPort(Short.toUnsignedInt(api().mk_rtp_server_port(value)));
                 rtpServerResult.setStream(key);
                 rtpServerResults.add(rtpServerResult);
             });

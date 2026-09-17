@@ -59,6 +59,7 @@ flowchart TD
 
 | 模块 | 功能 | 文档 |
 | --- | --- | --- |
+| `simple-secret-plugin-gb28181` | GB28181 平台注册、心跳、目录、录像检索、设备/状态/看守位/PTZ 精确位置查询、PTZ/预置位、设备与报警中心复位、关键帧请求、拉框放大/缩小、远程启动、录像和报警布防、报警上报与订阅、目录订阅、移动位置订阅、实时点播、历史回放与下载信令，UDP/TCP | [查看文档](simple-secret-plugins/simple-secret-plugin-gb28181/README.md) |
 | `simple-secret-plugin-geo` | 图片像素、WGS84 地理坐标和 DJI 相机遥测转换 | [查看文档](simple-secret-plugins/simple-secret-plugin-geo/README.md) |
 | `simple-secret-plugin-kmz` | KML、KMZ、DJI WPML 航点任务读写 | [查看文档](simple-secret-plugins/simple-secret-plugin-kmz/README.md) |
 | `simple-secret-plugin-udp` | JDK-only 的 UDP 单播与组播监听 | [查看文档](simple-secret-plugins/simple-secret-plugin-udp/README.md) |
@@ -73,6 +74,8 @@ flowchart TD
 
 | 模块 | 功能 | 文档 |
 | --- | --- | --- |
+| `simple-secret-springboot-starter-gb28181` | 默认关闭的 GB28181 信令自动配置与受管生命周期 | [查看文档](simple-secret-springboot-starter/simple-secret-springboot-starter-gb28181/README.md) |
+| `simple-secret-springboot-starter-gb28181-zlm` | 默认关闭的 GB28181 实时/历史/下载与 ZLM RTP 接收适配 | [查看文档](simple-secret-springboot-starter/simple-secret-springboot-starter-gb28181-zlm/README.md) |
 | `simple-secret-springboot-starter-mqttv3` | MQTT 3.1.1 多客户端、发布订阅、请求响应和配置刷新 | [查看文档](simple-secret-springboot-starter/simple-secret-springboot-starter-mqttv3/README.md) |
 | `simple-secret-springboot-starter-mqttv5` | MQTT v5 多客户端、共享订阅、请求响应和配置刷新 | [查看文档](simple-secret-springboot-starter/simple-secret-springboot-starter-mqttv5/README.md) |
 | `simple-secret-springboot-starter-camera` | 海康、大华摄像机与 NVR 的 RTSP 地址组装 | [查看文档](simple-secret-springboot-starter/simple-secret-springboot-starter-camera/README.md) |
@@ -107,6 +110,9 @@ flowchart TD
 
 | Consumer | 验证对象 | 文档 |
 | --- | --- | --- |
+| `consumer-gb28181-plugin` | GB28181 Plugin | [查看文档](integration-tests/consumer-gb28181-plugin/README.md) |
+| `consumer-gb28181` | GB28181 Starter | [查看文档](integration-tests/consumer-gb28181/README.md) |
+| `consumer-gb28181-zlm` | GB28181-ZLM Starter | [查看文档](integration-tests/consumer-gb28181-zlm/README.md) |
 | `consumer-toolbox` | Common Toolbox | [查看文档](integration-tests/consumer-toolbox/README.md) |
 | `consumer-core` | Common Core | [查看文档](integration-tests/consumer-core/README.md) |
 | `consumer-dict` | Common Dict | [查看文档](integration-tests/consumer-dict/README.md) |

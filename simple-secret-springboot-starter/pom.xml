@@ -12,6 +12,8 @@
     <artifactId>simple-secret-springboot-starter</artifactId>
     <packaging>pom</packaging>
     <modules>
+        <module>simple-secret-springboot-starter-gb28181</module>
+        <module>simple-secret-springboot-starter-gb28181-zlm</module>
         <module>simple-secret-springboot-starter-mqttv3</module>
         <module>simple-secret-springboot-starter-mqttv5</module>
         <module>simple-secret-springboot-starter-camera</module>

@@ -640,8 +640,12 @@ public final class DahuaCameraSdkService
 
     private boolean executePtz(
             long handle, int channel, PtzParameters parameters, int stop) {
-        if (!nativeApi.ptzControl(handle, channel, parameters.command(),
-                parameters.param1(), parameters.param2(), parameters.param3(), stop)) {
+        // 设备对停止命令校验参数必须全零，携带速度会被拒绝（错误码 0x80000007）。
+        PtzParameters effective = stop == 1
+                ? new PtzParameters(parameters.command(), 0, 0, 0)
+                : parameters;
+        if (!nativeApi.ptzControl(handle, channel, effective.command(),
+                effective.param1(), effective.param2(), effective.param3(), stop)) {
             throw failure("Dahua PTZ control failed");
         }
         return true;

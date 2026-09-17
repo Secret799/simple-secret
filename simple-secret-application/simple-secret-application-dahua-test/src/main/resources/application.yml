@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: simple-secret-application-dahua-test
+
+simple-secret:
+  zlm4j:
+    enabled: true
+    # 容器或跨机访问页面时必须监听全部网卡；仅限内网测试环境使用
+    listen-ip: 0.0.0.0
+    allow-anonymous-play: true
+    allow-anonymous-publish: false
+    rtmp-port: 7935
+    rtsp-port: 7554
+    http-port: 7080
+    rtc-port: 18000
+    rtc-listener-enabled: false
+    root-path: ./www
+    thread-num: 4
+  camera-zlm:
+    enabled: true

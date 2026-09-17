@@ -169,6 +169,8 @@ transcodeService.transcode(new TranscodeBO()
         .setScaleHeight(720));
 ```
 
+`openRtpServer` 与 `listRtpServer` 的成功端口使用无符号 16 位范围（1–65535），包括 32768 以上的端口；native 创建失败时 `openRtpServer` 返回 `-1`。
+
 上例中的 `mediaService`、`snapService`、`transcodeService` 分别为注入的 `IZlmMediaService`、`ISnapService`、`ITranscodeService`。业务停止时应对应调用 `stopRecord`、`closeRtpServer` 或 `stopTranscode` 释放资源。
 
 ## 监听 ZLM 事件

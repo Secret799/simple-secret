@@ -22,10 +22,11 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn install -DskipTests
 JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -f integration-tests/pom.xml test
 ```
 
-第一条命令把最新构件安装到本地 Maven 仓库，第二条命令让 22 个独立 consumer 解析并测试这些构件。
+第一条命令把最新构件安装到本地 Maven 仓库，第二条命令让 新增 GB28181 plugin/starter 在内的独立 consumer 解析并测试这些构件。
 
 ## Consumer 对应关系
 
+- GB28181：`consumer-gb28181-plugin`、`consumer-gb28181`、`consumer-gb28181-zlm`
 - common：`consumer-toolbox`、`consumer-core`、`consumer-dict`
 - plugin：`consumer-geo`、`consumer-kmz`、`consumer-udp`、`consumer-excel`、`consumer-camera-sdk`
   及两个厂商 SDK consumer

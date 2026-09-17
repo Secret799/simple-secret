@@ -30,8 +30,8 @@ Java 类，也不会给应用传递任何运行时依赖。
 
 ## 版本管理范围
 
-- 所有当前保留的 common、plugin 和 starter 模块。
-- Jackson、Netty、Apache POI、Commons、Bouncy Castle 和 JNA。
+- 所有当前保留的 common、plugin 和 starter 模块，包括可选 `simple-secret-springboot-starter-gb28181-zlm`。
+- Jackson、Netty、Apache POI、Commons、Bouncy Castle、JNA 和 JAIN-SIP。
 - BOM 不管理已经删除的 starter，也不恢复 `simple-secret-common-json`。
 
 ## 解析顺序

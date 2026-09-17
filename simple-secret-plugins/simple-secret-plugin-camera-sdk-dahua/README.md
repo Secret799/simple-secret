@@ -123,11 +123,13 @@ dahua.syncControl(device, turn);
 boolean queued = dahua.asyncControl(device, turn);
 ```
 
-逻辑通道 `1` 映射为设备登录结果的起始通道；速度等级 1 到 10 映射并限制到大华范围 1 到 8。
+逻辑通道 `1` 映射为设备登录结果的起始通道；速度等级 1 到 10 映射并限制到大华范围 1 到 8。停止命令始终以全零速度参数下发，设备会拒绝携带速度的停止命令（错误码 `0x80000007`）。注意每次控制调用都是独立登录会话，部分设备要求
+开始与停止在同一登录会话内配对，跨调用的 `isBegin=true/false` 组合可能被设备拒绝；需要持续转动时优先使用 `duration` 模式（同一次调用内完成开始、等待和停止）。
 
 ## H.264 实时预览
 
-`realPlay` 仅接受主码流 `0` 或子码流 `1`，回调只会收到以三或四字节 start code 开头的 Annex-B H.264 数据。回调的 `DahuaStreamFrame` 会复制字节数组；调用方必须关闭返回的预览句柄。
+`realPlay` 仅接受主码流 `0` 或子码流 `1`，回调只会收到以三或四字节 start code 开头的 Annex-B H.264 数据。预览会同时注册结构化帧回调与实时码流回调：设备支持结构化数据时走帧回调；只下发私有码流（`dataType=0` 的 DHAV 帧）的设备，
+由内置私有流解析器按帧长字段分帧、剥离私有帧头（扫描定位 Annex-B start code）后交付视频帧，毫秒时间戳与厂商帧类型保留在 `DahuaStreamFrame` 中，音频与信息帧被跳过。回调的 `DahuaStreamFrame` 会复制字节数组；调用方必须关闭返回的预览句柄。
 
 ```java
 PlayDomain previewRequest = new PlayDomain().setTakeStreamParam(

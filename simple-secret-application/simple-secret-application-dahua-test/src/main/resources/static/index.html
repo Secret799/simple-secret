@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大华 SDK 播放与云台测试</title>
+<script src="mpegts.js"></script>
+<style>
+  :root {
+    --bg: #0f1419; --panel: #1a2129; --line: #2a3440; --text: #d7dee6;
+    --muted: #7d8b99; --accent: #3d8bfd; --ok: #2ecc71; --warn: #e67e22; --err: #e74c3c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; min-height: 100vh; }
+  header { padding: 12px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 12px; }
+  header h1 { font-size: 17px; font-weight: 600; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  .layout { display: flex; gap: 16px; padding: 16px 20px; align-items: flex-start; flex-wrap: wrap; }
+  .video-box { flex: 1 1 640px; min-width: 480px; }
+  .side { width: 360px; display: flex; flex-direction: column; gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .card h2 { font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+  video { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; display: block; }
+  .overlay { position: relative; }
+  .overlay .badge { position: absolute; top: 10px; left: 10px; padding: 2px 10px; border-radius: 12px; font-size: 12px; background: rgba(0,0,0,.55); }
+  .badge.live { color: var(--ok); } .badge.idle { color: var(--muted); } .badge.err { color: var(--err); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  label.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+  input, select { background: #10161d; border: 1px solid var(--line); color: var(--text); border-radius: 6px; padding: 7px 9px; font-size: 13px; width: 100%; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  button { background: #22303f; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.danger { background: transparent; border-color: var(--err); color: var(--err); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; margin-top: 10px; }
+  .row button { flex: 1; }
+  /* 云台 */
+  .ptz-pad { display: grid; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(3, 56px); gap: 6px; justify-content: center; }
+  .ptz-pad button { font-size: 18px; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
+  .ptz-pad .center { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 11px; border-radius: 6px; }
+  .ptz-extra { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+  .ptz-extra button { padding: 8px 4px; font-size: 12px; user-select: none; -webkit-user-select: none; touch-action: none; }
+  .speed { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+  .speed input[type=range] { flex: 1; accent-color: var(--accent); }
+  .speed .val { width: 22px; text-align: center; color: var(--text); }
+  /* 状态与日志 */
+  .kv { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
+  .kv .k { color: var(--muted); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--muted); }
+  .dot.on { background: var(--ok); } .dot.off { background: var(--err); }
+  #log { font: 12px/1.7 ui-monospace, Menlo, Consolas, monospace; max-height: 180px; overflow-y: auto; }
+  #log .t { color: var(--muted); margin-right: 6px; }
+  #log .ok { color: var(--ok); } #log .err { color: var(--err); } #log .info { color: var(--text); }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>大华 SDK 播放与云台测试</h1>
+  <span class="sub">NetSDK 实时预览 → ZLM → WebSocket-FLV 播放；云台同步控制</span>
+</header>
+
+<div class="layout">
+  <div class="video-box card">
+    <div class="overlay">
+      <video id="video" muted autoplay controls></video>
+      <span id="badge" class="badge idle">未连接</span>
+    </div>
+    <div class="row">
+      <button id="btn-play" class="primary">开始播放</button>
+      <button id="btn-stop" class="danger">停止</button>
+    </div>
+    <div class="hint">播放链路：大华 NetSDK 回调 H.264 → DahuaZlmStreamService → 内嵌 ZLMediaKit → ws-flv。速度取决于设备码流与网络。</div>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <h2>设备连接</h2>
+      <div class="grid2">
+        <label class="f">设备 IP<input id="f-ip" value="192.168.11.116"></label>
+        <label class="f">SDK 端口<input id="f-port" value="37777"></label>
+        <label class="f">账号<input id="f-user" value="admin"></label>
+        <label class="f">密码<input id="f-pass" type="password" placeholder="登录密码"></label>
+        <label class="f">通道（1 起）<input id="f-channel" value="1"></label>
+        <label class="f">码流
+          <select id="f-stream-type"><option value="0">主码流</option><option value="1">子码流</option></select>
+        </label>
+        <label class="f">ZLM 应用名<input id="f-app" value="live"></label>
+        <label class="f">ZLM 流名<input id="f-stream" value="dahua-main"></label>
+      </div>
+      <div class="hint">凭据仅保存在本页面内存并发送到测试服务，不会写入磁盘。</div>
+    </div>
+
+    <div class="card">
+      <h2>云台控制</h2>
+      <div class="ptz-pad">
+        <button data-cmd="LEFT_UP" title="左上">↖</button>
+        <button data-cmd="UP" title="上">↑</button>
+        <button data-cmd="RIGHT_UP" title="右上">↗</button>
+        <button data-cmd="LEFT" title="左">←</button>
+        <div class="center">方向</div>
+        <button data-cmd="RIGHT" title="右">→</button>
+        <button data-cmd="LEFT_DOWN" title="左下">↙</button>
+        <button data-cmd="DOWN" title="下">↓</button>
+        <button data-cmd="RIGHT_DOWN" title="右下">↘</button>
+      </div>
+      <div class="ptz-extra">
+        <button data-cmd="ZOOM_IN">变倍 +</button>
+        <button data-cmd="ZOOM_OUT">变倍 −</button>
+        <span></span>
+        <button data-cmd="FOCUS_NEAR">焦点近</button>
+        <button data-cmd="FOCUS_FAR">焦点远</button>
+        <span></span>
+        <button data-cmd="IRIS_OPEN">光圈 +</button>
+        <button data-cmd="IRIS_CLOSE">光圈 −</button>
+        <span></span>
+      </div>
+      <div class="speed">速度 <input id="f-speed" type="range" min="1" max="8" value="4"><span class="val" id="speed-val">4</span></div>
+      <div class="hint">按住持续转动（短脉冲连发），松开即停；每次脉冲独立登录设备并在同一会话内启停。</div>
+    </div>
+
+    <div class="card">
+      <h2>状态</h2>
+      <div class="kv"><span class="k">SDK</span><span id="s-sdk"><span class="dot off"></span>检测中</span></div>
+      <div class="kv"><span class="k">推流会话</span><span id="s-session"><span class="dot off"></span>无</span></div>
+      <div class="kv"><span class="k">ZLM 在线协议</span><span id="s-schemas">-</span></div>
+      <div class="kv"><span class="k">会话异常</span><span id="s-failure">-</span></div>
+    </div>
+
+    <div class="card">
+      <h2>日志</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+let player = null;
+let zlmHttpPort = 7080;
+let playRetries = 0;
+const MAX_PLAY_RETRIES = 6;
+
+function log(msg, cls) {
+  const line = document.createElement('div');
+  const t = new Date().toTimeString().slice(0, 8);
+  line.innerHTML = `<span class="t">${t}</span><span class="${cls || 'info'}">${msg}</span>`;
+  const box = $('log');
+  box.prepend(line);
+  while (box.children.length > 60) box.lastChild.remove();
+}
+
+function deviceBody() {
+  return {
+    ip: $('f-ip').value.trim(), port: $('f-port').value.trim(),
+    username: $('f-user').value.trim(), password: $('f-pass').value,
+    channel: $('f-channel').value.trim()
+  };
+}
+
+async function api(path, body) {
+  const opt = body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+  const resp = await fetch(path, opt);
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.message || `HTTP ${resp.status}`);
+  return data;
+}
+
+function setBadge(cls, text) { const b = $('badge'); b.className = 'badge ' + cls; b.textContent = text; }
+
+function destroyPlayer() {
+  if (player) { try { player.destroy(); } catch (e) { /* 忽略销毁异常 */ } player = null; }
+  $('video').removeAttribute('src');
+}
+
+async function startPlay() {
+  const body = { ...deviceBody(), streamType: Number($('f-stream-type').value), app: $('f-app').value.trim(), stream: $('f-stream').value.trim() };
+  try {
+    setBadge('idle', '连接中…');
+    log('开始推流：' + body.app + '/' + body.stream);
+    await api('/api/stream/start', body);
+    log('推流会话已建立', 'ok');
+    playRetries = 0;
+    await attachPlayer(body);
+  } catch (e) {
+    setBadge('err', '失败');
+    log(String(e.message || e), 'err');
+  }
+}
+
+/* 挂载播放器；流尚未 ready 时 ZLM 会立刻断开 ws，按退避重试 */
+async function attachPlayer(body) {
+  if (typeof mpegts === 'undefined') throw new Error('mpegts.js 未加载（检查静态资源）');
+  const url = `ws://${location.hostname}:${zlmHttpPort}/${body.app}/${body.stream}.live.flv`;
+  return new Promise((resolve, reject) => {
+    destroyPlayer();
+    player = mpegts.createPlayer({ type: 'flv', isLive: true, url }, { enableWorker: false, liveBufferLatencyChasing: true });
+    player.attachMediaElement($('video'));
+    let settled = false;
+    player.on(mpegts.Events.ERROR, type => {
+      if (settled) { scheduleRetry(body); return; }
+      settled = true;
+      reject(new Error('播放器错误：' + type));
+    });
+    player.on(mpegts.Events.MEDIA_INFO, () => {
+      setBadge('live', '直播中');
+      if (!settled) { settled = true; resolve(); }
+    });
+    player.load();
+    player.play().catch(() => { /* 自动播放策略由用户手动点视频恢复 */ });
+    log('播放器加载：' + url, 'ok');
+  }).catch(e => {
+    log(String(e.message || e), 'err');
+    scheduleRetry(body);
+  });
+}
+
+function scheduleRetry(body) {
+  if (playRetries++ >= MAX_PLAY_RETRIES) {
+    setBadge('err', '重试超限');
+    log('播放重试超限，请点击“开始播放”重新连接', 'err');
+    return;
+  }
+  setBadge('idle', '流未就绪，重试 ' + playRetries + '/' + MAX_PLAY_RETRIES);
+  setTimeout(() => attachPlayer(body), 2500);
+}
+
+async function stopPlay() {
+  try { await api('/api/stream/stop', {}); log('推流会话已停止', 'ok'); }
+  catch (e) { log('停止失败：' + e.message, 'err'); }
+  destroyPlayer();
+  setBadge('idle', '未连接');
+}
+
+function refreshStatus() {
+  api('/api/stream/status').then(s => {
+    $('s-session').innerHTML = `<span class="dot ${s.sessionActive ? 'on' : 'off'}"></span>${s.sessionActive ? '活动中' : '无'}`;
+    $('s-schemas').textContent = s.zlmSchemas && s.zlmSchemas.length ? s.zlmSchemas.join(', ') : '-';
+    $('s-failure').textContent = s.failure || '-';
+    if (s.sessionActive && !player && $('badge').textContent === '未连接') setBadge('live', '推流中(未播放)');
+  }).catch(() => { /* 状态轮询失败不刷屏 */ });
+}
+
+/* 云台：按住以短脉冲连续控制（单次调用内完成 开始→等待→停止，设备要求同会话配对） */
+document.querySelectorAll('[data-cmd]').forEach(btn => {
+  const cmd = btn.dataset.cmd;
+  let pulseTimer = null;
+  let firing = false;
+  const fire = () => {
+    if (firing) return;
+    firing = true;
+    api('/api/ptz', { ...deviceBody(), command: cmd, speedLevel: Number($('f-speed').value), duration: 'PT0.8S' })
+      .then(() => log(`云台 ${cmd} 脉冲`, 'ok'))
+      .catch(e => log(`云台 ${cmd} 失败：` + e.message, 'err'))
+      .finally(() => { firing = false; });
+  };
+  const start = () => { if (pulseTimer) return; fire(); pulseTimer = setInterval(fire, 700); };
+  const stop = () => { if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; } };
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); start(); });
+  btn.addEventListener('pointerup', stop);
+  btn.addEventListener('pointercancel', stop);
+  btn.addEventListener('pointerleave', stop);
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+});
+
+$('f-speed').addEventListener('input', () => $('speed-val').textContent = $('f-speed').value);
+$('btn-play').addEventListener('click', startPlay);
+$('btn-stop').addEventListener('click', stopPlay);
+window.addEventListener('beforeunload', () => {
+  fetch('/api/stream/stop', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: '{}' });
+});
+
+/* 初始化自检 */
+api('/api/config').then(c => {
+  zlmHttpPort = c.zlmHttpPort || 7080;
+  const ready = !!c.sdkReady;
+  $('s-sdk').innerHTML = `<span class="dot ${ready ? 'on' : 'off'}"></span>${ready ? '就绪' : '未初始化'}`;
+  if (!ready) log('大华 SDK 未初始化：容器需设置 DAHUA_NETSDK_DIRECTORY 环境变量', 'err');
+  if (!c.streamServiceReady) log('推流服务未就绪：检查 simple-secret.camera-zlm.enabled', 'err');
+  if (typeof mpegts === 'undefined') log('mpegts.js 加载失败', 'err');
+}).catch(e => log('读取配置失败：' + e.message, 'err'));
+setInterval(refreshStatus, 2000);
+refreshStatus();
+</script>
+</body>
+</html>

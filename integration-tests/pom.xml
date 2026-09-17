@@ -10,6 +10,9 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>consumer-gb28181-plugin</module>
+        <module>consumer-gb28181</module>
+        <module>consumer-gb28181-zlm</module>
         <module>consumer-toolbox</module>
         <module>consumer-core</module>
         <module>consumer-dict</module>

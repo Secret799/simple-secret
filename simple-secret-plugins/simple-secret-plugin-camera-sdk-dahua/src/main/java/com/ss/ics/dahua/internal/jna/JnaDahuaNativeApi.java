@@ -205,13 +205,41 @@ public final class JnaDahuaNativeApi implements DahuaNativeApi {
             }
             return 1;
         };
-        gate.retain(nativeCallback);
+        // 部分设备不支持结构化帧回调（dataType=4），回落为原始私有码流（dataType=0）下发；
+        // 必须同时注册实时码流回调，否则这些设备预览建立成功但收不到任何帧。
+        DahuaNetSdkLibrary.RealDataCallback nativeRealDataCallback =
+                (handle, dataType, buffer, bufferSize, parameter, user) -> {
+                    try {
+                        if (!gate.enter()) {
+                            return;
+                        }
+                        try {
+                            if (!isValidNativeBuffer(buffer, bufferSize)) {
+                                return;
+                            }
+                            if (dataType == 0) {
+                                com.ss.ics.dahua.internal.DahuaPrivateStreamParser.parse(
+                                        buffer.getByteArray(0, bufferSize), callback);
+                            } else if (dataType == 1
+                                    && isAnnexB(buffer.getByteArray(0, Math.min(bufferSize, 4)))) {
+                                callback.onFrame(new DahuaNativeStreamFrame(
+                                        buffer.getByteArray(0, bufferSize), 0L, 0L, 0, 0));
+                            }
+                        } finally {
+                            gate.exit();
+                        }
+                    } catch (Throwable ignored) {
+                        // Native callback boundaries must never propagate Java exceptions.
+                    }
+                };
+        gate.retain(new Object[]{nativeCallback, nativeRealDataCallback});
         DahuaJnaStructures.RealPlayInput input = new DahuaJnaStructures.RealPlayInput();
         input.channel = channel;
         input.realPlayType = streamType == 0 ? 0 : 3;
         input.dataType = 4;
         input.audioType = 1;
         input.dataCallback = nativeCallback;
+        input.realDataCallback = nativeRealDataCallback;
         input.write();
         DahuaJnaStructures.RealPlayOutput output = new DahuaJnaStructures.RealPlayOutput();
         output.write();
