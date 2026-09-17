@@ -55,8 +55,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class Gb28181PluginConsumerTest {
     @Test void exposesHomePositionQueryApi() throws Exception {
-        assertEquals(new HomePosition("34020000001320000001", true, 30, 2),
-                new HomePosition("34020000001320000001", true, 30, 2));
+        Integer resetTime = 30;
+        Integer presetIndex = 2;
+        assertEquals(new HomePosition("34020000001320000001", true, resetTime, presetIndex),
+                new HomePosition("34020000001320000001", true, resetTime, presetIndex));
         assertNotNull(Gb28181Server.class.getMethod("queryHomePosition", String.class));
     }
     @Test void exposesPtzPositionQueryApi() throws Exception {

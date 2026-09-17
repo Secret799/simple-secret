@@ -1,12 +1,12 @@
 package com.ss.consumer.ics.dahua;
 
 import com.ss.ics.dahua.DahuaCameraSdkService;
-import com.ss.ics.dahua.DahuaPoint;
-import com.ss.ics.dahua.DahuaRadiometryRecord;
-import com.ss.ics.dahua.DahuaRealPlaySession;
-import com.ss.ics.dahua.DahuaSdkOptions;
-import com.ss.ics.dahua.DahuaTemperatureSummary;
 import com.ss.ics.dahua.DahuaThermalSubscription;
+import com.ss.ics.dahua.domain.DahuaPoint;
+import com.ss.ics.dahua.domain.DahuaRadiometryRecord;
+import com.ss.ics.dahua.domain.DahuaRealPlaySession;
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
+import com.ss.ics.dahua.domain.DahuaTemperatureSummary;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;

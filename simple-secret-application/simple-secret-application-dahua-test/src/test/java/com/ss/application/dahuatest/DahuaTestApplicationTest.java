@@ -19,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @since 2026-09-16
  */
 @SpringBootTest(properties = {
+        "simple-secret.camera-sdk.dahua.enabled=false",
         "simple-secret.zlm4j.enabled=false",
         "simple-secret.camera-zlm.enabled=false"
 })

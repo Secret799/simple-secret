@@ -3,7 +3,7 @@ package com.ss.consumer.ics.hikvision;
 import com.ss.ics.hikvision.HikvisionCameraSdkService;
 import com.ss.ics.hikvision.HikvisionSdkOptions;
 import com.ss.ics.hikvision.config.HikvisionCameraSdkAutoConfiguration;
-import com.ss.ics.hikvision.config.HikvisionCameraSdkProperties;
+import com.ss.ics.hikvision.config.properties.HikvisionCameraSdkProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport;

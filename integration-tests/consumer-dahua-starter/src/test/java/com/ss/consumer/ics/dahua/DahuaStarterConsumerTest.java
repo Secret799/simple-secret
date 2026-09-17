@@ -1,9 +1,9 @@
 package com.ss.consumer.ics.dahua;
 
 import com.ss.ics.dahua.DahuaCameraSdkService;
-import com.ss.ics.dahua.DahuaSdkOptions;
 import com.ss.ics.dahua.config.DahuaCameraSdkAutoConfiguration;
-import com.ss.ics.dahua.config.DahuaCameraSdkProperties;
+import com.ss.ics.dahua.config.properties.DahuaCameraSdkProperties;
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport;
