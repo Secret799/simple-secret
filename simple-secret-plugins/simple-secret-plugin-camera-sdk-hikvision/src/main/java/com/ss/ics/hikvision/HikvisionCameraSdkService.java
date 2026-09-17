@@ -1,5 +1,6 @@
 package com.ss.ics.hikvision;
 
+import com.ss.ics.constants.CameraBrandEnums;
 import com.ss.ics.domain.LoggedDomain;
 import com.ss.ics.domain.LoginDomain;
 import com.ss.ics.domain.DeviceDomain;
@@ -48,7 +49,7 @@ public final class HikvisionCameraSdkService
         implements DeviceLoginService, PtzControlService, PlayQueryService,
         PlayService<HikvisionStreamSession, HikvisionStreamDataHandler>, AutoCloseable {
     /** basic plugin 使用的厂商产品编码。 */
-    public static final String PRODUCT = "Hikvision";
+    public static final String PRODUCT = CameraBrandEnums.HIKVISION.getCode();
 
     private final HikvisionSdkRuntime runtime;
     private final HikvisionNativeApi nativeApi;

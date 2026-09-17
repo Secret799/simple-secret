@@ -1,5 +1,6 @@
 package com.ss.ics.dahua;
 
+import com.ss.ics.constants.CameraBrandEnums;
 import com.ss.ics.dahua.domain.*;
 import com.ss.ics.dahua.exception.DahuaSdkException;
 import com.ss.ics.domain.DeviceDomain;
@@ -40,7 +41,7 @@ public final class DahuaCameraSdkService
         implements DeviceLoginService, PtzControlService,
         PlayService<DahuaRealPlaySession, DahuaStreamCallback>, AutoCloseable {
     /** basic plugin 使用的厂商产品编码。 */
-    public static final String PRODUCT = "Dahua";
+    public static final String PRODUCT = CameraBrandEnums.DAHUA.getCode();
 
     private final DahuaSdkRuntime runtime;
     private final DahuaNativeApi nativeApi;
