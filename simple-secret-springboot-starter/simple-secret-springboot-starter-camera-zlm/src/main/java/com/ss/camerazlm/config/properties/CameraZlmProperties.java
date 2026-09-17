@@ -1,4 +1,4 @@
-package com.ss.camerazlm.config;
+package com.ss.camerazlm.config.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

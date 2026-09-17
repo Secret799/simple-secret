@@ -1,6 +1,7 @@
 package com.ss.camerazlm.config;
 
 import com.ss.camerazlm.DahuaZlmStreamService;
+import com.ss.camerazlm.config.properties.CameraZlmProperties;
 import com.ss.easymedia.h264.H264NakedFlowPushZlmManager;
 import com.ss.ics.dahua.DahuaCameraSdkService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
