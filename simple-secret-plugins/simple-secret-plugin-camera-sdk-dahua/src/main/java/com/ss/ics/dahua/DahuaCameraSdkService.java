@@ -1,6 +1,8 @@
 package com.ss.ics.dahua;
 
-import com.ss.ics.constants.enums.PtzControlCommandEnums;
+import com.ss.ics.constants.CameraBrandEnums;
+import com.ss.ics.dahua.domain.*;
+import com.ss.ics.dahua.exception.DahuaSdkException;
 import com.ss.ics.domain.DeviceDomain;
 import com.ss.ics.domain.LoggedDomain;
 import com.ss.ics.domain.LoginDomain;
@@ -13,9 +15,7 @@ import com.ss.ics.dahua.internal.model.DahuaNativeLoginResult;
 import com.ss.ics.dahua.internal.model.DahuaNativeRadiometryRecord;
 import com.ss.ics.dahua.internal.model.DahuaNativeRegionTemperature;
 import com.ss.ics.dahua.internal.model.DahuaNativeSearchStart;
-import com.ss.ics.dahua.internal.model.DahuaNativeStreamFrame;
 import com.ss.ics.dahua.internal.model.DahuaNativeTemperatureSummary;
-import com.ss.ics.dahua.internal.model.DahuaNativeThermalData;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -41,7 +41,7 @@ public final class DahuaCameraSdkService
         implements DeviceLoginService, PtzControlService,
         PlayService<DahuaRealPlaySession, DahuaStreamCallback>, AutoCloseable {
     /** basic plugin 使用的厂商产品编码。 */
-    public static final String PRODUCT = "Dahua";
+    public static final String PRODUCT = CameraBrandEnums.DAHUA.getCode();
 
     private final DahuaSdkRuntime runtime;
     private final DahuaNativeApi nativeApi;
@@ -640,8 +640,12 @@ public final class DahuaCameraSdkService
 
     private boolean executePtz(
             long handle, int channel, PtzParameters parameters, int stop) {
-        if (!nativeApi.ptzControl(handle, channel, parameters.command(),
-                parameters.param1(), parameters.param2(), parameters.param3(), stop)) {
+        // 设备对停止命令校验参数必须全零，携带速度会被拒绝（错误码 0x80000007）。
+        PtzParameters effective = stop == 1
+                ? new PtzParameters(parameters.command(), 0, 0, 0)
+                : parameters;
+        if (!nativeApi.ptzControl(handle, channel, effective.command(),
+                effective.param1(), effective.param2(), effective.param3(), stop)) {
             throw failure("Dahua PTZ control failed");
         }
         return true;

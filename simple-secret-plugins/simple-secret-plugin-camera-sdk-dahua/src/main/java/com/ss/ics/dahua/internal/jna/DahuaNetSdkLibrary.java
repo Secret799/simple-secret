@@ -1,7 +1,7 @@
 package com.ss.ics.dahua.internal.jna;
 
-import com.ss.ics.dahua.DahuaJnaStructures;
-import com.ss.ics.dahua.DahuaNativeLibrary;
+import com.ss.ics.dahua.internal.structures.DahuaJnaStructures;
+import com.ss.ics.dahua.internal.structures.DahuaNativeLibrary;
 
 import com.sun.jna.Library;
 import com.sun.jna.Pointer;

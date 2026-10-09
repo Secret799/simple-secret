@@ -422,6 +422,27 @@ class ZlmMediaServiceImplLifecycleTest {
         assertThat(releaseAttempts).hasValue(2);
     }
 
+    @Test
+    void rtpPortAboveSignedShortRangeRemainsUnsigned() {
+        MK_RTP_SERVER handle = new MK_RTP_SERVER(new Memory(8));
+        AtomicInteger releases = new AtomicInteger();
+        ZLMApi api = (ZLMApi) Proxy.newProxyInstance(ZLMApi.class.getClassLoader(),
+                new Class<?>[]{ZLMApi.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("mk_rtp_server_create")) return handle;
+                    if (method.getName().equals("mk_rtp_server_port")) return (short) 50000;
+                    if (method.getName().equals("mk_rtp_server_release")) releases.incrementAndGet();
+                    return defaultValue(method.getReturnType());
+                });
+        ZlmMediaServiceImpl service = new ZlmMediaServiceImpl(policy(), api);
+        try {
+            assertThat(service.openRtpServer(new OpenRtpServerBO()
+                    .setPort(0).setTcpMode(0).setStream("high-port"))).isEqualTo(50000);
+            assertThat(service.listRtpServer()).singleElement()
+                    .satisfies(server -> assertThat(server.getPort()).isEqualTo(50000));
+        } finally { service.close(); }
+        assertThat(releases).hasValue(1);
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> ConcurrentMap<String, T> registry(Object target, String name) throws Exception {
         Field field = ZlmMediaServiceImpl.class.getDeclaredField(name);

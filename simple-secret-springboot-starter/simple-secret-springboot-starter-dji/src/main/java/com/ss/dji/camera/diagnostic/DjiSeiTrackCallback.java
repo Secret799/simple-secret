@@ -238,7 +238,7 @@ public final class DjiSeiTrackCallback implements TrackDelegateCallback {
     private void logMessage(MediaSourceDomain source, TackDelegateInfo frame, VideoCodec codec, SeiMessage message) {
         byte[] payload = message.payload();
         PayloadPreview preview = PayloadPreview.from(payload, properties.getPreviewBytes());
-        LOG.info("DJI RTMP SEI detected: app={}, stream={}, codec={}, pts={}, dts={}, "
+        LOG.debug("DJI RTMP SEI detected: app={}, stream={}, codec={}, pts={}, dts={}, "
                         + "payloadType={}, payloadBytes={}, uuid={}, hex={}, text={}",
                 source.getApp(), source.getStream(), codec, frame.getPts(), frame.getDts(), message.payloadType(),
                 payload.length, message.uuid().orElse(null), preview.hex(), preview.text());

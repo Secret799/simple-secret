@@ -1,8 +1,10 @@
 package com.ss.ics.dahua.config;
 
 import com.ss.ics.dahua.DahuaCameraSdkService;
-import com.ss.ics.dahua.DahuaSdkOptions;
+import com.ss.ics.dahua.DahuaCameraSdkServiceFactory;
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
 import com.ss.ics.dahua.TestDahuaServices;
+import com.ss.ics.dahua.config.properties.DahuaCameraSdkProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

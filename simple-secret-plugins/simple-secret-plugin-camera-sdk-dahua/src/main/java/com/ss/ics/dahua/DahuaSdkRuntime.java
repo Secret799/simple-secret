@@ -1,5 +1,7 @@
 package com.ss.ics.dahua;
 
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
+import com.ss.ics.dahua.exception.DahuaSdkException;
 import com.ss.ics.dahua.internal.DahuaNativeApi;
 import com.ss.ics.dahua.internal.jna.JnaDahuaNativeApi;
 

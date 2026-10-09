@@ -64,7 +64,7 @@ class DjiSeiTrackCallbackTest {
         appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
-        logger.setLevel(Level.INFO);
+        logger.setLevel(Level.DEBUG);
         clock = new MutableClock();
         DjiSeiProperties properties = new DjiSeiProperties();
         callback = new DjiSeiTrackCallback(new H26xSeiParser(), properties, clock);

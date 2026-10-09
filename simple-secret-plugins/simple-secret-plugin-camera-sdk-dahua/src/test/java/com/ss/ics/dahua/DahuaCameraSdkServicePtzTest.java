@@ -1,6 +1,8 @@
 package com.ss.ics.dahua;
 
 import com.ss.ics.constants.enums.PtzControlCommandEnums;
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
+import com.ss.ics.dahua.exception.DahuaSdkException;
 import com.ss.ics.domain.DeviceDomain;
 import com.ss.ics.domain.PTZControlDomain;
 import org.junit.jupiter.api.Test;
@@ -37,7 +39,21 @@ class DahuaCameraSdkServicePtzTest {
                 .setDuration(Duration.ZERO).setSpeedLevel(1))).isTrue();
 
         assertThat(nativeApi.events).containsExactly(
-                "login", "ptz:42:0:33:1:1:0:0", "ptz:42:0:33:1:1:0:1", "logout:42");
+                "login", "ptz:42:0:33:1:1:0:0", "ptz:42:0:33:0:0:0:1", "logout:42");
+        service.close();
+    }
+
+    @Test
+    void stopCommandClearsSpeedParametersBecauseDevicesRejectThem() {
+        FakeDahuaNativeApi nativeApi = new FakeDahuaNativeApi();
+        DahuaCameraSdkService service = service(nativeApi);
+
+        assertThat(service.syncControl(device().setChannel("1"), new PTZControlDomain()
+                .setCommand(PtzControlCommandEnums.UP).setIsBegin(false).setSpeedLevel(4)))
+                .isTrue();
+
+        assertThat(nativeApi.events).containsExactly(
+                "login", "ptz:42:0:0:0:0:0:1", "logout:42");
         service.close();
     }
 

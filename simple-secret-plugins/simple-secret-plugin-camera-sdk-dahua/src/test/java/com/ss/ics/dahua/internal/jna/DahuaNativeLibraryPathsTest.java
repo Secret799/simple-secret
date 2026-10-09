@@ -1,6 +1,6 @@
 package com.ss.ics.dahua.internal.jna;
 
-import com.ss.ics.dahua.DahuaSdkOptions;
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

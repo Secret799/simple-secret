@@ -1,10 +1,9 @@
 package com.ss.ics.dahua.internal.jna;
 
-import com.ss.ics.dahua.DahuaJnaStructures;
-import com.ss.ics.dahua.DahuaPoint;
-import com.ss.ics.dahua.DahuaSdkException;
-import com.ss.ics.dahua.DahuaSdkOptions;
-import com.ss.ics.dahua.internal.DahuaNativeApi;
+import com.ss.ics.dahua.internal.structures.DahuaJnaStructures;
+import com.ss.ics.dahua.domain.DahuaPoint;
+import com.ss.ics.dahua.exception.DahuaSdkException;
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
 import com.ss.ics.dahua.internal.model.DahuaNativeLoginResult;
 import com.ss.ics.dahua.internal.model.DahuaNativeRadiometryRecord;
 import com.ss.ics.dahua.internal.model.DahuaNativeRegionTemperature;

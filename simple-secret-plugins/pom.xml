@@ -15,6 +15,7 @@
         ss 插件聚合包
     </description>
     <modules>
+        <module>simple-secret-plugin-gb28181</module>
         <module>simple-secret-plugin-geo</module>
         <module>simple-secret-plugin-kmz</module>
         <module>simple-secret-plugin-udp</module>

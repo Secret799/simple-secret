@@ -1,6 +1,8 @@
 package com.ss.ics.dahua.config;
 
 import com.ss.ics.dahua.DahuaCameraSdkService;
+import com.ss.ics.dahua.DahuaCameraSdkServiceFactory;
+import com.ss.ics.dahua.config.properties.DahuaCameraSdkProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

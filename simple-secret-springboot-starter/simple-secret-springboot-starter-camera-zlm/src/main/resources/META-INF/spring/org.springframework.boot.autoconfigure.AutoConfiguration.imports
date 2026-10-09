@@ -1,2 +1,3 @@
 com.ss.camerazlm.config.SimpleSecretCameraZlmAutoConfiguration
+com.ss.camerazlm.config.SimpleSecretCameraSdkAutoConfiguration
 com.ss.camerazlm.config.DahuaZlmStreamAutoConfiguration

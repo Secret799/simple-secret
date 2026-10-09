@@ -13,7 +13,7 @@
     <description>Simple Secret ZLMediaKit(zlm4j) Spring Boot 自动配置,用于视频推拉流、录像、转码、截图、视频拼接</description>
 
     <properties>
-        <zlm4j.version>1.11.0</zlm4j.version>
+        <zlm4j.version>1.12.0</zlm4j.version>
         <javacpp.version>1.5.10</javacpp.version>
         <ffmpeg.version>6.1.1-1.5.10</ffmpeg.version>
         <jna.version>5.18.0</jna.version>

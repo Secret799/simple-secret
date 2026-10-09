@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ss</groupId>
+        <artifactId>simple-secret-plugins</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <artifactId>simple-secret-plugin-gb28181</artifactId>
+    <description>GB28181 平台注册、查询、云台、报警上报与订阅、实时点播、历史回放与下载信令纯 Java 组件</description>
+    <dependencies>
+        <dependency>
+            <groupId>javax.sip</groupId>
+            <artifactId>jain-sip-ri</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.sip</groupId>
+            <artifactId>jain-sip-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,6 +1,8 @@
 package com.ss.ics.hikvision.config;
 
 import com.ss.ics.hikvision.HikvisionCameraSdkService;
+import com.ss.ics.hikvision.HikvisionCameraSdkServiceFactory;
+import com.ss.ics.hikvision.config.properties.HikvisionCameraSdkProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

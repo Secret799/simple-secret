@@ -1,5 +1,6 @@
 package com.ss.ics.dahua;
 
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
 import com.ss.ics.domain.LoggedDomain;
 import com.ss.ics.domain.LoginDomain;
 import org.junit.jupiter.api.Test;

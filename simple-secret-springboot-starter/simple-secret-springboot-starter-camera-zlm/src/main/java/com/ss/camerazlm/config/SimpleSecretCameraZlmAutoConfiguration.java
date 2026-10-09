@@ -1,5 +1,6 @@
 package com.ss.camerazlm.config;
 
+import com.ss.camerazlm.config.properties.CameraZlmProperties;
 import com.ss.easymedia.h264.H264NakedFlowPushZlmManager;
 import com.ss.ics.dahua.DahuaCameraSdkService;
 import com.ss.zlm4j.config.SimpleSecretZlmAutoConfiguration;
@@ -36,7 +37,7 @@ public class SimpleSecretCameraZlmAutoConfiguration {
      * @return 随 Spring 生命周期关闭的 H.264 publisher
      */
     @Bean(destroyMethod = "close")
-    @ConditionalOnBean({ZlmMediaContext.class, DahuaCameraSdkService.class})
+    @ConditionalOnBean({ZlmMediaContext.class})
     @ConditionalOnMissingBean(name = "cameraZlmH264Publisher")
     public H264NakedFlowPushZlmManager cameraZlmH264Publisher(
             ZlmMediaProperties zlmMediaProperties,

@@ -1,8 +1,10 @@
 package com.ss.ics.hikvision.config;
 
 import com.ss.ics.hikvision.HikvisionCameraSdkService;
+import com.ss.ics.hikvision.HikvisionCameraSdkServiceFactory;
 import com.ss.ics.hikvision.HikvisionSdkOptions;
 import com.ss.ics.hikvision.TestHikvisionServices;
+import com.ss.ics.hikvision.config.properties.HikvisionCameraSdkProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

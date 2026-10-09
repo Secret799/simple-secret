@@ -1,5 +1,6 @@
 package com.ss.ics.dahua;
 
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;

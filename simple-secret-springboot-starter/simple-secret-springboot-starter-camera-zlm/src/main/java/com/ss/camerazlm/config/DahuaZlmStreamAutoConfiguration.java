@@ -1,8 +1,11 @@
 package com.ss.camerazlm.config;
 
 import com.ss.camerazlm.DahuaZlmStreamService;
+import com.ss.camerazlm.config.properties.CameraZlmProperties;
 import com.ss.easymedia.h264.H264NakedFlowPushZlmManager;
 import com.ss.ics.dahua.DahuaCameraSdkService;
+import com.ss.ics.dahua.config.DahuaCameraSdkAutoConfiguration;
+import com.ss.ics.hikvision.config.HikvisionCameraSdkAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -18,7 +21,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
  * @since 2026-08-13
  */
 @AutoConfiguration
-@AutoConfigureAfter(SimpleSecretCameraZlmAutoConfiguration.class)
+@AutoConfigureAfter(value = {SimpleSecretCameraZlmAutoConfiguration.class, DahuaCameraSdkAutoConfiguration.class,
+    HikvisionCameraSdkAutoConfiguration.class})
 @ConditionalOnProperty(name = {
         "simple-secret.camera-zlm.enabled",
         "simple-secret.zlm4j.enabled"

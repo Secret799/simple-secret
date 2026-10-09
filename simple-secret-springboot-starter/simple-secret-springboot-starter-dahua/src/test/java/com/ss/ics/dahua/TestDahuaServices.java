@@ -1,5 +1,6 @@
 package com.ss.ics.dahua;
 
+import com.ss.ics.dahua.domain.DahuaSdkOptions;
 import com.ss.ics.dahua.internal.DahuaNativeApi;
 
 import java.util.concurrent.atomic.AtomicInteger;

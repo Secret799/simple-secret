@@ -12,7 +12,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify:
+    uses: ./.github/workflows/maven-verify.yml
+
   publish:
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 60
 

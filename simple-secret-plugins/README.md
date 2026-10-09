@@ -4,6 +4,8 @@
 
 ## 模块选择
 
+- `simple-secret-plugin-gb28181`：平台侧 GB28181 注册鉴权、心跳、目录/录像/设备查询、PTZ/预置位、报警复位、关键帧请求、拉框放大/缩小、远程启动、录像和报警布防、报警上报与订阅、目录订阅、移动位置订阅、实时点播、历史回放和下载信令（UDP/TCP）。
+
 - `simple-secret-plugin-geo`：像素、地理坐标、DJI 照片和实时遥测投影。
 - `simple-secret-plugin-kmz`：KML、KMZ、DJI WPML 航点任务读写。
 - `simple-secret-plugin-udp`：UDP 单播和组播监听。
